@@ -5,13 +5,12 @@ import { GameStateComp, GameState } from "../comp/GameStateComp";
 import { BettingComp } from "../comp/BettingComp";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
-import { SceneBackgroundComp } from "../comp/SceneBackgroundComp";
+import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { smc } from "../common/SingletonModuleComp";
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
-import { SceneData, SceneManagerData, createEmptySceneData } from "../scene/SceneData";
-import { SceneScriptComp } from "../scene/SceneScriptComp";
+import { SceneData } from "../scene/SceneData";
 
 const { ccclass, property } = _decorator;
 
@@ -37,24 +36,16 @@ export class MainGameUI extends CCComp {
     rocketNode: Node = null!;
 
     @property(Node)
-    sceneContainer: Node = null!;
+    backScene: Node = null!;
 
-    // 场景预制体数组
-    @property({ type: [Prefab], tooltip: "地面场景预制体 [back, front]" })
-    groundScenePrefabs: Prefab[] = [];
+    @property(Node)
+    frontScene: Node = null!;
 
-    @property({ type: [Prefab], tooltip: "天空场景预制体 [back, front]" })
-    skyScenePrefabs: Prefab[] = [];
+    // 可扩展的场景配置数组
+    @property({ type: [SceneData], tooltip: "场景配置数组，按倍数阈值排序" })
+    sceneConfigs: SceneData[] = [];
 
-    @property({ type: [Prefab], tooltip: "太空场景预制体 [back, front]" })
-    spaceScenePrefabs: Prefab[] = [];
 
-    // 场景管理数据
-    private sceneManager: SceneManagerData = {
-        scenes: new Map(),
-        currentScene: "ground",
-        sceneContainer: null
-    };
 
     onLoad() {
         console.log("MainGameUI loaded");
@@ -90,138 +81,79 @@ export class MainGameUI extends CCComp {
     private initSceneManager(): void {
         if (!smc.crashGame) return;
 
-        // 设置场景容器
-        this.sceneManager.sceneContainer = this.sceneContainer;
+        const sceneComp = smc.crashGame.get(SceneBackgroundComp);
+        if (sceneComp) {
+            // 设置场景节点引用
+            sceneComp.setSceneNodes(this.backScene, this.frontScene);
 
-        // 初始化场景数据
-        this.initSceneData();
+            // 设置场景配置
+            sceneComp.setSceneConfigs(this.sceneConfigs);
 
-        // 加载并激活默认场景
-        this.loadScene("ground").then(() => {
-            this.switchToScene("ground");
+            // 初始化场景实例
+            this.initSceneInstances(sceneComp);
+
+            // 初始化场景状态 - 只显示第一个场景
+            this.initSceneVisibility(sceneComp);
+
+            console.log(`Extensible scene system initialized with ${this.sceneConfigs.length} scenes`);
+        }
+    }
+
+    /** 初始化场景实例 */
+    private initSceneInstances(sceneComp: SceneBackgroundComp): void {
+        sceneComp.sceneInstances = [];
+
+        this.sceneConfigs.forEach((config, index) => {
+            const sceneInstance: SceneInstance = {
+                sceneName: config.sceneName,
+                backNode: null,
+                frontNode: null,
+                minMultiplier: config.minMultiplier,
+                backScrollSpeedMultiplier: config.backScrollSpeedMultiplier,
+                frontScrollSpeedMultiplier: config.frontScrollSpeedMultiplier
+            };
+
+            // 实例化背景层预制体
+            if (config.backPrefab && this.backScene) {
+                const backNode = instantiate(config.backPrefab);
+                backNode.name = config.sceneName;
+                backNode.active = false; // 初始隐藏
+                this.backScene.addChild(backNode);
+                sceneInstance.backNode = backNode;
+            }
+
+            // 实例化前景层预制体
+            if (config.frontPrefab && this.frontScene) {
+                const frontNode = instantiate(config.frontPrefab);
+                frontNode.name = config.sceneName;
+                frontNode.active = false; // 初始隐藏
+                this.frontScene.addChild(frontNode);
+                sceneInstance.frontNode = frontNode;
+            }
+
+            sceneComp.sceneInstances.push(sceneInstance);
+            console.log(`Scene initialized: ${config.sceneName} (${config.minMultiplier}x) - Path: ${config.getPrefabPath("back")}, ${config.getPrefabPath("front")}`);
+        });
+    }
+
+    /** 初始化场景可见性 */
+    private initSceneVisibility(sceneComp: SceneBackgroundComp): void {
+        // 隐藏所有场景
+        sceneComp.sceneInstances.forEach(instance => {
+            if (instance.backNode) instance.backNode.active = false;
+            if (instance.frontNode) instance.frontNode.active = false;
         });
 
-        console.log("Scene manager initialized");
-    }
-
-    /** 初始化场景数据 */
-    private initSceneData(): void {
-        // 创建地面场景数据
-        const groundScene = createEmptySceneData("ground");
-        groundScene.backPrefab = this.groundScenePrefabs[0] || null;
-        groundScene.frontPrefab = this.groundScenePrefabs[1] || null;
-        this.sceneManager.scenes.set("ground", groundScene);
-
-        // 创建天空场景数据
-        const skyScene = createEmptySceneData("sky");
-        skyScene.backPrefab = this.skyScenePrefabs[0] || null;
-        skyScene.frontPrefab = this.skyScenePrefabs[1] || null;
-        this.sceneManager.scenes.set("sky", skyScene);
-
-        // 创建太空场景数据
-        const spaceScene = createEmptySceneData("space");
-        spaceScene.backPrefab = this.spaceScenePrefabs[0] || null;
-        spaceScene.frontPrefab = this.spaceScenePrefabs[1] || null;
-        this.sceneManager.scenes.set("space", spaceScene);
-    }
-
-    /** 加载场景 */
-    private async loadScene(sceneType: string): Promise<void> {
-        const sceneData = this.sceneManager.scenes.get(sceneType);
-        if (!sceneData || sceneData.isLoaded) return;
-
-        try {
-            // 加载背景层
-            if (sceneData.backPrefab) {
-                sceneData.backNode = instantiate(sceneData.backPrefab);
-                sceneData.backScript = sceneData.backNode.getComponent(SceneScriptComp);
-                if (this.sceneContainer) {
-                    this.sceneContainer.addChild(sceneData.backNode);
-                }
-            }
-
-            // 加载前景层
-            if (sceneData.frontPrefab) {
-                sceneData.frontNode = instantiate(sceneData.frontPrefab);
-                sceneData.frontScript = sceneData.frontNode.getComponent(SceneScriptComp);
-                if (this.sceneContainer) {
-                    this.sceneContainer.addChild(sceneData.frontNode);
-                }
-            }
-
-            sceneData.isLoaded = true;
-            console.log(`Scene ${sceneType} loaded successfully`);
-
-        } catch (error) {
-            console.error(`Failed to load scene ${sceneType}:`, error);
+        // 显示第一个场景
+        if (sceneComp.sceneInstances.length > 0) {
+            const firstScene = sceneComp.sceneInstances[0];
+            if (firstScene.backNode) firstScene.backNode.active = true;
+            if (firstScene.frontNode) firstScene.frontNode.active = true;
+            sceneComp.currentSceneIndex = 0;
         }
     }
 
-    /** 切换到指定场景 */
-    private switchToScene(sceneType: string): void {
-        // 停用当前场景
-        if (this.sceneManager.currentScene) {
-            this.deactivateScene(this.sceneManager.currentScene);
-        }
 
-        // 激活新场景
-        this.activateScene(sceneType);
-        this.sceneManager.currentScene = sceneType;
-
-        console.log(`Switched to scene: ${sceneType}`);
-    }
-
-    /** 激活场景 */
-    private activateScene(sceneType: string): void {
-        const sceneData = this.sceneManager.scenes.get(sceneType);
-        if (!sceneData || !sceneData.isLoaded) return;
-
-        // 激活背景层
-        if (sceneData.backScript) {
-            sceneData.backScript.setActive(true);
-        }
-
-        // 激活前景层
-        if (sceneData.frontScript) {
-            sceneData.frontScript.setActive(true);
-        }
-
-        sceneData.isActive = true;
-    }
-
-    /** 停用场景 */
-    private deactivateScene(sceneType: string): void {
-        const sceneData = this.sceneManager.scenes.get(sceneType);
-        if (!sceneData || !sceneData.isActive) return;
-
-        // 停用背景层
-        if (sceneData.backScript) {
-            sceneData.backScript.setActive(false);
-        }
-
-        // 停用前景层
-        if (sceneData.frontScript) {
-            sceneData.frontScript.setActive(false);
-        }
-
-        sceneData.isActive = false;
-    }
-
-    /** 更新场景滚动速度 */
-    private updateSceneScrollSpeed(speedMultiplier: number): void {
-        const currentSceneData = this.sceneManager.scenes.get(this.sceneManager.currentScene);
-        if (!currentSceneData || !currentSceneData.isActive) return;
-
-        // 更新背景层速度
-        if (currentSceneData.backScript) {
-            currentSceneData.backScript.updateScrollSpeed(speedMultiplier * 0.6); // 背景层较慢
-        }
-
-        // 更新前景层速度
-        if (currentSceneData.frontScript) {
-            currentSceneData.frontScript.updateScrollSpeed(speedMultiplier * 1.2); // 前景层较快
-        }
-    }
 
     private setupUIEvents(): void {
         // HOLD按钮事件（只有在按钮存在时才绑定）

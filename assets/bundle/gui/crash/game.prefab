@@ -4215,7 +4215,6 @@
     "__type__": "dc546VWtWpN7rKD168gPxD+",
     "_name": "",
     "_objFlags": 0,
-    "__editorExtras__": {},
     "node": {
       "__id__": 1
     },
@@ -4241,10 +4240,11 @@
     "rocketNode": {
       "__id__": 114
     },
-    "groundBackground": null,
-    "skyBackground": null,
-    "spaceBackground": null,
-    "_id": ""
+    "sceneContainer": null,
+    "groundScenePrefabs": [],
+    "skyScenePrefabs": [],
+    "spaceScenePrefabs": [],
+    "_id": "c27Z1XrGpEa404AgQnwMrf"
   },
   {
     "__type__": "cc.CompPrefabInfo",

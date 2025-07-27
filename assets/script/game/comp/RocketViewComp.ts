@@ -7,10 +7,20 @@ export enum RocketState {
     LANDED      // 成功着陆
 }
 
+export enum RocketSceneState {
+    GROUND = "ground",      // 地面场景
+    SKY = "sky",           // 天空场景
+    SPACE = "space",       // 太空场景
+    ATMOSPHERE = "atmosphere" // 大气层场景
+}
+
 @ecs.register('RocketView')
 export class RocketViewComp extends ecs.Comp {
     /** 火箭状态 */
     rocketState: RocketState = RocketState.IDLE;
+
+    /** 火箭场景状态 */
+    sceneState: RocketSceneState = RocketSceneState.GROUND;
 
     /** 当前高度 */
     currentHeight: number = 0;
@@ -23,6 +33,7 @@ export class RocketViewComp extends ecs.Comp {
 
     reset() {
         this.rocketState = RocketState.IDLE;
+        this.sceneState = RocketSceneState.GROUND;
         this.currentHeight = 0;
         this.isAnimationPlaying = false;
     }

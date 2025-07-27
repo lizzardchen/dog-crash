@@ -4,26 +4,46 @@ import { CrashGame } from "../entity/CrashGame";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
+import { RocketViewComp } from "../comp/RocketViewComp";
+import { RocketSceneConfig } from "../config/RocketSceneConfig";
 
 @ecs.register('MultiplierSystem')
 export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
     filter(): ecs.IMatcher {
-        return ecs.allOf(MultiplierComp, GameStateComp, LocalDataComp);
+        return ecs.allOf(MultiplierComp, GameStateComp, LocalDataComp, RocketViewComp);
     }
 
     update(entity: CrashGame): void {
         const multiplierComp = entity.get(MultiplierComp);
         const gameStateComp = entity.get(GameStateComp);
         const localDataComp = entity.get(LocalDataComp);
+        const rocketComp = entity.get(RocketViewComp);
 
         if (gameStateComp.state === GameState.FLYING) {
             const currentTime = Date.now() - multiplierComp.startTime;
             const timeInSeconds = currentTime / 1000;
             const newMultiplier = this.calculateMultiplierFromTime(timeInSeconds);
 
+            // 检查场景状态变化
+            const previousTime = (currentTime - 100) / 1000; // 上一帧的时间
+            const sceneChange = RocketSceneConfig.checkSceneStateChange(previousTime, timeInSeconds);
+
+            if (sceneChange.changed) {
+                rocketComp.sceneState = sceneChange.newState;
+                console.log(`Rocket scene changed from ${sceneChange.oldState} to ${sceneChange.newState} at ${timeInSeconds.toFixed(1)}s`);
+
+                // 发送场景状态变化事件
+                oops.message.dispatchEvent("ROCKET_SCENE_CHANGED", {
+                    oldScene: sceneChange.oldState,
+                    newScene: sceneChange.newState,
+                    timeInSeconds: timeInSeconds,
+                    multiplier: newMultiplier
+                });
+            }
+
             // 添加调试日志
             if (Math.floor(timeInSeconds * 10) % 10 === 0) { // 每0.1秒输出一次
-                console.log(`Time: ${timeInSeconds.toFixed(1)}s, Current: ${newMultiplier.toFixed(2)}x, Target: ${localDataComp.currentCrashMultiplier.toFixed(2)}x`);
+                console.log(`Time: ${timeInSeconds.toFixed(1)}s, Current: ${newMultiplier.toFixed(2)}x, Scene: ${rocketComp.sceneState}, Target: ${localDataComp.currentCrashMultiplier.toFixed(2)}x`);
             }
 
             // 倍数变化时播放音效
