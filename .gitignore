@@ -21,3 +21,4 @@ native
 # WebStorm
 #//////////////////////////
 .idea/
+extensions/oops-plugin-framework
