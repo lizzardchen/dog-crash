@@ -19,6 +19,7 @@ import { CrashGameSystem } from './game/system/CrashGameSystem';
 import { MultiplierSystem } from './game/system/MultiplierSystem';
 import { UserDataSystem } from './game/system/UserDataSystem';
 import { RocketSystem } from './game/system/RocketSystem';
+import { SceneBackgroundSystem } from './game/system/SceneBackgroundSystem';
 
 const { ccclass } = _decorator;
 
