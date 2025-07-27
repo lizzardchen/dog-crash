@@ -1,0 +1,13 @@
+{
+  "_sourceId": "c30b28da-749e-479b-bcb6-cecd8d7be9e3",
+  "creator": {
+    "version": "3.8.6"
+  },
+  "dependencies": {
+    "crypto-es": "^1.2.7"
+  },
+  "description": "dog-crash-game",
+  "name": "dog-crash",
+  "uuid": "316E58CF-C814-4838-9063-BBDEBDB82985",
+  "version": "3.8.6"
+}
