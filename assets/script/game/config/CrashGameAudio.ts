@@ -7,38 +7,51 @@ export class CrashGameAudio {
         oops.audio.volumeMusic = 0.7;
         oops.audio.volumeEffect = 0.8;
 
-        // 播放背景音乐
-        oops.audio.playMusicLoop("game/audio/background_music");
+        console.log("CrashGameAudio initialized");
+        // 注意：背景音乐需要在资源准备好后再播放
+        // oops.audio.playMusicLoop("game/audio/background_music");
     }
 
     /** 播放小狗火箭起飞音效 */
     static playDogRocketLaunch(): void {
-        oops.audio.playEffect("game/audio/dog_rocket_launch");
+        console.log("Playing dog rocket launch sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/dog_rocket_launch");
     }
 
     /** 播放倍数变化音效 */
     static playMultiplierTick(): void {
-        oops.audio.playEffect("game/audio/multiplier_tick");
+        // console.log("Playing multiplier tick sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/multiplier_tick");
     }
 
     /** 播放崩盘爆炸音效 */
     static playCrashExplosion(): void {
-        oops.audio.playEffect("game/audio/crash_explosion");
+        console.log("Playing crash explosion sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/crash_explosion");
     }
 
     /** 播放小狗叫声 */
     static playDogBark(): void {
-        oops.audio.playEffect("game/audio/dog_bark");
+        console.log("Playing dog bark sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/dog_bark");
     }
 
     /** 播放提现成功音效 */
     static playCashOutSuccess(): void {
-        oops.audio.playEffect("game/audio/cash_out_success");
+        console.log("Playing cash out success sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/cash_out_success");
     }
 
     /** 播放按钮点击音效 */
     static playButtonClick(): void {
-        oops.audio.playEffect("game/audio/button_click");
+        console.log("Playing button click sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/button_click");
     }
 
     /** 设置音乐开关 */

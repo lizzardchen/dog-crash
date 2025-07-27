@@ -42,11 +42,15 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
 
     private handleCrashedState(entity: CrashGame): void {
         // 播放崩盘动画，结算游戏
-        oops.audio.playEffect("game/audio/crash_explosion");
+        console.log("Game crashed - playing crash sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/crash_explosion");
     }
 
     private handleCashedOutState(entity: CrashGame): void {
         // 播放成功提现动画，结算收益
-        oops.audio.playEffect("game/audio/cash_out_success");
+        console.log("Game cashed out - playing success sound");
+        // TODO: 添加实际的音频资源后启用
+        // oops.audio.playEffect("game/audio/cash_out_success");
     }
 }

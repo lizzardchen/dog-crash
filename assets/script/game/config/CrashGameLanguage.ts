@@ -7,47 +7,18 @@ export class CrashGameLanguage {
         // 设置支持的语言
         oops.language.languages = ["zh", "en"];
 
-        // 根据系统语言自动选择
+        // 根据系统语言自动选择，如果没有则使用中文
         const systemLang = oops.language.current || "zh";
-        oops.language.setLanguage(systemLang);
+        const supportedLang = oops.language.isExist(systemLang) ? systemLang : "zh";
 
-        // 加载语言包
-        this.loadLanguagePack();
-    }
-
-    /** 加载语言包 */
-    private static loadLanguagePack(): void {
-        const langData = {
-            "zh": {
-                "hold_to_fly": "按住起飞",
-                "balance": "余额",
-                "bet_amount": "下注金额",
-                "multiplier": "倍数",
-                "potential_win": "潜在收益",
-                "crashed": "崩盘了！",
-                "cash_out": "成功提现",
-                "insufficient_balance": "余额不足",
-                "game_history": "游戏历史",
-                "leaderboard": "排行榜",
-                "settings": "设置"
-            },
-            "en": {
-                "hold_to_fly": "HOLD TO FLY",
-                "balance": "Balance",
-                "bet_amount": "Bet Amount",
-                "multiplier": "Multiplier",
-                "potential_win": "Potential Win",
-                "crashed": "CRASHED!",
-                "cash_out": "CASH OUT",
-                "insufficient_balance": "Insufficient Balance",
-                "game_history": "Game History",
-                "leaderboard": "Leaderboard",
-                "settings": "Settings"
+        // 使用oops框架的标准语言设置方法
+        oops.language.setLanguage(supportedLang, (success: boolean) => {
+            if (success) {
+                console.log(`CrashGameLanguage initialized with language: ${supportedLang}`);
+            } else {
+                console.log(`CrashGameLanguage using cached language: ${supportedLang}`);
             }
-        };
-
-        // 设置语言数据
-        oops.language.setLanguageData(langData);
+        });
     }
 
     /** 获取本地化文本 */
@@ -57,8 +28,16 @@ export class CrashGameLanguage {
 
     /** 切换语言 */
     static switchLanguage(lang: string): void {
-        oops.language.setLanguage(lang);
-        // 发送语言切换消息，通知UI更新
-        oops.message.dispatchEvent("LANGUAGE_CHANGED", lang);
+        if (oops.language.isExist(lang)) {
+            oops.language.setLanguage(lang, (success: boolean) => {
+                if (success) {
+                    // 发送语言切换消息，通知UI更新
+                    oops.message.dispatchEvent("LANGUAGE_CHANGED", lang);
+                    console.log(`Language switched to: ${lang}`);
+                }
+            });
+        } else {
+            console.warn(`Language ${lang} is not supported`);
+        }
     }
 }

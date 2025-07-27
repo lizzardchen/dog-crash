@@ -76,9 +76,20 @@ export class LoadingViewComp extends CCVMParentComp {
 
     /** 加载完成事件 */
     private async onCompleteCallback() {
-        // 获取用户信息的多语言提示文本
-        this.data.prompt = oops.language.getLangByID("loading_load_player");
+        // // 获取用户信息的多语言提示文本
+        // this.data.prompt = oops.language.getLangByID("loading_load_player");
 
+        this.progress = 0
+        this.data.progress = (this.progress * 100).toFixed(2)
+        this.data.prompt = 'Load GUI'
+        oops.res.loadDir(
+            'gui/crash',
+            this.onProgressCallback.bind(this),
+            this.onUICompleteCallback.bind(this)
+        )
+    }
+
+    private async onUICompleteCallback() {
         // 直接跳转到崩盘游戏主界面
 
         await ModuleUtil.addViewUiAsync(smc.crashGame, MainGameUI, UIID.CrashGame);

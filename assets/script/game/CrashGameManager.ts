@@ -4,10 +4,10 @@ import { CrashGame } from "./entity/CrashGame";
 import { CrashGameAudio } from "./config/CrashGameAudio";
 import { CrashGameLanguage } from "./config/CrashGameLanguage";
 import { UIID, UIConfigData } from "./common/config/GameUIConfig";
+import { smc } from "./common/SingletonModuleComp";
 
 export class CrashGameManager {
     private static instance: CrashGameManager;
-    private gameEntity: CrashGame | null = null;
 
     public static getInstance(): CrashGameManager {
         if (!CrashGameManager.instance) {
@@ -20,41 +20,19 @@ export class CrashGameManager {
     public init(): void {
         console.log("CrashGameManager initializing...");
 
-        // 初始化UI配置
-        oops.gui.init(UIConfigData);
-
         // 初始化音频系统
         CrashGameAudio.init();
 
-        // 初始化多语言系统
-        CrashGameLanguage.init();
-
-        // 创建游戏实体
-        this.createGameEntity();
-
-        // 打开主游戏界面
-        this.openMainGameUI();
+        // 多语言系统已经在InitRes中初始化，这里测试多语言功能
+        console.log(`Current language: ${oops.language.current}`);
+        console.log(`Test text: ${CrashGameLanguage.getText("hold_to_fly")}`);
 
         console.log("CrashGameManager initialized successfully");
-    }
-
-    /** 创建游戏实体 */
-    private createGameEntity(): void {
-        this.gameEntity = ecs.getEntity(CrashGame);
-        if (this.gameEntity) {
-            console.log("CrashGame entity created successfully");
-        } else {
-            console.error("Failed to create CrashGame entity");
-        }
-    }
-
-    /** 打开主游戏界面 */
-    private openMainGameUI(): void {
-        oops.gui.open(UIID.CrashGame);
+        console.log("CrashGame entity is available at smc.crashGame");
     }
 
     /** 获取游戏实体 */
     public getGameEntity(): CrashGame | null {
-        return this.gameEntity;
+        return smc.crashGame;
     }
 }

@@ -22,7 +22,9 @@ export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemU
 
             // 倍数变化时播放音效
             if (newMultiplier > multiplierComp.currentMultiplier) {
-                oops.audio.playEffect("game/audio/multiplier_tick");
+                // console.log("Multiplier tick");
+                // TODO: 添加实际的音频资源后启用
+                // oops.audio.playEffect("game/audio/multiplier_tick");
             }
 
             multiplierComp.currentMultiplier = newMultiplier;

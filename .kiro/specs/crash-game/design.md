@@ -948,28 +948,7 @@ Game Root (oops.gui)
     └── Tutorial (新手引导)
 ```
 
-### UI配置管理
-```typescript
-// UI配置枚举
-export enum UIID {
-    Loading = 1001,
-    MainGame = 1002,
-    History = 1003,
-    Leaderboard = 1004,
-    Settings = 1005
-}
 
-// UI配置数据（MVP版本）
-export const UIConfigData = {
-    [UIID.Loading]: { layer: "Loading", prefab: "prefabs/ui/LoadingUI", bundle: "resources" },
-    [UIID.MainGame]: { layer: "Game", prefab: "prefabs/ui/MainGameUI", bundle: "game" }
-};
-
-// 初始化UI配置
-export function initUIConfig(): void {
-    oops.gui.init(UIConfigData);
-}
-```
 
 ### 主游戏界面布局
 ```
@@ -1137,7 +1116,7 @@ export class CrashGameLanguage {
                 "balance": "余额",
                 "bet_amount": "下注金额",
                 "multiplier": "倍数",
-                "potential_win": "潜在收益",
+                "potential_win": "",
                 "crashed": "崩盘了！",
                 "cash_out": "成功提现",
                 "insufficient_balance": "余额不足",
@@ -1150,7 +1129,7 @@ export class CrashGameLanguage {
                 "balance": "Balance",
                 "bet_amount": "Bet Amount",
                 "multiplier": "Multiplier",
-                "potential_win": "Potential Win",
+                "potential_win": "",
                 "crashed": "CRASHED!",
                 "cash_out": "CASH OUT",
                 "insufficient_balance": "Insufficient Balance",
@@ -1546,6 +1525,23 @@ import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/O
 3. **删除了不必要的导出文件** - 直接导入组件
 4. **简化了组件逻辑** - 移除重复代码
 5. **修复了模块引用错误** - 更新对已删除模块的引用
+6. **使用框架标准多语言方案** - 创建标准的language bundle配置
+7. **临时禁用音频资源** - 避免资源不存在的错误，添加TODO标记
+
+### 多语言配置（框架标准方式）
+按照oops框架的标准方式实现多语言：
+
+```
+assets/bundle/language/json/
+├── zh.json          # 中文语言包
+└── en.json          # 英文语言包
+```
+
+语言包由框架在InitRes中自动加载，游戏代码只需要调用：
+```typescript
+CrashGameLanguage.getText("hold_to_fly")  // 获取本地化文本
+CrashGameLanguage.switchLanguage("en")    // 切换语言
+```
 
 ## MVP实现计划（2天完成）
 

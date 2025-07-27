@@ -15,5 +15,18 @@
     "update_tips_update_success": "更新成功",
     "loading_load_json": "加载游戏本地数据",
     "loading_load_game": "加载游戏内容",
-    "loading_load_player": "获取用户信息"
+    "loading_load_player": "获取用户信息",
+    "hold_to_fly": "按住起飞",
+    "balance": "余额",
+    "bet_amount": "下注金额",
+    "multiplier": "倍数",
+    "potential_win": "",
+    "crashed": "崩盘了！",
+    "cash_out": "成功提现",
+    "insufficient_balance": "余额不足",
+    "invalid_bet_amount": "无效的下注金额",
+    "game_history": "游戏历史",
+    "leaderboard": "排行榜",
+    "settings": "设置",
+    "game_in_progress": "游戏进行中"
 }

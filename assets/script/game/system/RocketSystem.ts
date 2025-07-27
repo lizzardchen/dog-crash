@@ -43,27 +43,29 @@ export class RocketSystem extends ecs.ComblockSystem implements ecs.ISystemUpdat
     private handleFlyingState(rocketView: RocketViewComp, multiplier: MultiplierComp): void {
         // 如果还没开始飞行动画，启动它
         if (rocketView.rocketState === RocketState.IDLE) {
-            rocketView.playTakeoff();
+            rocketView.setTakeoffState();
+            console.log("Rocket takeoff started");
         }
 
-        // 更新飞行动画
+        // 更新飞行高度
         if (rocketView.rocketState === RocketState.FLYING) {
-            const deltaTime = oops.timer.deltaTime;
-            rocketView.updateFlying(deltaTime, multiplier.currentMultiplier);
+            rocketView.updateFlying(multiplier.currentMultiplier);
         }
     }
 
     private handleCrashedState(rocketView: RocketViewComp): void {
         // 播放崩盘动画（只播放一次）
         if (rocketView.rocketState === RocketState.FLYING) {
-            rocketView.playCrash();
+            rocketView.setCrashState();
+            console.log("Rocket crashed!");
         }
     }
 
     private handleCashedOutState(rocketView: RocketViewComp): void {
         // 播放成功着陆动画（只播放一次）
         if (rocketView.rocketState === RocketState.FLYING) {
-            rocketView.playLanding();
+            rocketView.setLandingState();
+            console.log("Rocket landed successfully!");
         }
     }
 }

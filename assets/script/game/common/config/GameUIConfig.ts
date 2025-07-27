@@ -42,7 +42,6 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.Loading]: { layer: LayerType.UI, prefab: "gui/loading/loading" },
     [UIID.Alert]: { layer: LayerType.Dialog, prefab: "common/prefab/alert" },
     [UIID.Confirm]: { layer: LayerType.Dialog, prefab: "common/prefab/confirm" },
-    [UIID.MainGame]: { layer: LayerType.UI, prefab: "gui/crash/main_game" },
     [UIID.SideMenu]: { layer: LayerType.PopUp, prefab: "gui/crash/side_menu" },
     [UIID.Account]: { layer: LayerType.UI, prefab: "gui/crash/account" },
     [UIID.Reward]: { layer: LayerType.UI, prefab: "gui/crash/reward" },

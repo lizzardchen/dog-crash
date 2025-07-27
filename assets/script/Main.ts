@@ -13,6 +13,7 @@ import { Account } from './game/account/Account';
 import { smc } from './game/common/SingletonModuleComp';
 import { UIConfigData } from './game/common/config/GameUIConfig';
 import { Initialize } from './game/initialize/Initialize';
+import { CrashGame } from './game/entity/CrashGame';
 import { CrashGameManager } from './game/CrashGameManager';
 import { CrashGameSystem } from './game/system/CrashGameSystem';
 import { MultiplierSystem } from './game/system/MultiplierSystem';
@@ -24,12 +25,13 @@ const { ccclass } = _decorator;
 @ccclass('Main')
 export class Main extends Root {
     start() {
-        if (DEBUG) profiler.showStats();
+        // if (DEBUG) profiler.showStats();
     }
 
     protected run() {
         smc.initialize = ecs.getEntity<Initialize>(Initialize)
         smc.account = ecs.getEntity<Account>(Account)
+        smc.crashGame = ecs.getEntity<CrashGame>(CrashGame)
 
         // 崩盘游戏将在Initialize模块中初始化
     }
