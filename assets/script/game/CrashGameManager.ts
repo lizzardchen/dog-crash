@@ -3,6 +3,7 @@ import { oops } from "../../../extensions/oops-plugin-framework/assets/core/Oops
 import { CrashGame } from "./entity/CrashGame";
 import { CrashGameAudio } from "./config/CrashGameAudio";
 import { CrashGameLanguage } from "./config/CrashGameLanguage";
+import { MultiplierConfig } from "./config/MultiplierConfig";
 import { UIID, UIConfigData } from "./common/config/GameUIConfig";
 import { smc } from "./common/SingletonModuleComp";
 
@@ -17,8 +18,11 @@ export class CrashGameManager {
     }
 
     /** 初始化游戏 */
-    public init(): void {
+    public async init(): Promise<void> {
         console.log("CrashGameManager initializing...");
+
+        // 初始化倍率配置系统
+        await MultiplierConfig.initialize();
 
         // 初始化音频系统
         CrashGameAudio.init();

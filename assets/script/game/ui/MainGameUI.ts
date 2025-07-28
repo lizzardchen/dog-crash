@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, EditBox, EventTouch, Prefab, instantiate } from 'cc';
+import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
@@ -42,7 +42,7 @@ export class MainGameUI extends CCComp {
     frontScene: Node = null!;
 
     // 可扩展的场景配置数组
-    @property({ type: [SceneData], tooltip: "场景配置数组，按倍数阈值排序" })
+    @property({ type: [SceneData], tooltip: "场景配置数组，根据rocket状态自动排序 (ground->sky->atmosphere->space)" })
     sceneConfigs: SceneData[] = [];
 
 
@@ -103,14 +103,13 @@ export class MainGameUI extends CCComp {
     private initSceneInstances(sceneComp: SceneBackgroundComp): void {
         sceneComp.sceneInstances = [];
 
-        this.sceneConfigs.forEach((config, index) => {
+        this.sceneConfigs.forEach((config) => {
             const sceneInstance: SceneInstance = {
                 sceneName: config.sceneName,
                 backNode: null,
                 frontNode: null,
-                minMultiplier: config.minMultiplier,
-                backScrollSpeedMultiplier: config.backScrollSpeedMultiplier,
-                frontScrollSpeedMultiplier: config.frontScrollSpeedMultiplier
+                backScrollSpeed: config.backScrollSpeed,
+                frontScrollSpeed: config.frontScrollSpeed
             };
 
             // 实例化背景层预制体
@@ -132,7 +131,7 @@ export class MainGameUI extends CCComp {
             }
 
             sceneComp.sceneInstances.push(sceneInstance);
-            console.log(`Scene initialized: ${config.sceneName} (${config.minMultiplier}x) - Path: ${config.getPrefabPath("back")}, ${config.getPrefabPath("front")}`);
+            console.log(`Scene initialized: ${config.sceneName} (${config.rocketState}) - Path: ${config.getPrefabPath("back")}, ${config.getPrefabPath("front")}`);
         });
     }
 
@@ -176,7 +175,7 @@ export class MainGameUI extends CCComp {
         oops.message.on("SCENE_CHANGED", this.onSceneChanged, this);
     }
 
-    private onHoldButtonTouchStart(event: EventTouch): void {
+    private onHoldButtonTouchStart(_event: EventTouch): void {
         if (!smc.crashGame) return;
 
         const gameState = smc.crashGame.get(GameStateComp);
@@ -205,7 +204,7 @@ export class MainGameUI extends CCComp {
         }
     }
 
-    private onHoldButtonTouchEnd(event: EventTouch): void {
+    private onHoldButtonTouchEnd(_event: EventTouch): void {
         if (!smc.crashGame) return;
 
         const gameState = smc.crashGame.get(GameStateComp);
@@ -299,12 +298,7 @@ export class MainGameUI extends CCComp {
 
     private onSceneChanged(data: any): void {
         console.log(`Scene changed from ${data.oldScene} to ${data.newScene} at ${data.multiplier.toFixed(2)}x`);
-
-        // 加载新场景（如果未加载）
-        this.loadScene(data.newScene).then(() => {
-            // 切换到新场景
-            this.switchToScene(data.newScene);
-        });
+        // 场景切换由SceneBackgroundSystem自动处理，这里只需要记录日志
     }
 
     private resetGame(): void {
@@ -326,7 +320,7 @@ export class MainGameUI extends CCComp {
         localData.currentCrashMultiplier = localData.generateCrashMultiplier();
 
         // 重置场景到地面场景
-        this.switchToScene("ground");
+        this.resetToGroundScene();
 
         this.updateHoldButtonState();
         this.updateUI();
@@ -413,7 +407,7 @@ export class MainGameUI extends CCComp {
         }
     }
 
-    update(deltaTime: number) {
+    update(_deltaTime: number) {
         // 实时更新UI显示
         this.updateUI();
 
@@ -441,6 +435,43 @@ export class MainGameUI extends CCComp {
             this.holdButton.node.off(Node.EventType.TOUCH_START, this.onHoldButtonTouchStart, this);
             this.holdButton.node.off(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
             this.holdButton.node.off(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
+        }
+    }
+
+    /** 重置到地面场景 */
+    private resetToGroundScene(): void {
+        if (!smc.crashGame) return;
+
+        const sceneComp = smc.crashGame.get(SceneBackgroundComp);
+        if (sceneComp && sceneComp.sceneInstances.length > 0) {
+            // 查找地面场景索引
+            const groundIndex = sceneComp.sceneConfigs.findIndex(config => config.rocketState === 'ground');
+            if (groundIndex !== -1) {
+                // 隐藏所有场景
+                sceneComp.sceneInstances.forEach(instance => {
+                    if (instance.backNode) instance.backNode.active = false;
+                    if (instance.frontNode) instance.frontNode.active = false;
+                });
+
+                // 显示地面场景
+                const groundScene = sceneComp.sceneInstances[groundIndex];
+                if (groundScene.backNode) groundScene.backNode.active = true;
+                if (groundScene.frontNode) groundScene.frontNode.active = true;
+                sceneComp.currentSceneIndex = groundIndex;
+
+                console.log("Reset to ground scene");
+            }
+        }
+    }
+
+    /** 更新场景滚动速度 */
+    private updateSceneScrollSpeed(speedMultiplier: number): void {
+        if (!smc.crashGame) return;
+
+        const sceneComp = smc.crashGame.get(SceneBackgroundComp);
+        if (sceneComp) {
+            // 设置当前的速度倍数，由SceneBackgroundSystem使用
+            sceneComp.currentSpeedMultiplier = speedMultiplier;
         }
     }
 

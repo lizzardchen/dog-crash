@@ -1,4 +1,5 @@
 import { _decorator, Prefab, CCString, CCFloat } from 'cc';
+import { RocketSceneState } from "../comp/RocketViewComp";
 
 const { ccclass, property } = _decorator;
 
@@ -7,6 +8,9 @@ const { ccclass, property } = _decorator;
 export class SceneData {
     @property({ type: CCString, tooltip: "场景名称 (对应 assets/bundle/game/scenes/{sceneName}/ 文件夹)" })
     sceneName: string = "";
+
+    @property({ type: CCString, tooltip: "对应的 Rocket 状态 (ground/sky/atmosphere/space)" })
+    rocketState: string = RocketSceneState.GROUND;
 
     @property({ type: Prefab, tooltip: "背景层预制体 ({sceneName}_back.prefab)" })
     backPrefab: Prefab | null = null;

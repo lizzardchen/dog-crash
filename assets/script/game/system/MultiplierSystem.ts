@@ -5,7 +5,7 @@ import { MultiplierComp } from "../comp/MultiplierComp";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
 import { RocketViewComp } from "../comp/RocketViewComp";
-import { RocketSceneConfig } from "../config/RocketSceneConfig";
+import { MultiplierConfig } from "../config/MultiplierConfig";
 
 @ecs.register('MultiplierSystem')
 export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
@@ -22,20 +22,21 @@ export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemU
         if (gameStateComp.state === GameState.FLYING) {
             const currentTime = Date.now() - multiplierComp.startTime;
             const timeInSeconds = currentTime / 1000;
-            const newMultiplier = this.calculateMultiplierFromTime(timeInSeconds);
+            const newMultiplier = MultiplierConfig.calculateMultiplierForTime(timeInSeconds);
 
-            // 检查场景状态变化
+            // 检查 Rocket 状态变化（基于倍率表格）
             const previousTime = (currentTime - 100) / 1000; // 上一帧的时间
-            const sceneChange = RocketSceneConfig.checkSceneStateChange(previousTime, timeInSeconds);
+            const rocketStateChange = MultiplierConfig.checkRocketStateChange(previousTime, timeInSeconds);
 
-            if (sceneChange.changed) {
-                rocketComp.sceneState = sceneChange.newState;
-                console.log(`Rocket scene changed from ${sceneChange.oldState} to ${sceneChange.newState} at ${timeInSeconds.toFixed(1)}s`);
+            if (rocketStateChange.changed) {
+                // 更新 Rocket 的场景状态
+                rocketComp.sceneState = rocketStateChange.newState;
+                console.log(`Rocket state changed from ${rocketStateChange.oldState} to ${rocketStateChange.newState} at ${timeInSeconds.toFixed(1)}s (${newMultiplier.toFixed(2)}x)`);
 
-                // 发送场景状态变化事件
+                // 发送 Rocket 场景状态变化事件
                 oops.message.dispatchEvent("ROCKET_SCENE_CHANGED", {
-                    oldScene: sceneChange.oldState,
-                    newScene: sceneChange.newState,
+                    oldScene: rocketStateChange.oldState,
+                    newScene: rocketStateChange.newState,
                     timeInSeconds: timeInSeconds,
                     multiplier: newMultiplier
                 });
@@ -70,18 +71,5 @@ export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemU
         }
     }
 
-    /** 基于时间计算倍数的改进算法 */
-    private calculateMultiplierFromTime(timeInSeconds: number): number {
-        // 改进的增长算法，前期增长较慢，后期加速
-        // 前5秒：1.0 -> 2.0 (线性增长)
-        // 5秒后：指数增长但速度更合理
-        if (timeInSeconds <= 5.0) {
-            return 1.0 + (timeInSeconds * 0.2); // 每秒增长0.2倍
-        } else {
-            const baseMultiplier = 2.0; // 5秒时的倍数
-            const extraTime = timeInSeconds - 5.0;
-            // 使用更温和的指数增长：base + 0.05 * extraTime^1.3
-            return baseMultiplier + 0.05 * Math.pow(extraTime, 1.3);
-        }
-    }
+
 }

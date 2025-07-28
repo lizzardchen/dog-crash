@@ -35,7 +35,7 @@
       }
     ],
     "_prefab": {
-      "__id__": 176
+      "__id__": 180
     },
     "_lpos": {
       "__type__": "cc.Vec3",
@@ -4215,6 +4215,7 @@
     "__type__": "dc546VWtWpN7rKD168gPxD+",
     "_name": "",
     "_objFlags": 0,
+    "__editorExtras__": {},
     "node": {
       "__id__": 1
     },
@@ -4240,15 +4241,91 @@
     "rocketNode": {
       "__id__": 114
     },
-    "sceneContainer": null,
-    "groundScenePrefabs": [],
-    "skyScenePrefabs": [],
-    "spaceScenePrefabs": [],
-    "_id": "c27Z1XrGpEa404AgQnwMrf"
+    "backScene": {
+      "__id__": 3
+    },
+    "frontScene": {
+      "__id__": 139
+    },
+    "sceneConfigs": [
+      {
+        "__id__": 176
+      },
+      {
+        "__id__": 177
+      },
+      {
+        "__id__": 178
+      },
+      {
+        "__id__": 179
+      }
+    ],
+    "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
     "fileId": "a2v4VsFhpCcbqVuxaMpFhp"
+  },
+  {
+    "__type__": "SceneData",
+    "sceneName": "ground",
+    "rocketState": "ground",
+    "backPrefab": {
+      "__uuid__": "e0ffe755-99db-465e-8b72-50907f199ba6",
+      "__expectedType__": "cc.Prefab"
+    },
+    "frontPrefab": {
+      "__uuid__": "3ee67c3c-6d93-4e3d-b8c4-666af4024a1b",
+      "__expectedType__": "cc.Prefab"
+    },
+    "backScrollSpeed": 30,
+    "frontScrollSpeed": 80
+  },
+  {
+    "__type__": "SceneData",
+    "sceneName": "sky",
+    "rocketState": "sky",
+    "backPrefab": {
+      "__uuid__": "50c412ae-d549-4ed9-b707-ff43be353d95",
+      "__expectedType__": "cc.Prefab"
+    },
+    "frontPrefab": {
+      "__uuid__": "603ff1fd-b692-4be3-9777-0ff556573777",
+      "__expectedType__": "cc.Prefab"
+    },
+    "backScrollSpeed": 30,
+    "frontScrollSpeed": 80
+  },
+  {
+    "__type__": "SceneData",
+    "sceneName": "atmosphere",
+    "rocketState": "atmosphere",
+    "backPrefab": {
+      "__uuid__": "0068966f-6dfe-4b73-b818-db14f6920e1b",
+      "__expectedType__": "cc.Prefab"
+    },
+    "frontPrefab": {
+      "__uuid__": "677cfa30-4cb4-4422-b258-c471f4fff30b",
+      "__expectedType__": "cc.Prefab"
+    },
+    "backScrollSpeed": 30,
+    "frontScrollSpeed": 80
+  },
+  {
+    "__type__": "SceneData",
+    "sceneName": "space",
+    "rocketState": "space",
+    "backPrefab": {
+      "__uuid__": "6fdf4cb1-7bde-4576-a32e-5c7bd6bcb33d",
+      "__expectedType__": "cc.Prefab"
+    },
+    "frontPrefab": {
+      "__uuid__": "603ff1fd-b692-4be3-9777-0ff556573777",
+      "__expectedType__": "cc.Prefab"
+    },
+    "backScrollSpeed": 30,
+    "frontScrollSpeed": 80
   },
   {
     "__type__": "cc.PrefabInfo",

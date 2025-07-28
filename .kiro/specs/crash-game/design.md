@@ -195,6 +195,41 @@ graph TB
     NETWORK -.->|Data Sync| EXPRESS
 ```
 
+## Scene System Design
+
+### 分层场景架构
+游戏采用分层场景系统，支持背景层和前景层的视差滚动效果，场景切换完全由倍率表格中的Rocket状态驱动。
+
+#### 场景资源结构
+```
+assets/bundle/game/scenes/
+├── ground/
+│   ├── ground_back.prefab    # 地面背景层（天空、远山等）
+│   └── ground_front.prefab   # 地面前景层（建筑、树木等）
+├── sky/
+│   ├── sky_back.prefab       # 天空背景层（蓝天、云层等）
+│   └── sky_front.prefab      # 天空前景层（热气球、飞鸟等）
+├── atmosphere/
+│   ├── atmosphere_back.prefab # 大气层背景层（高空云层等）
+│   └── atmosphere_front.prefab # 大气层前景层（卫星等）
+└── space/
+    ├── space_back.prefab     # 太空背景层（星空、星云等）
+    └── space_front.prefab    # 太空前景层（太空碎片等）
+```
+
+#### 场景切换逻辑
+1. **数据驱动**: 倍率表格包含时间、倍率、Rocket状态三个字段
+2. **状态映射**: Rocket状态直接对应场景名称（ground/sky/atmosphere/space）
+3. **切换类型**:
+   - **场景间切换**: 不同Rocket状态间的切换（如ground→sky）
+   - **场景内循环**: 相同Rocket状态的无缝循环效果
+4. **视差效果**: 背景层滚动较慢，前景层滚动较快，营造深度感
+
+#### 可扩展性设计
+- **配置化**: 通过SceneData配置数组轻松添加新场景
+- **预制体化**: 每个场景的背景层和前景层独立为预制体
+- **组件化**: SceneScriptComp挂载在预制体上处理场景特定逻辑
+
 ## Components and Interfaces
 
 ### 核心实体 (Entities)
@@ -682,6 +717,34 @@ export class UserDataSystem extends ecs.ComblockSystem implements ecs.IEntityEnt
         UserIdManager.saveUserData(userData);
     }
 }
+
+## Multiplier Configuration System
+
+### 倍率表格设计
+基于策划文档Dog_Crash_Req.pdf中的倍率表格，系统使用配置化的倍率管理：
+
+#### 倍率表格结构
+```typescript
+interface MultiplierTimePoint {
+    time: number;           // 时间点（秒）
+    multiplier: number;     // 对应的倍率
+    rocketState: string;    // Rocket状态，用于驱动场景切换
+}
+```
+
+#### 官方倍率配置
+基于公式 `Multiplier = 1 × e^(0.15 × t)` 的标准倍率表格：
+- 0-4秒: ground状态 (1.0x - 1.81x)
+- 5-10秒: sky状态 (2.10x - 4.32x)  
+- 15-20秒: atmosphere状态 (8.47x - 16.63x)
+- 30-40秒: space状态 (64.65x - 251.50x)
+
+#### 配置管理特性
+- **服务器配置支持**: 可从服务器动态加载倍率配置
+- **本地缓存**: 支持本地默认配置作为备用
+- **运行时更新**: 支持游戏运行时更新倍率表格
+- **插值计算**: 支持线性、指数、自定义曲线插值
+- **状态驱动**: Rocket状态变化自动触发场景切换
 
 ## Data Models
 

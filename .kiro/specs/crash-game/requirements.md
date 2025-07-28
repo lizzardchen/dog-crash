@@ -19,19 +19,32 @@
 
 ### Requirement 2
 
-**User Story:** 作为玩家，我希望游戏使用预定义的倍率表格来控制倍数增长，以确保游戏的公平性和可预测性
+**User Story:** 作为玩家，我希望游戏使用预定义的倍率表格来控制倍数增长和场景切换，以确保游戏的公平性和可预测性
 
 #### Acceptance Criteria
 
-1. WHEN 游戏初始化 THEN 系统 SHALL 加载预定义的倍率表格，包含时间点和对应的倍数值
-2. WHEN 玩家按住HOLD按钮 THEN 系统 SHALL 根据倍率表格计算当前时间对应的倍数
-3. WHEN 当前时间在两个表格节点之间 THEN 系统 SHALL 使用线性插值计算精确倍数：multiplier = prevMultiplier + (nextMultiplier - prevMultiplier) * (currentTime - prevTime) / (nextTime - prevTime)
+1. WHEN 游戏初始化 THEN 系统 SHALL 加载预定义的倍率表格，包含时间点、对应的倍数值和Rocket状态三个字段
+2. WHEN 玩家按住HOLD按钮 THEN 系统 SHALL 根据倍率表格计算当前时间对应的倍数，使用公式：Multiplier = 1 × e^(0.15 × t)
+3. WHEN 当前时间在两个表格节点之间 THEN 系统 SHALL 使用指数插值计算精确倍数
 4. WHEN 倍数计算完成 THEN 系统 SHALL 实时更新倍数显示和潜在收益（下注金额 × 当前倍数）
-5. WHEN 系统需要验证倍数准确性 THEN 系统 SHALL 确保计算结果与预期倍率表格一致
+5. WHEN 系统检测到Rocket状态变化 THEN 系统 SHALL 根据倍率表格中的Rocket状态字段驱动场景切换
+6. WHEN 系统需要验证倍数准确性 THEN 系统 SHALL 确保计算结果与策划文档Dog_Crash_Req.pdf中的倍率表格一致
 
 ### Requirement 3
 
-**User Story:** 作为玩家，我希望通过按住HOLD按钮控制小狗火箭飞行并看到实时倍数变化，以便了解当前的潜在收益
+**User Story:** 作为玩家，我希望看到根据倍率表格驱动的场景切换效果，以便获得更丰富的视觉体验
+
+#### Acceptance Criteria
+
+1. WHEN 系统读取倍率表格 THEN 系统 SHALL 解析每个时间点对应的Rocket状态（ground/sky/atmosphere/space）
+2. WHEN Rocket状态从倍率表格中发生变化 THEN 系统 SHALL 触发对应的场景切换
+3. WHEN 场景切换发生 THEN 系统 SHALL 无缝切换背景场景和前景场景
+4. WHEN 相同Rocket状态持续 THEN 系统 SHALL 执行场景内的循环效果
+5. WHEN 场景切换完成 THEN 系统 SHALL 发送场景切换事件供其他系统监听
+
+### Requirement 4
+
+**User Story:** 作为玩家，我希望通过按住HOLD按钮控制小狗火箭飞行并看到实时倍数变化和场景切换，以便了解当前的潜在收益和飞行高度
 
 #### Acceptance Criteria
 
@@ -39,9 +52,10 @@
 2. WHEN 玩家持续按住HOLD按钮 THEN 系统 SHALL 根据倍率表格平滑增长倍数显示
 3. WHEN 倍数变化时 THEN 系统 SHALL 实时更新潜在收益显示（下注金额 × 当前倍数）
 4. WHEN 火箭飞行高度增加 THEN 系统 SHALL 同步更新小狗火箭在屏幕上的位置和动画
-5. WHEN 玩家松开HOLD按钮 THEN 系统 SHALL 立即停止火箭飞行并进入提现流程
+5. WHEN 倍率表格中的Rocket状态发生变化 THEN 系统 SHALL 无缝切换背景场景（ground→sky→atmosphere→space）
+6. WHEN 玩家松开HOLD按钮 THEN 系统 SHALL 立即停止火箭飞行并进入提现流程
 
-### Requirement 4
+### Requirement 5
 
 **User Story:** 作为玩家，我希望通过松开HOLD按钮来提现，以便在合适的时机获得收益
 
@@ -54,6 +68,19 @@
 
 ### Requirement 5
 
+**User Story:** 作为玩家，我希望看到分层的背景场景系统，包含背景层和前景层的视差滚动效果，以增强游戏的视觉体验和沉浸感
+
+#### Acceptance Criteria
+
+1. WHEN 游戏初始化 THEN 系统 SHALL 加载可扩展的场景配置数组，每个场景包含背景层预制体和前景层预制体
+2. WHEN 场景资源组织 THEN 系统 SHALL 按照 assets/bundle/game/scenes/{sceneName}/{sceneName}_back.prefab 和 {sceneName}_front.prefab 的结构存储
+3. WHEN 游戏运行时 THEN 系统 SHALL 实现背景层和前景层的视差滚动效果，前景层滚动速度更快以营造深度感
+4. WHEN Rocket状态变化时 THEN 系统 SHALL 支持两种场景切换：场景间切换（不同场景）和场景内循环（相同场景的无缝循环）
+5. WHEN 场景切换发生 THEN 系统 SHALL 同时切换背景层和前景层，并重置滚动偏移以实现无缝过渡
+6. WHEN 场景系统扩展 THEN 系统 SHALL 支持通过配置数组轻松添加新场景，无需修改核心代码
+
+### Requirement 6
+
 **User Story:** 作为玩家，我希望游戏有公平的随机崩盘机制，以确保游戏的公正性
 
 #### Acceptance Criteria
@@ -63,7 +90,7 @@
 3. WHEN 火箭崩盘 THEN 系统 SHALL 显示爆炸效果和"CRASHED"提示
 4. IF 火箭在玩家松开HOLD按钮前崩盘 THEN 系统 SHALL 扣除下注金额并显示失败结果
 
-### Requirement 6
+### Requirement 7
 
 **User Story:** 作为玩家，我希望看到游戏历史记录，以便分析之前的游戏结果
 
@@ -74,7 +101,7 @@
 3. WHEN 显示历史记录 THEN 系统 SHALL 包含时间、下注金额、崩盘倍数、提现倍数、收益信息
 4. WHEN 玩家重新进入游戏 THEN 系统 SHALL 从本地存储加载历史记录
 
-### Requirement 7
+### Requirement 8
 
 **User Story:** 作为玩家，我希望游戏有音效和视觉反馈，以增强游戏体验
 

@@ -1,82 +1,6 @@
 import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite } from 'cc';
 import { SceneBackgroundComp, SceneLayer } from '../comp/SceneBackgroundComp';
 import { smc } from '../common/SingletonModuleComp';
-import { config } from 'process';
-import particle from '../../../../@cocos/creator-types/editor/packages/scene/@types/cce/3d/manager/particle';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import particle from '../../../../@cocos/creator-types/editor/packages/scene/@types/cce/3d/manager/particle';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import node from '../../../../@cocos/creator-types/editor/packages/engine/@types/editor-extends/manager/node';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
 
 const { ccclass, property } = _decorator;
 
@@ -126,10 +50,14 @@ export class SceneScriptComp extends Component {
     @property({ type: Animation, tooltip: "场景动画组件" })
     sceneAnimation: Animation = null!;
 
+    @property({ type: Node, tooltip: "可滚动的内容节点" })
+    scrollContent: Node = null!;
+
     // 运行时数据
     private isActive: boolean = false;
     private nodeTweens: Map<Node, Tween<Node>> = new Map();
     private currentGlobalSpeed: number = 1.0;
+    private scrollTween: Tween<Node> | null = null;
 
     onLoad() {
         console.log(`SceneScriptComp loaded: ${this.sceneType}_${this.sceneLayer}`);
@@ -166,7 +94,6 @@ export class SceneScriptComp extends Component {
     private initImageNode(config: SceneNodeConfig): void {
         const sprite = config.targetNode.getComponent(Sprite);
         if (sprite) {
-            // 可以设置初始透明度、颜色等
             console.log(`Initialized image node: ${config.targetNode.name}`);
         }
     }
@@ -175,7 +102,6 @@ export class SceneScriptComp extends Component {
     private initSpineNode(config: SceneNodeConfig): void {
         const skeleton = config.targetNode.getComponent(sp.Skeleton);
         if (skeleton) {
-            // 设置默认动画
             skeleton.setAnimation(0, "idle", true);
             console.log(`Initialized spine node: ${config.targetNode.name}`);
         }
@@ -185,7 +111,6 @@ export class SceneScriptComp extends Component {
     private initParticleNode(config: SceneNodeConfig): void {
         const particle = config.targetNode.getComponent(ParticleSystem2D);
         if (particle) {
-            // 设置初始发射速率
             particle.emissionRate = 10;
             console.log(`Initialized particle node: ${config.targetNode.name}`);
         }
@@ -271,6 +196,11 @@ export class SceneScriptComp extends Component {
             tween.stop();
         });
         this.nodeTweens.clear();
+
+        if (this.scrollTween) {
+            this.scrollTween.stop();
+            this.scrollTween = null;
+        }
     }
 
     /** 更新所有子节点的运动 */
@@ -280,38 +210,175 @@ export class SceneScriptComp extends Component {
         });
     }
 
-    /**
-     * 启动滚动动画
-     */
-    private startScrollAnimation(): void {
-        if (!this.scrollContent || this.currentSpeed <= 0) return;
+    /** 启动单个节点的运动 */
+    private startNodeMotion(config: SceneNodeConfig): void {
+        if (!config.targetNode) return;
 
-        // 停止之前的动画
-        if (this.scrollTween) {
-            this.scrollTween.stop();
+        const finalSpeed = config.affectedByGlobalSpeed ?
+            config.speedMultiplier * this.currentGlobalSpeed :
+            config.speedMultiplier;
+
+        switch (config.motionType) {
+            case NodeMotionType.SCROLL:
+                this.startScrollMotion(config, finalSpeed);
+                break;
+            case NodeMotionType.FLOAT:
+                this.startFloatMotion(config, finalSpeed);
+                break;
+            case NodeMotionType.ROTATE:
+                this.startRotateMotion(config, finalSpeed);
+                break;
+            case NodeMotionType.SCALE_PULSE:
+                this.startScalePulseMotion(config, finalSpeed);
+                break;
+            case NodeMotionType.CUSTOM_PATH:
+                this.startCustomPathMotion(config, finalSpeed);
+                break;
         }
 
-        // 计算滚动距离和时间
-        const uiTransform = this.scrollContent.getComponent(UITransform);
+        // 根据节点类型更新特定属性
+        this.updateNodeByType(config, finalSpeed);
+    }
+
+    /** 更新单个节点的运动 */
+    private updateNodeMotion(config: SceneNodeConfig): void {
+        // 停止当前运动
+        const existingTween = this.nodeTweens.get(config.targetNode);
+        if (existingTween) {
+            existingTween.stop();
+            this.nodeTweens.delete(config.targetNode);
+        }
+
+        // 重新启动运动
+        this.startNodeMotion(config);
+    }
+
+    /** 滚动运动 */
+    private startScrollMotion(config: SceneNodeConfig, speed: number): void {
+        const node = config.targetNode;
+        const uiTransform = node.getComponent(UITransform);
         if (!uiTransform) return;
 
         const contentHeight = uiTransform.contentSize.height;
-        const scrollTime = contentHeight / this.currentSpeed;
+        const scrollTime = contentHeight / (speed * 50); // 基础速度50
 
-        // 重置位置
-        this.scrollContent.setPosition(0, 0);
-
-        // 创建循环滚动动画
-        this.scrollTween = tween(this.scrollContent)
-            .to(scrollTime, { position: this.scrollContent.position.clone().add3f(0, -contentHeight, 0) })
-            .call(() => {
-                // 动画完成后重置位置并重新开始
-                this.scrollContent.setPosition(0, 0);
-                if (this.isActive && this.enableLoopScroll) {
-                    this.startScrollAnimation();
-                }
-            })
+        const scrollTween = tween(node)
+            .repeatForever(
+                tween(node)
+                    .to(scrollTime, { position: node.position.clone().add3f(0, -contentHeight, 0) })
+                    .call(() => {
+                        node.setPosition(node.position.x, contentHeight / 2);
+                    })
+            )
             .start();
+
+        this.nodeTweens.set(node, scrollTween);
+    }
+
+    /** 浮动运动 */
+    private startFloatMotion(config: SceneNodeConfig, speed: number): void {
+        const node = config.targetNode;
+        const floatRange = 20 * speed;
+        const floatTime = 2.0 / speed;
+
+        const floatTween = tween(node)
+            .repeatForever(
+                tween(node)
+                    .to(floatTime, { position: node.position.clone().add3f(0, floatRange, 0) })
+                    .to(floatTime, { position: node.position.clone().add3f(0, -floatRange, 0) })
+            )
+            .start();
+
+        this.nodeTweens.set(node, floatTween);
+    }
+
+    /** 旋转运动 */
+    private startRotateMotion(config: SceneNodeConfig, speed: number): void {
+        const node = config.targetNode;
+        const rotateTime = 5.0 / speed;
+
+        const rotateTween = tween(node)
+            .repeatForever(
+                tween(node)
+                    .to(rotateTime, { angle: 360 })
+                    .call(() => { node.angle = 0; })
+            )
+            .start();
+
+        this.nodeTweens.set(node, rotateTween);
+    }
+
+    /** 缩放脉冲运动 */
+    private startScalePulseMotion(config: SceneNodeConfig, speed: number): void {
+        const node = config.targetNode;
+        const pulseScale = 0.1 * speed;
+        const pulseTime = 1.0 / speed;
+
+        const pulseTween = tween(node)
+            .repeatForever(
+                tween(node)
+                    .to(pulseTime, { scale: node.scale.clone().multiplyScalar(1 + pulseScale) })
+                    .to(pulseTime, { scale: node.scale.clone().multiplyScalar(1 - pulseScale) })
+            )
+            .start();
+
+        this.nodeTweens.set(node, pulseTween);
+    }
+
+    /** 自定义路径运动 */
+    private startCustomPathMotion(config: SceneNodeConfig, speed: number): void {
+        console.log(`Custom path motion for ${config.targetNode.name} with speed ${speed}`);
+    }
+
+    /** 根据节点类型更新特定属性 */
+    private updateNodeByType(config: SceneNodeConfig, speed: number): void {
+        switch (config.nodeType) {
+            case "spine":
+                this.updateSpineNode(config, speed);
+                break;
+            case "particle":
+                this.updateParticleNode(config, speed);
+                break;
+            case "image":
+            default:
+                this.updateImageNode(config, speed);
+                break;
+        }
+    }
+
+    /** 更新Image节点 */
+    private updateImageNode(config: SceneNodeConfig, speed: number): void {
+        const sprite = config.targetNode.getComponent(Sprite);
+        if (sprite) {
+            const alpha = Math.min(255, 100 + speed * 50);
+            sprite.color = sprite.color.clone().set(sprite.color.r, sprite.color.g, sprite.color.b, alpha);
+        }
+    }
+
+    /** 更新Spine节点 */
+    private updateSpineNode(config: SceneNodeConfig, speed: number): void {
+        const skeleton = config.targetNode.getComponent(sp.Skeleton);
+        if (skeleton) {
+            skeleton.timeScale = speed;
+
+            if (speed > 2.0) {
+                skeleton.setAnimation(0, "fast", true);
+            } else if (speed > 1.0) {
+                skeleton.setAnimation(0, "normal", true);
+            } else {
+                skeleton.setAnimation(0, "slow", true);
+            }
+        }
+    }
+
+    /** 更新粒子节点 */
+    private updateParticleNode(config: SceneNodeConfig, speed: number): void {
+        const particle = config.targetNode.getComponent(ParticleSystem2D);
+        if (particle) {
+            particle.emissionRate = 10 * speed;
+            particle.startSpeed = 100 * speed;
+            particle.startSpeedVar = 50 * speed;
+        }
     }
 
     /**
@@ -320,6 +387,22 @@ export class SceneScriptComp extends Component {
     playSceneEffect(effectName: string): void {
         if (this.sceneAnimation) {
             this.sceneAnimation.play(effectName);
+        }
+    }
+
+    /**
+     * 更新滚动偏移（由 SceneBackgroundSystem 调用）
+     */
+    updateScrollOffset(offset: number): void {
+        if (!this.scrollContent) return;
+
+        const uiTransform = this.scrollContent.getComponent(UITransform);
+        if (!uiTransform) return;
+
+        const contentHeight = uiTransform.contentSize.height;
+        if (contentHeight > 0) {
+            const scrollY = offset % contentHeight;
+            this.scrollContent.setPosition(0, -scrollY);
         }
     }
 
@@ -334,209 +417,6 @@ export class SceneScriptComp extends Component {
     }
 
     onDestroy() {
-        if (this.scrollTween) {
-            this.scrollTween.stop();
-            this.scrollTween = null;
-        }
+        this.stopAllNodeMotions();
     }
-}
-   /** 启动单个节点的运动 */
-    private startNodeMotion(config: SceneNodeConfig): void {
-    if(!config.targetNode) return;
-
-    const finalSpeed = config.affectedByGlobalSpeed ?
-        config.speedMultiplier * this.currentGlobalSpeed :
-        config.speedMultiplier;
-
-    switch(config.motionType) {
-            case NodeMotionType.SCROLL:
-    this.startScrollMotion(config, finalSpeed);
-    break;
-            case NodeMotionType.FLOAT:
-    this.startFloatMotion(config, finalSpeed);
-    break;
-            case NodeMotionType.ROTATE:
-    this.startRotateMotion(config, finalSpeed);
-    break;
-            case NodeMotionType.SCALE_PULSE:
-    this.startScalePulseMotion(config, finalSpeed);
-    break;
-            case NodeMotionType.CUSTOM_PATH:
-    this.startCustomPathMotion(config, finalSpeed);
-    break;
-}
-
-// 根据节点类型更新特定属性
-this.updateNodeByType(config, finalSpeed);
-    }
-
-    /** 更新单个节点的运动 */
-    private updateNodeMotion(config: SceneNodeConfig): void {
-    // 停止当前运动
-    const existingTween = this.nodeTweens.get(config.targetNode);
-    if(existingTween) {
-        existingTween.stop();
-        this.nodeTweens.delete(config.targetNode);
-    }
-
-        // 重新启动运动
-        this.startNodeMotion(config);
-}
-
-    /** 滚动运动 */
-    private startScrollMotion(config: SceneNodeConfig, speed: number): void {
-    const node = config.targetNode;
-    const uiTransform = node.getComponent(UITransform);
-    if(!uiTransform) return;
-
-    const contentHeight = uiTransform.contentSize.height;
-    const scrollTime = contentHeight / (speed * 50); // 基础速度50
-
-    const scrollTween = tween(node)
-        .repeatForever(
-            tween(node)
-                .to(scrollTime, { position: node.position.clone().add3f(0, -contentHeight, 0) })
-                .call(() => {
-                    node.setPosition(node.position.x, contentHeight / 2);
-                })
-        )
-        .start();
-
-    this.nodeTweens.set(node, scrollTween);
-}
-
-    /** 浮动运动 */
-    private startFloatMotion(config: SceneNodeConfig, speed: number): void {
-    const node = config.targetNode;
-    const floatRange = 20 * speed;
-    const floatTime = 2.0 / speed;
-
-    const floatTween = tween(node)
-        .repeatForever(
-            tween(node)
-                .to(floatTime, { position: node.position.clone().add3f(0, floatRange, 0) })
-                .to(floatTime, { position: node.position.clone().add3f(0, -floatRange, 0) })
-        )
-        .start();
-
-    this.nodeTweens.set(node, floatTween);
-}
-
-    /** 旋转运动 */
-    private startRotateMotion(config: SceneNodeConfig, speed: number): void {
-    const node = config.targetNode;
-    const rotateTime = 5.0 / speed;
-
-    const rotateTween = tween(node)
-        .repeatForever(
-            tween(node)
-                .to(rotateTime, { angle: 360 })
-                .call(() => { node.angle = 0; })
-        )
-        .start();
-
-    this.nodeTweens.set(node, rotateTween);
-}
-
-    /** 缩放脉冲运动 */
-    private startScalePulseMotion(config: SceneNodeConfig, speed: number): void {
-    const node = config.targetNode;
-    const pulseScale = 0.1 * speed;
-    const pulseTime = 1.0 / speed;
-
-    const pulseTween = tween(node)
-        .repeatForever(
-            tween(node)
-                .to(pulseTime, { scale: node.scale.clone().multiplyScalar(1 + pulseScale) })
-                .to(pulseTime, { scale: node.scale.clone().multiplyScalar(1 - pulseScale) })
-        )
-        .start();
-
-    this.nodeTweens.set(node, pulseTween);
-}
-
-    /** 自定义路径运动 */
-    private startCustomPathMotion(config: SceneNodeConfig, speed: number): void {
-    // 这里可以根据具体需求实现自定义路径
-    console.log(`Custom path motion for ${config.targetNode.name} with speed ${speed}`);
-}
-
-    /** 根据节点类型更新特定属性 */
-    private updateNodeByType(config: SceneNodeConfig, speed: number): void {
-    switch(config.nodeType) {
-            case "spine":
-    this.updateSpineNode(config, speed);
-    break;
-            case "particle":
-    this.updateParticleNode(config, speed);
-    break;
-            case "image":
-            default:
-    this.updateImageNode(config, speed);
-    break;
-}
-    }
-
-    /** 更新Image节点 */
-    private updateImageNode(config: SceneNodeConfig, speed: number): void {
-    // 可以根据速度调整透明度、颜色等
-    const sprite = config.targetNode.getComponent(Sprite);
-    if(sprite) {
-        // 例如：根据速度调整透明度
-        const alpha = Math.min(255, 100 + speed * 50);
-        sprite.color = sprite.color.clone().set(sprite.color.r, sprite.color.g, sprite.color.b, alpha);
-    }
-}
-
-    /** 更新Spine节点 */
-    private updateSpineNode(config: SceneNodeConfig, speed: number): void {
-    const skeleton = config.targetNode.getComponent(sp.Skeleton);
-    if(skeleton) {
-        // 根据速度调整动画播放速度
-        skeleton.timeScale = speed;
-
-        // 可以根据速度切换不同的动画
-        if (speed > 2.0) {
-            skeleton.setAnimation(0, "fast", true);
-        } else if (speed > 1.0) {
-            skeleton.setAnimation(0, "normal", true);
-        } else {
-            skeleton.setAnimation(0, "slow", true);
-        }
-    }
-}
-
-    /** 更新粒子节点 */
-    private updateParticleNode(config: SceneNodeConfig, speed: number): void {
-    const particle = config.targetNode.getComponent(ParticleSystem2D);
-    if(particle) {
-        // 根据速度调整发射速率和粒子速度
-        particle.emissionRate = 10 * speed;
-        particle.startSpeed = 100 * speed;
-        particle.startSpeedVar = 50 * speed;
-    }
-}
-
-/**
- * 播放场景特效
- */
-playSceneEffect(effectName: string): void {
-    if(this.sceneAnimation) {
-    this.sceneAnimation.play(effectName);
-}
-    }
-
-/**
- * 获取场景信息
- */
-getSceneInfo(): { type: string, layer: string } {
-    return {
-        type: this.sceneType,
-        layer: this.sceneLayer
-    };
-}
-
-onDestroy() {
-    this.stopAllNodeMotions();
-}
 }
