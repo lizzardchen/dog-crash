@@ -160,15 +160,20 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
 
     /** 通知场景脚本 */
     private notifySceneScripts(sceneInstance: any, action: 'activate' | 'deactivate'): void {
+        // 获取场景配置信息
+        const sceneComp = smc.crashGame?.get(SceneBackgroundComp);
+        const sceneConfig = sceneComp?.sceneConfigs.find(config => config.sceneName === sceneInstance.sceneName);
+        const sceneType = sceneConfig ? sceneConfig.rocketState : 'unknown';
+
         // 通知背景层脚本
         if (sceneInstance.backNode) {
             const backScript = sceneInstance.backNode.getComponent(SceneScriptComp);
             if (backScript) {
                 if (action === 'activate') {
-                    backScript.setActive(true);
-                } else {
-                    backScript.setActive(false);
+                    backScript.setSceneInfo(sceneType, 'back');
                 }
+                backScript.setActive(action === 'activate');
+                console.log(`${action} back script for: ${sceneInstance.sceneName} (${sceneType})`);
             }
         }
 
@@ -177,10 +182,10 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             const frontScript = sceneInstance.frontNode.getComponent(SceneScriptComp);
             if (frontScript) {
                 if (action === 'activate') {
-                    frontScript.setActive(true);
-                } else {
-                    frontScript.setActive(false);
+                    frontScript.setSceneInfo(sceneType, 'front');
                 }
+                frontScript.setActive(action === 'activate');
+                console.log(`${action} front script for: ${sceneInstance.sceneName} (${sceneType})`);
             }
         }
     }
@@ -228,18 +233,36 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     /** 更新场景脚本的滚动效果 */
     private updateSceneScriptsScroll(sceneInstance: any, backOffset: number, frontOffset: number): void {
         // 更新背景层滚动
-        if (sceneInstance.backNode) {
+        if (sceneInstance.backNode && sceneInstance.backNode.active) {
             const backScript = sceneInstance.backNode.getComponent(SceneScriptComp);
             if (backScript) {
                 backScript.updateScrollOffset(backOffset);
+            } else {
+                // 如果没有SceneScriptComp，直接移动节点实现基本滚动
+                const scrollY = -(backOffset % 1334); // 使用屏幕高度循环
+                sceneInstance.backNode.setPosition(0, scrollY);
+
+                if (!sceneInstance._backScriptWarned) {
+                    console.warn(`No SceneScriptComp on back node, using direct scroll: ${sceneInstance.sceneName}`);
+                    sceneInstance._backScriptWarned = true;
+                }
             }
         }
 
         // 更新前景层滚动
-        if (sceneInstance.frontNode) {
+        if (sceneInstance.frontNode && sceneInstance.frontNode.active) {
             const frontScript = sceneInstance.frontNode.getComponent(SceneScriptComp);
             if (frontScript) {
                 frontScript.updateScrollOffset(frontOffset);
+            } else {
+                // 如果没有SceneScriptComp，直接移动节点实现基本滚动
+                const scrollY = -(frontOffset % 1000); // 前景层使用不同的循环高度
+                sceneInstance.frontNode.setPosition(0, scrollY);
+
+                if (!sceneInstance._frontScriptWarned) {
+                    console.warn(`No SceneScriptComp on front node, using direct scroll: ${sceneInstance.sceneName}`);
+                    sceneInstance._frontScriptWarned = true;
+                }
             }
         }
     }

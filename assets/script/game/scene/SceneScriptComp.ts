@@ -38,12 +38,6 @@ export class SceneNodeConfig {
  */
 @ccclass('SceneScriptComp')
 export class SceneScriptComp extends Component {
-    @property({ type: CCString, tooltip: "场景类型 (ground/sky/space)" })
-    sceneType: string = "ground";
-
-    @property({ type: CCString, tooltip: "场景层级 (back/front)" })
-    sceneLayer: string = "back";
-
     @property({ type: [SceneNodeConfig], tooltip: "子节点配置数组" })
     nodeConfigs: SceneNodeConfig[] = [];
 
@@ -53,20 +47,38 @@ export class SceneScriptComp extends Component {
     @property({ type: Node, tooltip: "可滚动的内容节点" })
     scrollContent: Node = null!;
 
-    // 运行时数据
+    // 运行时数据 - 这些信息由外部系统设置
+    private sceneInfo: { type: string, layer: string } = { type: "unknown", layer: "unknown" };
     private isActive: boolean = false;
     private nodeTweens: Map<Node, Tween<Node>> = new Map();
     private currentGlobalSpeed: number = 1.0;
     private scrollTween: Tween<Node> | null = null;
 
     onLoad() {
-        console.log(`SceneScriptComp loaded: ${this.sceneType}_${this.sceneLayer}`);
+        console.log(`SceneScriptComp loaded: ${this.node.name}`);
         this.initializeNodes();
     }
 
     start() {
-        // 初始化场景状态
+        // 初始化场景状态 - 默认不激活
         this.setActive(false);
+        console.log(`SceneScriptComp started: ${this.node.name}, nodes: ${this.nodeConfigs.length}`);
+    }
+
+    /**
+     * 设置场景信息（由外部系统调用）
+     * @param sceneType 场景类型 (ground/sky/atmosphere/space)
+     * @param sceneLayer 场景层级 (back/front)
+     */
+    setSceneInfo(sceneType: string, sceneLayer: string): void {
+        this.sceneInfo = { type: sceneType, layer: sceneLayer };
+        console.log(`Scene info set for ${this.node.name}: ${sceneType}_${sceneLayer}`);
+
+        // 如果场景已经激活，重新启动效果以应用新的场景信息
+        if (this.isActive) {
+            this.stopSceneEffects();
+            this.startSceneEffects();
+        }
     }
 
     /** 初始化所有子节点 */
@@ -121,12 +133,15 @@ export class SceneScriptComp extends Component {
      */
     setActive(active: boolean): void {
         this.isActive = active;
-        this.node.active = active;
+        // 注意：不要设置node.active，因为这会影响整个场景节点的显示
+        // this.node.active = active;
 
         if (active) {
             this.startSceneEffects();
+            console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} activated`);
         } else {
             this.stopSceneEffects();
+            console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} deactivated`);
         }
     }
 
@@ -140,11 +155,11 @@ export class SceneScriptComp extends Component {
         if (!sceneComp) return;
 
         // 获取当前层级的速度
-        const layer = this.sceneLayer === "back" ? SceneLayer.BACK : SceneLayer.FRONT;
+        const layer = this.sceneInfo.layer === "back" ? SceneLayer.BACK : SceneLayer.FRONT;
         const currentSpeed = sceneComp.getCurrentScrollSpeed(layer);
 
         // 计算速度倍数
-        const baseSpeed = this.sceneLayer === "back" ? sceneComp.baseBackScrollSpeed : sceneComp.baseFrontScrollSpeed;
+        const baseSpeed = this.sceneInfo.layer === "back" ? sceneComp.baseBackScrollSpeed : sceneComp.baseFrontScrollSpeed;
         this.currentGlobalSpeed = baseSpeed > 0 ? currentSpeed / baseSpeed : 1.0;
 
         // 更新所有子节点的运动
@@ -159,13 +174,13 @@ export class SceneScriptComp extends Component {
     private startSceneEffects(): void {
         // 播放场景进入动画
         if (this.sceneAnimation) {
-            this.sceneAnimation.play(`${this.sceneType}_enter`);
+            this.sceneAnimation.play(`${this.sceneInfo.type}_enter`);
         }
 
         // 启动所有子节点的运动
         this.startAllNodeMotions();
 
-        console.log(`Scene ${this.sceneType}_${this.sceneLayer} activated`);
+        console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} activated`);
     }
 
     /**
@@ -177,10 +192,10 @@ export class SceneScriptComp extends Component {
 
         // 播放场景退出动画
         if (this.sceneAnimation) {
-            this.sceneAnimation.play(`${this.sceneType}_exit`);
+            this.sceneAnimation.play(`${this.sceneInfo.type}_exit`);
         }
 
-        console.log(`Scene ${this.sceneType}_${this.sceneLayer} deactivated`);
+        console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} deactivated`);
     }
 
     /** 启动所有子节点的运动 */
@@ -260,14 +275,20 @@ export class SceneScriptComp extends Component {
         if (!uiTransform) return;
 
         const contentHeight = uiTransform.contentSize.height;
-        const scrollTime = contentHeight / (speed * 50); // 基础速度50
+        if (contentHeight <= 0) return;
 
+        const scrollSpeed = speed * 50; // 基础滚动速度
+        const scrollTime = contentHeight / scrollSpeed;
+
+        // 创建无缝循环滚动
+        const initialY = node.position.y;
         const scrollTween = tween(node)
             .repeatForever(
                 tween(node)
                     .to(scrollTime, { position: node.position.clone().add3f(0, -contentHeight, 0) })
                     .call(() => {
-                        node.setPosition(node.position.x, contentHeight / 2);
+                        // 重置到起始位置，创建无缝循环
+                        node.setPosition(node.position.x, initialY);
                     })
             )
             .start();
@@ -376,8 +397,9 @@ export class SceneScriptComp extends Component {
         const particle = config.targetNode.getComponent(ParticleSystem2D);
         if (particle) {
             particle.emissionRate = 10 * speed;
-            particle.startSpeed = 100 * speed;
-            particle.startSpeedVar = 50 * speed;
+            // 注意：ParticleSystem2D的属性名可能不同，需要根据实际API调整
+            // particle.startSpeed = 100 * speed;
+            // particle.startSpeedVar = 50 * speed;
         }
     }
 
@@ -392,17 +414,48 @@ export class SceneScriptComp extends Component {
 
     /**
      * 更新滚动偏移（由 SceneBackgroundSystem 调用）
+     * 实现无缝循环滚动
      */
     updateScrollOffset(offset: number): void {
-        if (!this.scrollContent) return;
+        // 确保场景已激活
+        if (!this.isActive) {
+            this.setActive(true);
+        }
 
-        const uiTransform = this.scrollContent.getComponent(UITransform);
-        if (!uiTransform) return;
+        // 使用scrollContent或整个节点作为滚动内容
+        const scrollNode = this.scrollContent || this.node;
+        const uiTransform = scrollNode.getComponent(UITransform);
 
-        const contentHeight = uiTransform.contentSize.height;
-        if (contentHeight > 0) {
-            const scrollY = offset % contentHeight;
-            this.scrollContent.setPosition(0, -scrollY);
+        if (!uiTransform) {
+            console.warn(`No UITransform found on scroll node: ${scrollNode.name}`);
+            return;
+        }
+
+        // 获取内容高度，如果没有设置则使用屏幕高度
+        let contentHeight = uiTransform.contentSize.height;
+        if (contentHeight <= 0) {
+            contentHeight = 1334; // 默认屏幕高度
+        }
+
+        // 实现无缝循环滚动
+        // 使用双倍内容高度来确保无缝循环
+        const loopHeight = contentHeight * 2;
+        const normalizedOffset = offset % loopHeight;
+
+        // 计算滚动位置
+        let scrollY = -normalizedOffset;
+
+        // 当滚动超过一个内容高度时，重置位置实现循环
+        if (normalizedOffset > contentHeight) {
+            scrollY = -(normalizedOffset - contentHeight);
+        }
+
+        // 设置滚动位置
+        scrollNode.setPosition(0, scrollY);
+
+        // 调试信息（减少输出频率）
+        if (Math.floor(offset / 200) !== Math.floor((offset - 10) / 200)) {
+            console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} scroll: offset=${offset.toFixed(1)}, y=${scrollY.toFixed(1)}, height=${contentHeight}`);
         }
     }
 
@@ -410,10 +463,7 @@ export class SceneScriptComp extends Component {
      * 获取场景信息
      */
     getSceneInfo(): { type: string, layer: string } {
-        return {
-            type: this.sceneType,
-            layer: this.sceneLayer
-        };
+        return { ...this.sceneInfo };
     }
 
     onDestroy() {

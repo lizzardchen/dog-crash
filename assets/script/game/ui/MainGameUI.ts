@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate } from 'cc';
+import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
@@ -11,6 +11,7 @@ import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { smc } from "../common/SingletonModuleComp";
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
 import { SceneData } from "../scene/SceneData";
+import { SceneScriptComp } from '../scene/SceneScriptComp';
 
 const { ccclass, property } = _decorator;
 
@@ -137,18 +138,39 @@ export class MainGameUI extends CCComp {
 
     /** 初始化场景可见性 */
     private initSceneVisibility(sceneComp: SceneBackgroundComp): void {
+        console.log(`Initializing scene visibility with ${sceneComp.sceneInstances.length} scenes`);
+
         // 隐藏所有场景
-        sceneComp.sceneInstances.forEach(instance => {
-            if (instance.backNode) instance.backNode.active = false;
-            if (instance.frontNode) instance.frontNode.active = false;
+        sceneComp.sceneInstances.forEach((instance, index) => {
+            if (instance.backNode) {
+                instance.backNode.active = false;
+                console.log(`Hidden back scene ${index}: ${instance.sceneName}`);
+            }
+            if (instance.frontNode) {
+                instance.frontNode.active = false;
+                console.log(`Hidden front scene ${index}: ${instance.sceneName}`);
+            }
         });
 
-        // 显示第一个场景
+        // 显示第一个场景（地面场景）
         if (sceneComp.sceneInstances.length > 0) {
             const firstScene = sceneComp.sceneInstances[0];
-            if (firstScene.backNode) firstScene.backNode.active = true;
-            if (firstScene.frontNode) firstScene.frontNode.active = true;
+            if (firstScene.backNode) {
+                firstScene.backNode.active = true;
+                console.log(`Activated back scene: ${firstScene.sceneName}`);
+            }
+            if (firstScene.frontNode) {
+                firstScene.frontNode.active = true;
+                console.log(`Activated front scene: ${firstScene.sceneName}`);
+            }
             sceneComp.currentSceneIndex = 0;
+
+            // 立即启动场景脚本
+            this.activateSceneScripts(firstScene);
+
+            console.log(`Scene initialization complete. Current scene: ${firstScene.sceneName}`);
+        } else {
+            console.error("No scene instances found during initialization!");
         }
     }
 
@@ -280,7 +302,10 @@ export class MainGameUI extends CCComp {
         betting.balance -= betting.betAmount;
 
         CrashGameAudio.playCrashExplosion();
-        console.log(`Game crashed at ${data.crashMultiplier.toFixed(2)}x`);
+
+        // 安全检查data.crashMultiplier
+        const crashMultiplier = data && data.crashMultiplier ? data.crashMultiplier : 1.0;
+        console.log(`Game crashed at ${crashMultiplier.toFixed(2)}x`);
 
         this.scheduleOnce(() => {
             this.resetGame();
@@ -288,7 +313,9 @@ export class MainGameUI extends CCComp {
     }
 
     private onGameCashedOut(data: any): void {
-        console.log(`Game cashed out at ${data.cashOutMultiplier.toFixed(2)}x`);
+        // 安全检查data.cashOutMultiplier
+        const cashOutMultiplier = data && data.cashOutMultiplier ? data.cashOutMultiplier : 1.0;
+        console.log(`Game cashed out at ${cashOutMultiplier.toFixed(2)}x`);
     }
 
     private onGameStarted(data: any): void {
@@ -297,7 +324,11 @@ export class MainGameUI extends CCComp {
     }
 
     private onSceneChanged(data: any): void {
-        console.log(`Scene changed from ${data.oldScene} to ${data.newScene} at ${data.multiplier.toFixed(2)}x`);
+        // 安全检查data属性
+        const oldScene = data && data.oldScene ? data.oldScene : 'unknown';
+        const newScene = data && data.newScene ? data.newScene : 'unknown';
+        const multiplier = data && data.multiplier ? data.multiplier : 1.0;
+        console.log(`Scene changed from ${oldScene} to ${newScene} at ${multiplier.toFixed(2)}x`);
         // 场景切换由SceneBackgroundSystem自动处理，这里只需要记录日志
     }
 
@@ -460,6 +491,63 @@ export class MainGameUI extends CCComp {
                 sceneComp.currentSceneIndex = groundIndex;
 
                 console.log("Reset to ground scene");
+            }
+        }
+    }
+
+    /** 激活场景脚本 */
+    private activateSceneScripts(sceneInstance: SceneInstance): void {
+        // 查找对应的场景配置以获取场景类型
+        const sceneConfig = this.sceneConfigs.find(config => config.sceneName === sceneInstance.sceneName);
+        const sceneType = sceneConfig ? sceneConfig.rocketState : 'ground'; // 默认为ground
+
+        console.log(`🔄 Activating scene scripts for: ${sceneInstance.sceneName} (${sceneType})`);
+
+        // 激活背景层脚本
+        if (sceneInstance.backNode) {
+            console.log(`Checking back node: ${sceneInstance.backNode.name}, active: ${sceneInstance.backNode.active}`);
+
+            // 尝试多种方式获取组件
+            let backScript: SceneScriptComp = sceneInstance.backNode.getComponent(SceneScriptComp) as SceneScriptComp;
+
+            if (!backScript) {
+                // 尝试从子节点查找
+                backScript = sceneInstance.backNode.getComponentInChildren(SceneScriptComp) as SceneScriptComp;
+            }
+
+            if (backScript) {
+                backScript.setSceneInfo(sceneType, 'back');
+                backScript.setActive(true);
+                console.log(`✓ Activated back script for: ${sceneInstance.sceneName} (${sceneType})`);
+            } else {
+                console.warn(`✗ No SceneScriptComp found on back node: ${sceneInstance.sceneName}`);
+                // 列出所有组件用于调试
+                const components = sceneInstance.backNode.getComponents(Component);
+                console.log(`Available components on back node:`, components.map(c => c.constructor.name));
+            }
+        }
+
+        // 激活前景层脚本
+        if (sceneInstance.frontNode) {
+            console.log(`Checking front node: ${sceneInstance.frontNode.name}, active: ${sceneInstance.frontNode.active}`);
+
+            // 尝试多种方式获取组件
+            let frontScript: SceneScriptComp = sceneInstance.frontNode.getComponent(SceneScriptComp) as SceneScriptComp;
+
+            if (!frontScript) {
+                // 尝试从子节点查找
+                frontScript = sceneInstance.frontNode.getComponentInChildren(SceneScriptComp) as SceneScriptComp;
+            }
+
+            if (frontScript) {
+                frontScript.setSceneInfo(sceneType, 'front');
+                frontScript.setActive(true);
+                console.log(`✓ Activated front script for: ${sceneInstance.sceneName} (${sceneType})`);
+            } else {
+                console.warn(`✗ No SceneScriptComp found on front node: ${sceneInstance.sceneName}`);
+                // 列出所有组件用于调试
+                const components = sceneInstance.frontNode.getComponents(Component);
+                console.log(`Available components on front node:`, components.map(c => c.constructor.name));
             }
         }
     }
