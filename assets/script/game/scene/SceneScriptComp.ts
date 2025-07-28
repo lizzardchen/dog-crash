@@ -30,6 +30,9 @@ export class SceneNodeConfig {
 
     @property({ type: CCBoolean, tooltip: "是否受全局速度影响" })
     affectedByGlobalSpeed: boolean = true;
+
+    @property({ type: CCBoolean, tooltip: "是否是背景节点（用于滚动循环）" })
+    isBackground: boolean = false;
 }
 
 /**
@@ -414,7 +417,9 @@ export class SceneScriptComp extends Component {
 
     /**
      * 更新滚动偏移（由 SceneBackgroundSystem 调用）
-     * 实现无缝循环滚动
+     * 新的逻辑：
+     * - 背景元素(isBackground=true)不需要移动，跟随整个预制体移动
+     * - 非背景元素在预制体内独立移动，速度受currentSpeedMultiplier影响
      */
     updateScrollOffset(offset: number): void {
         // 确保场景已激活
@@ -422,42 +427,126 @@ export class SceneScriptComp extends Component {
             this.setActive(true);
         }
 
-        // 使用scrollContent或整个节点作为滚动内容
-        const scrollNode = this.scrollContent || this.node;
-        const uiTransform = scrollNode.getComponent(UITransform);
+        // 只更新非背景元素的运动
+        this.updateNonBackgroundElements();
+    }
 
-        if (!uiTransform) {
-            console.warn(`No UITransform found on scroll node: ${scrollNode.name}`);
-            return;
-        }
+    /**
+     * 更新非背景元素的运动
+     * 这些元素在场景预制体内独立移动，速度受currentSpeedMultiplier影响
+     */
+    private updateNonBackgroundElements(): void {
+        if (!smc.crashGame) return;
 
-        // 获取内容高度，如果没有设置则使用屏幕高度
-        let contentHeight = uiTransform.contentSize.height;
-        if (contentHeight <= 0) {
-            contentHeight = 1334; // 默认屏幕高度
-        }
+        const sceneComp = smc.crashGame.get(SceneBackgroundComp);
+        if (!sceneComp) return;
 
-        // 实现无缝循环滚动
-        // 使用双倍内容高度来确保无缝循环
-        const loopHeight = contentHeight * 2;
-        const normalizedOffset = offset % loopHeight;
+        // 获取当前的速度倍数
+        const speedMultiplier = sceneComp.currentSpeedMultiplier || 1.0;
 
-        // 计算滚动位置
-        let scrollY = -normalizedOffset;
+        // 更新所有非背景元素
+        this.nodeConfigs.forEach(config => {
+            if (!config.isBackground && config.targetNode && config.affectedByGlobalSpeed) {
+                this.updateNonBackgroundNode(config, speedMultiplier);
+            }
+        });
+    }
 
-        // 当滚动超过一个内容高度时，重置位置实现循环
-        if (normalizedOffset > contentHeight) {
-            scrollY = -(normalizedOffset - contentHeight);
-        }
+    /**
+     * 更新单个非背景节点的运动
+     */
+    private updateNonBackgroundNode(config: SceneNodeConfig, speedMultiplier: number): void {
+        const node = config.targetNode;
+        const finalSpeed = config.speedMultiplier * speedMultiplier;
 
-        // 设置滚动位置
-        scrollNode.setPosition(0, scrollY);
-
-        // 调试信息（减少输出频率）
-        if (Math.floor(offset / 200) !== Math.floor((offset - 10) / 200)) {
-            console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} scroll: offset=${offset.toFixed(1)}, y=${scrollY.toFixed(1)}, height=${contentHeight}`);
+        // 根据运动类型更新节点
+        switch (config.motionType) {
+            case NodeMotionType.SCROLL:
+                this.updateScrollingNode(node, finalSpeed);
+                break;
+            case NodeMotionType.FLOAT:
+                // 浮动运动的速度也受speedMultiplier影响
+                this.updateFloatingNode(node, finalSpeed);
+                break;
+            case NodeMotionType.ROTATE:
+                // 旋转运动的速度也受speedMultiplier影响
+                this.updateRotatingNode(node, finalSpeed);
+                break;
+            // 其他运动类型...
         }
     }
+
+    /**
+     * 更新滚动类型的非背景节点
+     * 实现元素在场景内的循环滚动
+     */
+    private updateScrollingNode(node: Node, speed: number): void {
+        // 获取场景的边界（用于循环）
+        const sceneBounds = this.getSceneBounds();
+        if (!sceneBounds) return;
+
+        // 计算移动距离
+        const deltaTime = 1 / 60; // 假设60FPS
+        const moveDistance = speed * deltaTime * 50; // 调整移动速度
+
+        // 向下移动
+        const currentY = node.position.y;
+        const newY = currentY - moveDistance;
+
+        // 检查是否超出下边界，如果是则从上方重新进入
+        if (newY < sceneBounds.bottom) {
+            node.setPosition(node.position.x, sceneBounds.top);
+        } else {
+            node.setPosition(node.position.x, newY);
+        }
+    }
+
+    /**
+     * 更新浮动类型的非背景节点
+     */
+    private updateFloatingNode(node: Node, speed: number): void {
+        // 浮动运动的频率也受速度影响
+        const time = Date.now() * 0.001 * speed;
+        const floatRange = 20;
+        const baseY = node.userData?.originalY || node.position.y;
+
+        // 保存原始Y位置
+        if (node.userData?.originalY === undefined) {
+            node.userData = node.userData || {};
+            node.userData.originalY = node.position.y;
+        }
+
+        const floatY = baseY + Math.sin(time) * floatRange;
+        node.setPosition(node.position.x, floatY);
+    }
+
+    /**
+     * 更新旋转类型的非背景节点
+     */
+    private updateRotatingNode(node: Node, speed: number): void {
+        // 旋转速度也受speedMultiplier影响
+        const rotateSpeed = speed * 50; // 度/秒
+        const deltaTime = 1 / 60;
+        const currentAngle = node.angle;
+        const newAngle = (currentAngle + rotateSpeed * deltaTime) % 360;
+        node.angle = newAngle;
+    }
+
+    /**
+     * 获取场景边界
+     */
+    private getSceneBounds(): { top: number, bottom: number } | null {
+        const uiTransform = this.node.getComponent(UITransform);
+        if (!uiTransform) return null;
+
+        const height = uiTransform.contentSize.height || 1334;
+        return {
+            top: height / 2,
+            bottom: -height / 2
+        };
+    }
+
+
 
     /**
      * 获取场景信息

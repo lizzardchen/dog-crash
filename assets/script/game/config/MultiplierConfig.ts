@@ -45,7 +45,7 @@ export class MultiplierConfig {
             { time: 7, multiplier: 2.81, rocketState: RocketSceneState.SKY },
             { time: 8, multiplier: 3.25, rocketState: RocketSceneState.SKY },
             { time: 9, multiplier: 3.75, rocketState: RocketSceneState.SKY },
-            { time: 10, multiplier: 4.32, rocketState: RocketSceneState.SKY },
+            { time: 10, multiplier: 4.32, rocketState: RocketSceneState.ATMOSPHERE },
             { time: 15, multiplier: 8.47, rocketState: RocketSceneState.ATMOSPHERE },
             { time: 20, multiplier: 16.63, rocketState: RocketSceneState.ATMOSPHERE },
             { time: 30, multiplier: 64.65, rocketState: RocketSceneState.SPACE },

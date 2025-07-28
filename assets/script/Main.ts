@@ -14,12 +14,6 @@ import { smc } from './game/common/SingletonModuleComp';
 import { UIConfigData } from './game/common/config/GameUIConfig';
 import { Initialize } from './game/initialize/Initialize';
 import { CrashGame } from './game/entity/CrashGame';
-import { CrashGameManager } from './game/CrashGameManager';
-import { CrashGameSystem } from './game/system/CrashGameSystem';
-import { MultiplierSystem } from './game/system/MultiplierSystem';
-import { UserDataSystem } from './game/system/UserDataSystem';
-import { RocketSystem } from './game/system/RocketSystem';
-import { SceneBackgroundSystem } from './game/system/SceneBackgroundSystem';
 
 const { ccclass } = _decorator;
 

@@ -39,6 +39,11 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         if (gameStateComp.state === GameState.FLYING) {
             // 更新当前场景的滚动效果
             this.updateCurrentSceneScroll(sceneComp, 1 / 60); // 假设60FPS，实际应该使用真实的deltaTime
+
+            // 添加调试日志
+            if (Math.floor(Date.now() / 1000) % 2 === 0) { // 每2秒输出一次
+                console.log(`SceneBackgroundSystem update: state=${gameStateComp.state}, currentSpeedMultiplier=${sceneComp.currentSpeedMultiplier}`);
+            }
         }
     }
 
@@ -46,11 +51,19 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     private onRocketSceneChanged(eventData: any): void {
         const { newScene, multiplier } = eventData;
 
+        console.log(`🚀 SceneBackgroundSystem received ROCKET_SCENE_CHANGED: ${newScene} at ${multiplier.toFixed(2)}x`);
+
         // 通过smc获取CrashGame实体
-        if (!smc.crashGame) return;
+        if (!smc.crashGame) {
+            console.error("smc.crashGame not found in onRocketSceneChanged");
+            return;
+        }
 
         const sceneComp = smc.crashGame.get(SceneBackgroundComp);
-        if (!sceneComp) return;
+        if (!sceneComp) {
+            console.error("SceneBackgroundComp not found in onRocketSceneChanged");
+            return;
+        }
 
         // 根据 Rocket 场景状态切换背景场景
         this.switchToSceneByName(sceneComp, newScene, multiplier);
