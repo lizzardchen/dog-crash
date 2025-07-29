@@ -76,6 +76,7 @@ export class MainGameUI extends CCComp {
 
         // 初始化场景管理系统
         this.initSceneManager();
+        this.updateHoldButtonState();
     }
    
     /** 初始化场景管理系统 */
@@ -402,6 +403,7 @@ export class MainGameUI extends CCComp {
         const buttonLabel = this.holdButton.getComponentInChildren(Label);
 
         switch (gameState.state) {
+            case GameState.INIT:
             case GameState.WAITING:
                 if (buttonLabel) {
                     buttonLabel.string = CrashGameLanguage.getText("hold_to_fly");
