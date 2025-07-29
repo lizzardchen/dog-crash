@@ -7,8 +7,10 @@ import { RocketSceneState, RocketViewComp } from "../comp/RocketViewComp";
 import { SceneScriptComp } from "../scene/SceneScriptComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { smc } from "../common/SingletonModuleComp";
-import { MultiplierConfig } from "../config/MultiplierConfig";
+import { MultiplierConfig, ScenePhysicalResult } from "../config/MultiplierConfig";
 import { UITransform } from "cc";
+import { PhysicalSceneCalculator } from "../config/PhysicalSceneCalculator";
+import { GlobalScrollOffsetCalculator } from "../config/GlobalScrollOffsetCalculator";
 
 /** 场景位置信息 */
 interface ScenePositionInfo {
@@ -31,6 +33,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     private isInitialized: boolean = false;
     private past_scene_offset: number = 0;
     private last_scene_time: number = 0;
+    private global_offset_calculator: GlobalScrollOffsetCalculator = null;
 
     filter(): ecs.IMatcher {
         return ecs.allOf(SceneBackgroundComp, MultiplierComp, GameStateComp, RocketViewComp);
@@ -92,6 +95,16 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             return;
         }
 
+        //重新计算场景的高度
+        const scene_calculator: PhysicalSceneCalculator = new PhysicalSceneCalculator();
+        const scene_physic_infos: ScenePhysicalResult[] = scene_calculator.calculateAllSceneHeights();
+        let first_scene_physic_info: ScenePhysicalResult = scene_physic_infos[0];
+        for (let sidx = 0; sidx < scene_physic_infos.length; sidx++) {
+            if (scene_physic_infos[sidx].rocketState === RocketSceneState.GROUND) {
+                first_scene_physic_info = scene_physic_infos[sidx];
+                break;
+            }
+        }
         // 修复：从场景容器节点获取实际的游戏区域高度
         this.screenHeight = 1920; // 先使用固定值，后续可以从Canvas获取
         if (sceneComp.backScene) {
@@ -112,7 +125,15 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         for (let i = 0; i < sceneComp.sceneConfigs.length; i++) {
             const sceneConfig = sceneComp.sceneConfigs[i];
             const sceneInstance = sceneComp.sceneInstances[i];
-
+            const scenePhysicInfo = scene_physic_infos.find((info) => info.rocketState === sceneConfig.rocketState);
+            if (scenePhysicInfo == null) {
+                console.warn(`No physic info found for scene: ${sceneConfig.sceneName} (${sceneConfig.rocketState})`);
+                continue;
+            }
+            const scenescriptComp = sceneInstance.backNode?.getComponent(SceneScriptComp);
+            if (scenescriptComp) {
+                scenescriptComp.ResetScenePhysicInfo(scenePhysicInfo);
+            }
             // 查找该场景对应的时间段
             const sceneTimePoints = timePoints.filter(tp => tp.rocketState === sceneConfig.rocketState);
             if (sceneTimePoints.length === 0) {
@@ -135,7 +156,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             const duration = endTime - startTime;
 
             // 获取场景高度
-            const sceneHeight = this.getSceneHeight(sceneInstance);
+            const sceneHeight = scenePhysicInfo.sceneHeight;//this.getSceneHeight(sceneInstance);
 
             // 注意：现在使用全局统一的滚动速度，不再为每个场景单独计算速度
             // 这里保留scrollSpeed字段是为了兼容性，但实际使用全局速度
@@ -153,13 +174,14 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             } else {
                 // 后续场景：依次向上排列
                 // 从第一个场景的位置开始，累加前面场景的高度
-                const firstSceneHeight = this.getSceneHeight(sceneComp.sceneInstances[0]);
+                const firstSceneHeight = first_scene_physic_info.sceneHeight;//this.getSceneHeight(sceneComp.sceneInstances[0]);
                 initialY = (firstSceneHeight - this.screenHeight) / 2;
-
-                for (let j = 0; j < i; j++) {
-                    const prevSceneHeight = this.getSceneHeight(sceneComp.sceneInstances[j]);
-                    initialY += prevSceneHeight;
+                let aditive_y = firstSceneHeight / 2;
+                for (let j = 1; j < i; j++) {
+                    const prevSceneHeight = scene_physic_infos[j].sceneHeight;//this.getSceneHeight(sceneComp.sceneInstances[j]);
+                    aditive_y += prevSceneHeight;
                 }
+                initialY += aditive_y + scene_physic_infos[i].sceneHeight / 2;
             }
 
             const positionInfo: ScenePositionInfo = {
@@ -188,6 +210,8 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
 
         this.past_scene_offset = 0;
         this.last_scene_time = 0;
+
+        this.global_offset_calculator = new GlobalScrollOffsetCalculator(scene_calculator.calculateAllSceneHeights());
 
         this.isInitialized = true;
         console.log(`✅ Scene positions initialized. Total scenes: ${this.scenePositions.length}`);
@@ -245,6 +269,8 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         let globalScrollOffset = this.past_scene_offset + globalScrollSpeed * past_time;
         this.past_scene_offset = globalScrollOffset;
         this.last_scene_time = currentTime;
+
+        globalScrollOffset = this.global_offset_calculator.calculateGlobalScrollOffset(currentTime);
 
         for (const posInfo of this.scenePositions) {
             const sceneInstance = sceneComp.sceneInstances[posInfo.sceneIndex];

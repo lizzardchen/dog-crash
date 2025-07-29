@@ -1,6 +1,8 @@
 import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite } from 'cc';
 import { SceneBackgroundComp, SceneLayer } from '../comp/SceneBackgroundComp';
 import { smc } from '../common/SingletonModuleComp';
+import { ScenePhysicalResult } from '../config/MultiplierConfig';
+import { RocketSceneState } from '../comp/RocketViewComp';
 
 const { ccclass, property } = _decorator;
 
@@ -145,6 +147,56 @@ export class SceneScriptComp extends Component {
         } else {
             this.stopSceneEffects();
             console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} deactivated`);
+        }
+    }
+
+    ResetScenePhysicInfo(physicInfo: ScenePhysicalResult): void {
+        const uitransform = this.getComponent(UITransform);
+        if (!uitransform) {
+            console.warn("UITransform component not found on scene node");
+            return;
+        }
+
+        // 记录旧的高度
+        const oldHeight = uitransform.contentSize.height;
+        let newHeight = physicInfo.sceneHeight;
+        if (physicInfo.rocketState == RocketSceneState.GROUND) {
+            const parent_uitransform = this.node.parent.getComponent(UITransform);
+            newHeight = parent_uitransform?.contentSize.height + newHeight;
+            physicInfo.sceneHeight = newHeight;
+        }
+
+        // 如果高度没有变化，直接返回
+        if (Math.abs(oldHeight - newHeight) < 1) {
+            return;
+        }
+
+        // 设置新的高度和宽度（宽度等于高度）
+        uitransform.setContentSize(newHeight, newHeight);
+
+        // 计算位置缩放比例：y2/(newHeight/2) = y1/(oldHeight/2) => y2 = y1 * newHeight / oldHeight
+        const scaleRatio = newHeight / oldHeight;
+
+        // 调整所有非背景节点的位置
+        this.nodeConfigs.forEach(config => {
+            if (!config.isBackground && config.targetNode) {
+                const currentPos = config.targetNode.position;
+                // 按比例调整Y位置（相对于场景中心）
+                const newY = currentPos.y * scaleRatio;
+                config.targetNode.setPosition(currentPos.x, newY, currentPos.z);
+
+                console.log(`Node ${config.targetNode.name} position adjusted: Y ${currentPos.y.toFixed(2)} -> ${newY.toFixed(2)}`);
+            }
+        });
+
+        console.log(`Scene ${physicInfo.sceneName} physics info reset: ${oldHeight.toFixed(2)}px -> ${newHeight.toFixed(2)}px (ratio: ${scaleRatio.toFixed(3)})`);
+
+        // 立即生效：强制刷新UI布局
+        uitransform.node.updateWorldTransform();
+
+        // 如果有滚动内容，也需要立即刷新
+        if (this.scrollContent) {
+            this.scrollContent.updateWorldTransform();
         }
     }
 

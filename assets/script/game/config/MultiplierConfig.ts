@@ -19,6 +19,31 @@ export interface MultiplierCurveConfig {
     interpolationType: 'linear' | 'exponential' | 'custom'; // 插值类型
 }
 
+/** 加速度阶段配置（根据MultiplierCurveConfig自动生成） */
+export interface AccelerationStageConfig {
+    name: string;                           // 阶段名称 (ground/sky/atmosphere/space)
+    rocketState: RocketSceneState;          // 对应的场景状态
+    timeRange: [number, number];            // 时间范围 [开始时间, 结束时间]
+    duration: number;                       // 持续时间
+    accelerationFormula: (t: number) => number; // 加速度计算公式，t是该阶段内的相对时间(0到duration)
+    description: string;                    // 物理描述
+}
+
+/** 场景物理计算结果 */
+export interface ScenePhysicalResult {
+    sceneName: string;
+    rocketState: RocketSceneState;
+    timeRange: [number, number];
+    duration: number;
+    sceneHeight: number;                    // 计算出的场景高度（像素）
+    initialVelocity: number;                // 初始速度（像素/秒）
+    finalVelocity: number;                  // 最终速度（像素/秒）
+    initialAcceleration: number;            // 初始加速度（像素/秒²）
+    finalAcceleration: number;              // 最终加速度（像素/秒²）
+    accelerationFormula: (t: number) => number; // 加速度公式
+}
+
+
 /** 崩盘概率配置 */
 export interface CrashProbabilityConfig {
     minMultiplier: number;      // 最小倍率
@@ -252,5 +277,124 @@ export class MultiplierConfig {
 
         // 如果倍率超出范围，返回最大时间
         return config.maxTime;
+    }
+
+    /** 根据timePoints自动生成AccelerationStageConfig */
+    static generateAccelerationStageConfigs(): AccelerationStageConfig[] {
+        const config = this.currentCurveConfig;
+        const accelerationConfigs: AccelerationStageConfig[] = [];
+
+        // 按场景状态分组时间点
+        const stateGroups = this.groupTimePointsByState(config.timePoints);
+
+        for (const [state, timePoints] of stateGroups) {
+            if (timePoints.length < 2) continue;
+
+            const startTime = timePoints[0].time;
+            const endTime = timePoints[timePoints.length - 1].time;
+            const duration = endTime - startTime;
+
+            const accelerationConfig: AccelerationStageConfig = {
+                name: this.getSceneNameFromState(state),
+                rocketState: state,
+                timeRange: [startTime, endTime],
+                duration: duration,
+                accelerationFormula: this.generateAccelerationFormula(state, duration),
+                description: this.getSceneDescription(state)
+            };
+
+            accelerationConfigs.push(accelerationConfig);
+        }
+
+        return accelerationConfigs;
+    }
+
+    /** 基于物理规律的加速度公式 */
+    private static generateAccelerationFormula(state: RocketSceneState, duration: number): (t: number) => number {
+        switch (state) {
+            case RocketSceneState.GROUND:
+                // Ground: 5 → 10，逐渐增加，克服重力+阻力
+                return (t: number) => 10 + 180 * t / duration;
+
+            case RocketSceneState.SKY:
+                // Sky: 10 → 12，快速增加，空气阻力急剧减少
+                return (t: number) => 190 - 240 * t / duration;
+
+            case RocketSceneState.ATMOSPHERE:
+                // Atmosphere: 12 → 6，缓慢下降但保持较高值
+                return (t: number) => -50 + 48 * t / duration;
+
+            case RocketSceneState.SPACE:
+                // Space: 6 → 1，趋向稳定但保持正值，避免减速
+                return (t: number) => -2 + 2 * t / duration;
+
+            default:
+                return (t: number) => 1;
+        }
+    }
+
+    /** 按场景状态分组时间点 */
+    private static groupTimePointsByState(timePoints: MultiplierTimePoint[]): Map<RocketSceneState, MultiplierTimePoint[]> {
+        const groups = new Map<RocketSceneState, MultiplierTimePoint[]>();
+
+        for (const point of timePoints) {
+            if (!groups.has(point.rocketState)) {
+                groups.set(point.rocketState, []);
+            }
+            groups.get(point.rocketState)!.push(point);
+        }
+
+        // 为每个组添加边界点确保连续性
+        for (const [state, points] of groups) {
+            // 如果下一个状态存在，添加过渡点
+            const nextStateFirstPoint = this.findNextStateFirstPoint(timePoints, points[points.length - 1]);
+            if (nextStateFirstPoint) {
+                points.push(nextStateFirstPoint);
+            }
+        }
+
+        return groups;
+    }
+
+    /** 查找下一个状态的第一个点 */
+    private static findNextStateFirstPoint(allPoints: MultiplierTimePoint[], currentLastPoint: MultiplierTimePoint): MultiplierTimePoint | null {
+        const currentIndex = allPoints.findIndex(p => p === currentLastPoint);
+        if (currentIndex >= 0 && currentIndex < allPoints.length - 1) {
+            return allPoints[currentIndex + 1];
+        }
+        return null;
+    }
+
+
+    /** 根据场景状态获取场景名称 */
+    private static getSceneNameFromState(state: RocketSceneState): string {
+        switch (state) {
+            case RocketSceneState.GROUND: return "ground";
+            case RocketSceneState.SKY: return "sky";
+            case RocketSceneState.ATMOSPHERE: return "atmosphere";
+            case RocketSceneState.SPACE: return "space";
+            default: return "unknown";
+        }
+    }
+
+    /** 根据场景状态获取物理描述 */
+    private static getSceneDescription(state: RocketSceneState): string {
+        switch (state) {
+            case RocketSceneState.GROUND:
+                return "线性增长的正Jerk，火箭克服重力和阻力，燃料消耗质量减轻";
+            case RocketSceneState.SKY:
+                return "从峰值递减的正Jerk，空气阻力急剧减少的突破阶段";
+            case RocketSceneState.ATMOSPHERE:
+                return "余弦衰减的Jerk，从正值转向负值，推力接近稳定状态";
+            case RocketSceneState.SPACE:
+                return "线性递减的负Jerk，推力逐渐衰减，加速度开始下降";
+            default:
+                return "未知场景状态";
+        }
+    }
+
+    /** 获取当前配置的加速度阶段配置 */
+    static getCurrentAccelerationStageConfigs(): AccelerationStageConfig[] {
+        return this.generateAccelerationStageConfigs();
     }
 }
