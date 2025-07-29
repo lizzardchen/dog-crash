@@ -43,6 +43,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         // 开始监听 Rocket 场景状态变化事件
         if (!this.isListeningToRocketEvents) {
             oops.message.on("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
+            oops.message.on("GAME_INITIALIZED", this.onGameInitialized, this);
             this.isListeningToRocketEvents = true;
         }
     }
@@ -51,15 +52,34 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         // 停止监听事件
         if (this.isListeningToRocketEvents) {
             oops.message.off("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
+            oops.message.off("GAME_INITIALIZED", this.onGameInitialized, this);
             this.isListeningToRocketEvents = false;
         }
         this.isInitialized = false;
+    }
+    
+    public InitScenes(entity: CrashGame): void {
+        const sceneComp = entity.get(SceneBackgroundComp);
+        if (!sceneComp || !sceneComp.sceneConfigs || sceneComp.sceneConfigs.length === 0) {
+            console.warn("SceneBackgroundComp or sceneConfigs not available for initialization");
+            return;
+        }
+
+         // 确保已初始化
+        if (!this.isInitialized) {
+            this.initializeScenePositions(entity);
+        }
+        // 更新所有场景的位置
+        this.updateAllScenesPosition(sceneComp, 0);
+        // 更新场景可见性
+        this.updateSceneVisibility(sceneComp, 0);
     }
 
     update(entity: CrashGame): void {
         const sceneComp = entity.get(SceneBackgroundComp);
         const gameStateComp = entity.get(GameStateComp);
         const multiplierComp = entity.get(MultiplierComp);
+        
 
         if (gameStateComp.state === GameState.FLYING) {
             // 确保已初始化
@@ -450,6 +470,10 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             }
         }
         console.log(`👁️ Visible scenes: [${visibleScenes.join(', ')}]`);
+    }
+
+    private onGameInitialized(eventData:any): void {
+        this.InitScenes(smc.crashGame);   
     }
 
     /** 处理 Rocket 场景状态变化事件 */

@@ -17,6 +17,9 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         const multiplier = entity.get(MultiplierComp);
 
         switch (gameState.state) {
+            case GameState.INIT:
+                this.handleInitState(entity);
+                break;
             case GameState.WAITING:
                 this.handleWaitingState(entity);
                 break;
@@ -30,6 +33,16 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                 this.handleCashedOutState(entity);
                 break;
         }
+    }
+
+    private handleInitState(entity: CrashGame): void {
+        console.log("Game initialized - ready to start");
+        oops.message.dispatchEvent("GAME_INITIALIZED", {});
+        // 初始化游戏状态，设置初始倍率等
+        const gameState = entity.get(GameStateComp);
+        gameState.state = GameState.WAITING;
+        gameState.startTime = 0;
+        gameState.crashPoint = 0;
     }
 
     private handleWaitingState(entity: CrashGame): void {
