@@ -31,5 +31,8 @@
     "game_history": "游戏历史",
     "leaderboard": "排行榜",
     "settings": "设置",
-    "game_in_progress": "游戏进行中"
+    "game_in_progress": "游戏进行中",
+    "history": "历史",
+    "crash_history": "崩盘历史",
+    "no_history_records": "暂无历史记录"
 }

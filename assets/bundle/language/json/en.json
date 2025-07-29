@@ -31,5 +31,8 @@
     "game_history": "Game History",
     "leaderboard": "Leaderboard",
     "settings": "Settings",
-    "game_in_progress": "Game In Progress"
+    "game_in_progress": "Game In Progress",
+    "history": "History",
+    "crash_history": "Crash History",
+    "no_history_records": "No History Records"
 }

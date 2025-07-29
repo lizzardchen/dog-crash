@@ -6,6 +6,7 @@ import { BettingComp } from "../comp/BettingComp";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
 import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
+import { GameHistoryComp } from "../comp/GameHistoryComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { smc } from "../common/SingletonModuleComp";
@@ -32,6 +33,9 @@ export class MainGameUI extends CCComp {
 
     @property(Button)
     holdButton: Button = null!;
+
+    @property(Button)
+    historyButton: Button = null!;
 
     @property(Node)
     rocketNode: Node = null!;
@@ -72,6 +76,12 @@ export class MainGameUI extends CCComp {
         if (localData && localData.currentCrashMultiplier === 0) {
             localData.currentCrashMultiplier = localData.generateCrashMultiplier();
             console.log(`Generated crash multiplier: ${localData.currentCrashMultiplier.toFixed(2)}x`);
+        }
+
+        // 初始化历史记录
+        const gameHistory = smc.crashGame.get(GameHistoryComp);
+        if (gameHistory && localData) {
+            gameHistory.initializeHistory(localData);
         }
 
         // 初始化场景管理系统
@@ -191,6 +201,11 @@ export class MainGameUI extends CCComp {
             this.betAmountInput.node.on(EditBox.EventType.TEXT_CHANGED, this.onBetAmountChanged, this);
         }
 
+        // 历史记录按钮事件
+        if (this.historyButton) {
+            this.historyButton.node.on(Button.EventType.CLICK, this.onHistoryButtonClick, this);
+        }
+
         // 监听游戏事件
         oops.message.on("GAME_CRASHED", this.onGameCrashed, this);
         oops.message.on("GAME_CASHED_OUT", this.onGameCashedOut, this);
@@ -284,9 +299,18 @@ export class MainGameUI extends CCComp {
 
         const betting = smc.crashGame.get(BettingComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
+        const localData = smc.crashGame.get(LocalDataComp);
+        const gameHistory = smc.crashGame.get(GameHistoryComp);
 
         const winAmount = betting.betAmount * multiplier.cashOutMultiplier;
         betting.balance += winAmount - betting.betAmount;
+
+        // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
+        if (gameHistory && localData) {
+            const serverCrashMultiplier = localData.currentCrashMultiplier;
+            gameHistory.addCrashRecord(serverCrashMultiplier, localData);
+            console.log(`Recorded server crash multiplier: ${serverCrashMultiplier.toFixed(2)}x (player cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x)`);
+        }
 
         CrashGameAudio.playCashOutSuccess();
         console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x, won: ${winAmount.toFixed(0)}`);
@@ -300,13 +324,22 @@ export class MainGameUI extends CCComp {
         if (!smc.crashGame) return;
 
         const betting = smc.crashGame.get(BettingComp);
+        const gameHistory = smc.crashGame.get(GameHistoryComp);
+        const localData = smc.crashGame.get(LocalDataComp);
+        
         betting.balance -= betting.betAmount;
 
         CrashGameAudio.playCrashExplosion();
 
-        // 安全检查data.crashMultiplier
-        const crashMultiplier = data && data.crashMultiplier ? data.crashMultiplier : 1.0;
-        console.log(`Game crashed at ${crashMultiplier.toFixed(2)}x`);
+        // 使用服务器预设的崩盘倍数（而不是data.crashMultiplier）
+        const serverCrashMultiplier = localData ? localData.currentCrashMultiplier : 1.0;
+        
+        // 添加崩盘记录到历史并保存到本地存储
+        if (gameHistory && localData) {
+            gameHistory.addCrashRecord(serverCrashMultiplier, localData);
+        }
+        
+        console.log(`Game crashed at ${serverCrashMultiplier.toFixed(2)}x`);
 
         this.scheduleOnce(() => {
             this.resetGame();
@@ -364,6 +397,14 @@ export class MainGameUI extends CCComp {
         this.updatePotentialWin();
     }
 
+    private onHistoryButtonClick(): void {
+        CrashGameAudio.playButtonClick();
+        console.log("History button clicked - opening history popup");
+        
+        // 触发打开历史记录弹窗的事件
+        oops.message.dispatchEvent("OPEN_HISTORY_POPUP");
+    }
+
     private updateUI(): void {
         if (!smc.crashGame) return;
 
@@ -382,6 +423,9 @@ export class MainGameUI extends CCComp {
 
         // 更新潜在收益
         this.updatePotentialWin();
+
+        // 更新历史记录按钮
+        this.updateHistoryButton();
     }
 
     private updatePotentialWin(): void {
@@ -393,6 +437,22 @@ export class MainGameUI extends CCComp {
 
         const potentialWin = betAmount * multiplier.currentMultiplier;
         this.potentialWinLabel.string = ` ${potentialWin.toFixed(0)}`;
+    }
+
+    private updateHistoryButton(): void {
+        if (!smc.crashGame || !this.historyButton) return;
+
+        const gameHistory = smc.crashGame.get(GameHistoryComp);
+        const buttonLabel = this.historyButton.getComponentInChildren(Label);
+        
+        if (buttonLabel && gameHistory) {
+            const latestCrash = gameHistory.getLatestCrashMultiplier();
+            if (latestCrash > 0) {
+                buttonLabel.string = `${latestCrash.toFixed(2)}x`;
+            } else {
+                buttonLabel.string = "1.00x";
+            }
+        }
     }
 
     private updateHoldButtonState(): void {
@@ -468,6 +528,10 @@ export class MainGameUI extends CCComp {
             this.holdButton.node.off(Node.EventType.TOUCH_START, this.onHoldButtonTouchStart, this);
             this.holdButton.node.off(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
             this.holdButton.node.off(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
+        }
+
+        if (this.historyButton) {
+            this.historyButton.node.off(Button.EventType.CLICK, this.onHistoryButtonClick, this);
         }
     }
 
