@@ -12,6 +12,7 @@ export class LocalDataComp extends ecs.Comp {
 
     /** 生成本局游戏的崩盘倍数 */
     generateCrashMultiplier(): number {
-        return MultiplierConfig.generateCrashMultiplier();
+        return 251.0;
+        //return MultiplierConfig.generateCrashMultiplier();
     }
 }

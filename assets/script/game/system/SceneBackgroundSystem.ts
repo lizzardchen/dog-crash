@@ -3,7 +3,7 @@ import { CrashGame } from "../entity/CrashGame";
 import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
-import { RocketViewComp } from "../comp/RocketViewComp";
+import { RocketSceneState, RocketViewComp } from "../comp/RocketViewComp";
 import { SceneScriptComp } from "../scene/SceneScriptComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { smc } from "../common/SingletonModuleComp";
@@ -29,6 +29,8 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     private scenePositions: ScenePositionInfo[] = [];
     private screenHeight: number = 0;
     private isInitialized: boolean = false;
+    private past_scene_offset: number = 0;
+    private last_scene_time: number = 0;
 
     filter(): ecs.IMatcher {
         return ecs.allOf(SceneBackgroundComp, MultiplierComp, GameStateComp, RocketViewComp);
@@ -91,7 +93,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         }
 
         // 修复：从场景容器节点获取实际的游戏区域高度
-        this.screenHeight = 1334; // 先使用固定值，后续可以从Canvas获取
+        this.screenHeight = 1920; // 先使用固定值，后续可以从Canvas获取
         if (sceneComp.backScene) {
             const parentUITransform = sceneComp.backScene.parent?.getComponent(UITransform);
             if (parentUITransform) {
@@ -144,7 +146,9 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
 
             if (i === 0) {
                 // 第一个场景：场景底部与屏幕底部对齐
-                // 当锚点在中间时，节点Y位置 = (sceneHeight - screenHeight) / 2
+                // 屏幕底部 = -screenHeight/2，场景底部 = nodeY - sceneHeight/2
+                // 要让场景底部与屏幕底部对齐：nodeY - sceneHeight/2 = -screenHeight/2
+                // 解得：nodeY = sceneHeight/2 - screenHeight/2 = (sceneHeight - screenHeight) / 2
                 initialY = (sceneHeight - this.screenHeight) / 2;
             } else {
                 // 后续场景：依次向上排列
@@ -181,6 +185,9 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
 
             console.log(`📍 Scene ${sceneConfig.sceneName}: time=${startTime}-${endTime}s, height=${sceneHeight}, nodeY=${initialY}, bottom=${sceneBottom}, top=${sceneTop}`);
         }
+
+        this.past_scene_offset = 0;
+        this.last_scene_time = 0;
 
         this.isInitialized = true;
         console.log(`✅ Scene positions initialized. Total scenes: ${this.scenePositions.length}`);
@@ -232,8 +239,12 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         // 关键：所有场景都以统一的速度同步向上移动
 
         // 计算全局滚动偏移：基于游戏开始时间和统一的移动速度
-        const globalScrollSpeed = this.calculateGlobalScrollSpeed();
-        const globalScrollOffset = currentTime * globalScrollSpeed * sceneComp.currentSpeedMultiplier;
+        const globalScrollSpeed = this.calculateGlobalScrollSpeed(currentTime);
+        // const globalScrollOffset = currentTime * globalScrollSpeed * sceneComp.currentSpeedMultiplier;
+        let past_time = currentTime - this.last_scene_time;
+        let globalScrollOffset = this.past_scene_offset + globalScrollSpeed * past_time;
+        this.past_scene_offset = globalScrollOffset;
+        this.last_scene_time = currentTime;
 
         for (const posInfo of this.scenePositions) {
             const sceneInstance = sceneComp.sceneInstances[posInfo.sceneIndex];
@@ -248,34 +259,51 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     }
 
     /** 计算全局滚动速度 */
-    private calculateGlobalScrollSpeed(): number {
-        // 重新理解需求：
-        // 目标：在第5秒时，第二个场景刚好开始进入屏幕
-        // 这意味着在5秒内，所有场景需要向上移动一定距离，使第二个场景的底部到达屏幕顶部
+    private calculateGlobalScrollSpeed(curTime: number): number {
+        // 基于MultiplierConfig动态计算全局滚动速度：
+        // 目标：在第二个场景开始时间时，第一个场景完成移动
+        // 
+        // 第一个场景：
+        // - 初始位置：场景底部与屏幕底部对齐
+        // - 结束位置：场景上边与屏幕上边对齐  
+        // - 移动距离：sceneHeight - screenHeight
+        // - 移动时间：从MultiplierConfig获取的第二个场景开始时间
 
-        if (this.scenePositions.length < 2) {
-            return 20; // 默认较慢的速度
+        if (this.scenePositions.length === 0) {
+            return 2; // 默认速度
         }
 
-        const secondScene = this.scenePositions[1];
-        const switchTime = secondScene.startTime; // 通常是5秒
+        const rocket_state: RocketSceneState = MultiplierConfig.getRocketStateForTime(curTime);
+        const currentScenes = this.scenePositions.filter(pos => pos.rocketState === rocket_state);
+        const firstScene = this.scenePositions[0];
+        let curScene = firstScene;
+        let switchTime = 40; // 默认值，如果没有第二个场景
+        if (currentScenes.length > 0) {
+            curScene = currentScenes[0];
+        }
+        if (curScene) {
+            switchTime = curScene.endTime + 1;
+        }
 
-        // 重新计算所需移动距离：
-        // 目标：在第5秒时，第二个场景的底部刚好到达屏幕顶部
-        // 第二个场景初始节点Y位置：firstSceneHeight + secondSceneHeight/2
-        // 第二个场景底部初始位置：(firstSceneHeight + secondSceneHeight/2) - secondSceneHeight/2 = firstSceneHeight
-        // 目标位置：第二个场景底部在屏幕顶部 = screenHeight
-        // 所需移动距离：firstSceneHeight - screenHeight
-        const firstSceneHeight = this.scenePositions[0].sceneHeight;
-        const requiredDistance = Math.max(firstSceneHeight - this.screenHeight, 0);
+        let firstSceneHeight = firstScene.sceneHeight;
+        // 从MultiplierConfig动态获取第二个场景的开始时间，不硬编码
 
-        // 全局移动速度 = 所需距离 / 切换时间
-        const globalSpeed = switchTime > 0 ? requiredDistance / switchTime : 20;
+        // 第一个场景需要移动的距离：sceneHeight - screenHeight
+        let requiredDistance = Math.max(firstSceneHeight - this.screenHeight, 0);
 
-        console.log(`🚀 Global scroll speed: ${globalSpeed.toFixed(1)}px/s`);
+        if (curScene.rocketState != firstScene.rocketState) {
+            requiredDistance = curScene.sceneHeight;
+        }
+
+        // 全局移动速度 = 移动距离 / 移动时间
+        const globalSpeed = switchTime > 0 ? requiredDistance / switchTime : 2;
+
+        console.log(`🚀 Dynamic Global scroll speed: ${globalSpeed.toFixed(1)}px/s`);
         console.log(`   - First scene height: ${firstSceneHeight}px`);
         console.log(`   - Screen height: ${this.screenHeight}px`);
         console.log(`   - Required distance: ${requiredDistance}px`);
+        console.log(`   - Switch time from config: ${switchTime}s`);
+        console.log(`   - Switch time: ${switchTime}s`);
         console.log(`   - Switch time: ${switchTime}s`);
         console.log(`   - First scene initial Y: ${this.scenePositions[0].initialY}px`);
         console.log(`   - First scene final Y: ${this.scenePositions[0].initialY - requiredDistance}px`);
@@ -323,18 +351,23 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         const sceneBottom = sceneY - posInfo.sceneHeight / 2; // 锚点在中间，底部 = Y - 高度/2
         const sceneTop = sceneY + posInfo.sceneHeight / 2;    // 顶部 = Y + 高度/2
 
-        // 屏幕范围
-        const screenBottom = 0;
-        const screenTop = this.screenHeight;
+        // 修复屏幕范围判断：
+        // 在Cocos Creator中，屏幕中心通常是(0,0)，所以屏幕范围应该是：
+        // 屏幕底部：-screenHeight/2
+        // 屏幕顶部：+screenHeight/2
+        const screenBottom = -this.screenHeight / 2;
+        const screenTop = this.screenHeight / 2;
 
-        // 关键修复：只要场景与屏幕有任何重叠就显示
-        // 场景完全在屏幕下方时才隐藏（场景顶部 < 屏幕底部）
-        // 场景完全在屏幕上方时也隐藏（场景底部 > 屏幕顶部）
-        const isVisible = sceneTop > screenBottom && sceneBottom < screenTop;
+        // 使用宽松的可见性判断，添加缓冲区域
+        const bufferZone = 10; // 300像素的缓冲区域，避免过早隐藏场景
+        const extendedScreenBottom = screenBottom - bufferZone;
+        const extendedScreenTop = screenTop + bufferZone;
+
+        const isVisible = sceneTop > extendedScreenBottom && sceneBottom < extendedScreenTop;
 
         // 调试信息（每秒输出一次）
-        if (Math.floor(currentTime * 4) !== Math.floor((currentTime - 1 / 60) * 4)) {
-            console.log(`🔍 Scene ${posInfo.sceneName}: time=${currentTime.toFixed(2)}s, sceneY=${sceneY.toFixed(1)}, sceneBottom=${sceneBottom.toFixed(1)}, sceneTop=${sceneTop.toFixed(1)}, screenRange=${screenBottom}-${screenTop}, visible=${isVisible}`);
+        if (Math.floor(currentTime * 2) !== Math.floor((currentTime - 1 / 60) * 2)) {
+            console.log(`🔍 Scene ${posInfo.sceneName}: time=${currentTime.toFixed(2)}s, sceneY=${sceneY.toFixed(1)}, bottom=${sceneBottom.toFixed(1)}, top=${sceneTop.toFixed(1)}, screen=${screenBottom}-${screenTop}, extendedScreen=${extendedScreenBottom}-${extendedScreenTop}, visible=${isVisible}`);
         }
 
         return isVisible;
