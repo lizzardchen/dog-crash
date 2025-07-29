@@ -33,7 +33,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     private isInitialized: boolean = false;
     private past_scene_offset: number = 0;
     private last_scene_time: number = 0;
-    private global_offset_calculator: GlobalScrollOffsetCalculator = null;
+    private global_offset_calculator: GlobalScrollOffsetCalculator | undefined;
 
     filter(): ecs.IMatcher {
         return ecs.allOf(SceneBackgroundComp, MultiplierComp, GameStateComp, RocketViewComp);
@@ -267,7 +267,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         this.past_scene_offset = globalScrollOffset;
         this.last_scene_time = currentTime;
 
-        globalScrollOffset = this.global_offset_calculator.calculateGlobalScrollOffset(currentTime);
+        globalScrollOffset = this.global_offset_calculator?.calculateGlobalScrollOffset(currentTime) ?? 0;
 
         for (const posInfo of this.scenePositions) {
             const sceneInstance = sceneComp.sceneInstances[posInfo.sceneIndex];
