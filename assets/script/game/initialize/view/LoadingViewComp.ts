@@ -13,6 +13,7 @@ import { ModuleUtil } from "../../../../../extensions/oops-plugin-framework/asse
 import { smc } from "../../common/SingletonModuleComp";
 import { UIID } from "../../common/config/GameUIConfig";
 import { MainGameUI } from "../../ui/MainGameUI";
+import { CrashGame } from "../../entity/CrashGame";
 
 const { ccclass, property } = _decorator;
 
@@ -91,7 +92,8 @@ export class LoadingViewComp extends CCVMParentComp {
 
     private async onUICompleteCallback() {
         // 直接跳转到崩盘游戏主界面
-
+        smc.crashGame = ecs.getEntity<CrashGame>(CrashGame);
+        await smc.crashGame.InitServer();
         await ModuleUtil.addViewUiAsync(smc.crashGame, MainGameUI, UIID.CrashGame);
         ModuleUtil.removeViewUi(this.ent, LoadingViewComp, UIID.Loading);
     }

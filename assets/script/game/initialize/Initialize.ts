@@ -6,7 +6,6 @@
  */
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { InitResComp } from "./bll/InitRes";
-import { CrashGameManager } from "../CrashGameManager";
 
 /**
  * 游戏进入初始化模块
@@ -19,17 +18,6 @@ export class Initialize extends ecs.Entity {
     protected init() {
         // 初始化游戏公共资源
         this.add(InitResComp);
-
-        // 初始化崩盘游戏
-        this.initCrashGame();
-    }
-
-    private initCrashGame(): void {
-        // 延迟初始化，等待资源加载完成
-        setTimeout(() => {
-            const crashGameManager = CrashGameManager.getInstance();
-            crashGameManager.init();
-        }, 1000);
     }
 }
 

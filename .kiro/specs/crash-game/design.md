@@ -59,7 +59,6 @@ dog-crash-game/
 │   │       ├── account/      # 账户模块（现有）
 │   │       ├── initialize/   # 初始化模块（现有）
 │   │       ├── data/         # 数据模型
-│   │       └── CrashGameManager.ts      # 游戏管理器
 │   ├── resources/            # 基础资源（警告框、loading等）
 │   │   └── config/
 │   │       └── game_config.json

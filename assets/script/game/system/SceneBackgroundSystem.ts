@@ -39,10 +39,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         return ecs.allOf(SceneBackgroundComp, MultiplierComp, GameStateComp, RocketViewComp);
     }
 
-    onEntityEnter(entity: CrashGame): void {
-        // 初始化场景位置信息
-        this.initializeScenePositions(entity);
-
+    entityEnter(entity: CrashGame): void {
         // 开始监听 Rocket 场景状态变化事件
         if (!this.isListeningToRocketEvents) {
             oops.message.on("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
@@ -50,7 +47,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         }
     }
 
-    onEntityRemove(_entity: CrashGame): void {
+    entityRemove(_entity: CrashGame): void {
         // 停止监听事件
         if (this.isListeningToRocketEvents) {
             oops.message.off("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
@@ -458,7 +455,8 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     /** 处理 Rocket 场景状态变化事件 */
     private onRocketSceneChanged(eventData: any): void {
         const { oldScene, newScene, multiplier } = eventData;
-        console.log(`🚀 Scene state changed: ${oldScene} -> ${newScene} at ${multiplier.toFixed(2)}x (handled by continuous scroll)`);
+        const multiplierText = multiplier ? multiplier.toFixed(2) : '0.00';
+        console.log(`🚀 Scene state changed: ${oldScene} -> ${newScene} at ${multiplierText}x (handled by continuous scroll)`);
         // 在新的连续滚动系统中，场景切换是自动的，不需要手动处理
     }
 }

@@ -26,8 +26,6 @@ export class Main extends Root {
     protected run() {
         smc.initialize = ecs.getEntity<Initialize>(Initialize)
         smc.account = ecs.getEntity<Account>(Account)
-        smc.crashGame = ecs.getEntity<CrashGame>(CrashGame)
-
         // 崩盘游戏将在Initialize模块中初始化
     }
 

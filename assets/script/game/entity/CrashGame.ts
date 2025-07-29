@@ -7,6 +7,8 @@ import { LocalDataComp } from "../comp/LocalDataComp";
 import { GameHistoryComp } from "../comp/GameHistoryComp";
 import { SceneBackgroundComp } from "../comp/SceneBackgroundComp";
 import { RocketViewComp } from "../comp/RocketViewComp";
+import { CrashGameAudio } from "../config/CrashGameAudio";
+import { MultiplierConfig } from "../config/MultiplierConfig";
 
 @ecs.register('CrashGame')
 export class CrashGame extends ecs.Entity {
@@ -19,5 +21,11 @@ export class CrashGame extends ecs.Entity {
         this.add(GameHistoryComp);
         this.add(RocketViewComp);
         this.add(SceneBackgroundComp);
+        // 初始化音频系统
+        CrashGameAudio.init();
+    }
+    public async InitServer(): Promise<void> {
+        // 初始化倍率配置系统
+        await MultiplierConfig.initialize();
     }
 }

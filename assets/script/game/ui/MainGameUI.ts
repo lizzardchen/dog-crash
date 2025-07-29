@@ -77,7 +77,7 @@ export class MainGameUI extends CCComp {
         // 初始化场景管理系统
         this.initSceneManager();
     }
-
+   
     /** 初始化场景管理系统 */
     private initSceneManager(): void {
         if (!smc.crashGame) return;
