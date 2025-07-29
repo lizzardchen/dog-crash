@@ -320,7 +320,7 @@ export class MainGameUI extends CCComp {
         }, 2);
     }
 
-    private onGameCrashed(data: any): void {
+    private onGameCrashed(_data: any): void {
         if (!smc.crashGame) return;
 
         const betting = smc.crashGame.get(BettingComp);
@@ -354,6 +354,19 @@ export class MainGameUI extends CCComp {
 
     private onGameStarted(data: any): void {
         console.log(`Game started with bet: ${data.betAmount}`);
+        console.log("=== Game Started - Debug Info ===");
+        
+        if (smc.crashGame) {
+            const gameHistory = smc.crashGame.get(GameHistoryComp);
+            const localData = smc.crashGame.get(LocalDataComp);
+            
+            if (gameHistory && localData) {
+                console.log(`Current history length: ${gameHistory.crashHistory.length}`);
+                console.log(`Latest crash multiplier: ${gameHistory.getLatestCrashMultiplier()}`);
+                console.log(`Target crash multiplier for this round: ${localData.currentCrashMultiplier.toFixed(2)}x`);
+            }
+        }
+        
         this.updateUI();
     }
 
@@ -440,17 +453,26 @@ export class MainGameUI extends CCComp {
     }
 
     private updateHistoryButton(): void {
-        if (!smc.crashGame || !this.historyButton) return;
+        if (!smc.crashGame || !this.historyButton) {
+            console.log("updateHistoryButton: Missing crashGame or historyButton");
+            return;
+        }
 
         const gameHistory = smc.crashGame.get(GameHistoryComp);
         const buttonLabel = this.historyButton.getComponentInChildren(Label);
         
+        // console.log(`updateHistoryButton: gameHistory exists: ${!!gameHistory}, buttonLabel exists: ${!!buttonLabel}`);
+        
         if (buttonLabel && gameHistory) {
             const latestCrash = gameHistory.getLatestCrashMultiplier();
+            // console.log(`updateHistoryButton: latestCrash = ${latestCrash}, crashHistory length = ${gameHistory.crashHistory.length}`);
+            
             if (latestCrash > 0) {
                 buttonLabel.string = `${latestCrash.toFixed(2)}x`;
+                // console.log(`updateHistoryButton: Updated button to ${latestCrash.toFixed(2)}x`);
             } else {
                 buttonLabel.string = "1.00x";
+                // console.log("updateHistoryButton: Set button to default 1.00x");
             }
         }
     }
