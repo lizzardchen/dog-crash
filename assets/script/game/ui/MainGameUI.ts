@@ -15,6 +15,7 @@ import { SceneData } from "../scene/SceneData";
 import { SceneScriptComp } from '../scene/SceneScriptComp';
 import { UIID } from "../common/config/GameUIConfig";
 import { GameResultUI, GameResultParams } from "./GameResultUI";
+import { AutoCashOutUI, AutoCashOutParams } from "./AutoCashOutUI";
 import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets/core/gui/layer/Defines";
 
 const { ccclass, property } = _decorator;
@@ -1071,6 +1072,59 @@ export class MainGameUI extends CCComp {
         };
 
         oops.gui.open(UIID.GameResult, params, callbacks);
+    }
+
+    /**
+     * 显示自动提现设置弹窗
+     */
+    showAutoCashOutUI(): void {
+        if (!smc.crashGame) return;
+
+        const betting = smc.crashGame.get(BettingComp);
+        if (!betting) return;
+
+        const status = betting.getAutoCashOutStatus();
+        const params: AutoCashOutParams = {
+            multiplier: status.multiplier,
+            totalBets: status.totalBets
+        };
+
+        console.log("Showing auto cashout UI with params:", params);
+
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node, params: any) => {
+                const autoCashOutUI = node.getComponent(AutoCashOutUI);
+                if (autoCashOutUI) {
+                    autoCashOutUI.onOpen(params,
+                        (multiplier: number, totalBets: number) => {
+                            // 开始自动提现回调
+                            this.startAutoCashOut(multiplier, totalBets);
+                        },
+                        () => {
+                            // 关闭弹窗回调
+                            oops.gui.remove(UIID.AutoCashOut);
+                        }
+                    );
+                }
+            }
+        };
+
+        oops.gui.open(UIID.AutoCashOut, params, callbacks);
+    }
+
+    /**
+     * 开始自动提现
+     * @param multiplier 自动提现倍数
+     * @param totalBets 总下注次数
+     */
+    private startAutoCashOut(multiplier: number, totalBets: number): void {
+        if (!smc.crashGame) return;
+
+        const betting = smc.crashGame.get(BettingComp);
+        if (betting) {
+            betting.setAutoCashOut(true, multiplier, totalBets);
+            console.log(`Started auto cashout: ${multiplier}x, ${totalBets === -1 ? 'infinite' : totalBets} bets`);
+        }
     }
 
     // CCComp要求实现的reset方法

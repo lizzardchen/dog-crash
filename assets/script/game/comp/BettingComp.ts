@@ -39,10 +39,16 @@ export class BettingComp extends ecs.Comp {
     // 当前选择的下注项
     currentBetItem: BetAmountItem = this.betAmountData[0]; // 默认选择free
 
+    // 自动提现设置
+    autoCashOutEnabled: boolean = false;
+    autoCashOutMultiplier: number = 2.0;
+    autoCashOutTotalBets: number = -1; // -1表示无限
+    autoCashOutCurrentBets: number = 0; // 当前已进行的下注次数
+
     reset() {
         this.betAmount = 0;
         this.isHolding = false;
-        // 注意：不重置currentBetItem，保持用户的选择
+        // 注意：不重置currentBetItem和自动提现设置，保持用户的选择
     }
 
     /**
@@ -139,5 +145,58 @@ export class BettingComp extends ecs.Comp {
     clearSavedBetSelection(): void {
         oops.storage.remove(BettingComp.SELECTED_BET_KEY);
         console.log("Cleared saved bet selection from local storage");
+    }
+
+    /**
+     * 设置自动提现
+     * @param enabled 是否启用
+     * @param multiplier 自动提现倍数
+     * @param totalBets 总下注次数 (-1表示无限)
+     */
+    setAutoCashOut(enabled: boolean, multiplier: number = 2.0, totalBets: number = -1): void {
+        this.autoCashOutEnabled = enabled;
+        this.autoCashOutMultiplier = multiplier;
+        this.autoCashOutTotalBets = totalBets;
+        this.autoCashOutCurrentBets = 0; // 重置计数
+
+        console.log(`Auto cashout ${enabled ? 'enabled' : 'disabled'}: multiplier=${multiplier}, totalBets=${totalBets}`);
+    }
+
+    /**
+     * 检查是否应该自动提现
+     * @param currentMultiplier 当前倍数
+     * @returns 是否应该自动提现
+     */
+    shouldAutoCashOut(currentMultiplier: number): boolean {
+        if (!this.autoCashOutEnabled) return false;
+
+        return currentMultiplier >= this.autoCashOutMultiplier;
+    }
+
+    /**
+     * 增加自动提现计数
+     */
+    incrementAutoCashOutBets(): void {
+        if (this.autoCashOutEnabled) {
+            this.autoCashOutCurrentBets++;
+
+            // 检查是否达到总次数限制
+            if (this.autoCashOutTotalBets > 0 && this.autoCashOutCurrentBets >= this.autoCashOutTotalBets) {
+                this.autoCashOutEnabled = false;
+                console.log(`Auto cashout disabled: reached total bets limit (${this.autoCashOutTotalBets})`);
+            }
+        }
+    }
+
+    /**
+     * 获取自动提现状态信息
+     */
+    getAutoCashOutStatus(): { enabled: boolean; multiplier: number; totalBets: number; currentBets: number } {
+        return {
+            enabled: this.autoCashOutEnabled,
+            multiplier: this.autoCashOutMultiplier,
+            totalBets: this.autoCashOutTotalBets,
+            currentBets: this.autoCashOutCurrentBets
+        };
     }
 }
