@@ -113,6 +113,49 @@ export class MainGameUI extends CCComp {
         }
     }
 
+    /**
+     * 加载保存的下注选择
+     */
+    private loadSavedBetSelection(): void {
+        if (!smc.crashGame) return;
+
+        const localData = smc.crashGame.get(LocalDataComp);
+        if (localData) {
+            const savedBet = localData.loadSelectedBet();
+            if (savedBet) {
+                // 在betAmountData中查找匹配的项
+                const matchedItem = this.betAmountData.find(item =>
+                    item.display === savedBet.display &&
+                    item.value === savedBet.value &&
+                    item.isFree === savedBet.isFree
+                );
+
+                if (matchedItem) {
+                    this.currentBetItem = matchedItem;
+                    console.log(`Restored saved bet selection: ${matchedItem.display} (${matchedItem.value})`);
+                } else {
+                    console.warn("Saved bet item not found in current data, using default");
+                }
+            }
+        }
+    }
+
+    /**
+     * 保存当前下注选择
+     */
+    private saveBetSelection(): void {
+        if (!smc.crashGame) return;
+
+        const localData = smc.crashGame.get(LocalDataComp);
+        if (localData) {
+            localData.saveSelectedBet({
+                display: this.currentBetItem.display,
+                value: this.currentBetItem.value,
+                isFree: this.currentBetItem.isFree
+            });
+        }
+    }
+
     private formatValueFromShotText(value: string): number {
         if (value.endsWith("M")) {
             return parseFloat(value.slice(0, -1)) * 1000000;
@@ -153,6 +196,9 @@ export class MainGameUI extends CCComp {
             localData.currentCrashMultiplier = localData.generateCrashMultiplier();
             console.log(`Generated crash multiplier: ${localData.currentCrashMultiplier.toFixed(2)}x`);
         }
+
+        // 加载保存的下注选择
+        this.loadSavedBetSelection();
 
         // 初始化历史记录
         const gameHistory = smc.crashGame.get(GameHistoryComp);
@@ -688,6 +734,9 @@ export class MainGameUI extends CCComp {
 
         // 更新UI显示
         this.updateBetAmount(betItem.value, betItem.display);
+
+        // 保存选择到本地存储
+        this.saveBetSelection();
 
         // 选择完成后立即隐藏面板
         this.hideBetPanel();
