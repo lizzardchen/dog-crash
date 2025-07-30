@@ -70,6 +70,7 @@ export class GameResultUI extends CCComp {
         if (this._can_close) {
             this._can_close = false;
             if (this._close_callback) {
+                this.removeEvent();
                 this._close_callback();
             }
         }
@@ -170,7 +171,7 @@ export class GameResultUI extends CCComp {
         this._can_close = true;
     }
 
-    onDestroy() {
+    removeEvent() {
         // 清理按钮事件监听
         if (this.close_button) {
             this.close_button.node.off(Button.EventType.CLICK, this.onCloseButtonClick, this);
