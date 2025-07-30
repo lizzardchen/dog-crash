@@ -410,6 +410,7 @@ export class MainGameUI extends CCComp {
     }
 
     private onGameCrashed(_data: any): void {
+        console.log("MainGameUI: onGameCrashed event received", _data);
         if (!smc.crashGame) return;
 
         const betting = smc.crashGame.get(BettingComp);
@@ -448,9 +449,48 @@ export class MainGameUI extends CCComp {
     }
 
     private onGameCashedOut(data: any): void {
+        console.log("MainGameUI: onGameCashedOut event received", data);
+        
+        if (!smc.crashGame) return;
+
+        const betting = smc.crashGame.get(BettingComp);
+        const multiplier = smc.crashGame.get(MultiplierComp);
+        const localData = smc.crashGame.get(LocalDataComp);
+        const gameHistory = smc.crashGame.get(GameHistoryComp);
+
         // 安全检查data.cashOutMultiplier
         const cashOutMultiplier = data && data.cashOutMultiplier ? data.cashOutMultiplier : 1.0;
-        console.log(`Game cashed out at ${cashOutMultiplier.toFixed(2)}x`);
+        console.log(`MainGameUI: Game cashed out at ${cashOutMultiplier.toFixed(2)}x`);
+
+        // 计算收益并更新余额（和processCashOut相同的逻辑）
+        const winAmount = betting.betAmount * cashOutMultiplier;
+        let profit: number;
+
+        // 免费模式：不扣除下注金额，收益就是全部奖金
+        if (betting.currentBetItem.isFree) {
+            profit = winAmount;
+            betting.balance += winAmount; // 免费模式直接加奖金
+        } else {
+            profit = winAmount - betting.betAmount;
+            betting.balance += profit; // 正常模式加净收益
+        }
+
+        // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
+        if (gameHistory && localData) {
+            const serverCrashMultiplier = localData.currentCrashMultiplier;
+            gameHistory.addCrashRecord(serverCrashMultiplier, localData);
+            console.log(`MainGameUI: Recorded server crash multiplier: ${serverCrashMultiplier.toFixed(2)}x (player cashed out at ${cashOutMultiplier.toFixed(2)}x)`);
+        }
+
+        console.log(`MainGameUI: Auto cashed out at ${cashOutMultiplier.toFixed(2)}x, won: ${winAmount.toFixed(0)} (free: ${betting.currentBetItem.isFree})`);
+
+        // 延迟显示成功结果弹窗
+        this.scheduleOnce(() => {
+            this.showGameResult({
+                isWin: true,
+                profit: profit
+            });
+        }, 0.2);
     }
 
     private onGameStarted(data: any): void {
@@ -504,7 +544,7 @@ export class MainGameUI extends CCComp {
         this.updateHoldButtonState();
         this.updateUI();
 
-        console.log(`Game reset, ready for next round. Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
+        console.log(`MainGameUI: Game reset, ready for next round. Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
     }
 
     private onBetAmountChanged(): void {
@@ -1214,6 +1254,7 @@ export class MainGameUI extends CCComp {
 
         console.log(`Updated auto bet button state: ${status.enabled ? 'ON' : 'OFF'}`);
     }
+
 
     // CCComp要求实现的reset方法
     reset(): void {

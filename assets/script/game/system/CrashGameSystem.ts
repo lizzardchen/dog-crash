@@ -127,16 +127,14 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         if (betting.autoCashOutEnabled) {
             // 增加自动下注计数
             betting.incrementAutoCashOutBets();
-            
-            // 如果自动下注仍然启用，延迟重置游戏继续下注
-            if (betting.autoCashOutEnabled) {
-                console.log(`CrashGameSystem: Scheduling auto restart after crash`);
-                this.scheduleAutoRestart(entity);
-            } else {
-                console.log(`CrashGameSystem: Auto betting disabled after crash, not restarting`);
-            }
-        } else {
-            console.log(`CrashGameSystem: Auto betting not enabled, not restarting`);
+            console.log(`CrashGameSystem: Auto betting - incremented bet count, still enabled: ${betting.autoCashOutEnabled}`);
+        }
+        
+        // 如果启用自动下注，直接重置游戏状态并开始下一轮
+        if (betting.autoCashOutEnabled) {
+            setTimeout(() => {
+                this.resetForNextRound(entity);
+            }, 4000); // 给足够时间让GameResult界面显示3秒并关闭
         }
     }
 
@@ -159,16 +157,14 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         if (betting.autoCashOutEnabled) {
             // 增加自动下注计数
             betting.incrementAutoCashOutBets();
-            
-            // 如果自动下注仍然启用，延迟重置游戏继续下注
-            if (betting.autoCashOutEnabled) {
-                console.log(`CrashGameSystem: Scheduling auto restart after cashout`);
-                this.scheduleAutoRestart(entity);
-            } else {
-                console.log(`CrashGameSystem: Auto betting disabled after cashout, not restarting`);
-            }
-        } else {
-            console.log(`CrashGameSystem: Auto betting not enabled, not restarting`);
+            console.log(`CrashGameSystem: Auto betting - incremented bet count, still enabled: ${betting.autoCashOutEnabled}`);
+        }
+        
+        // 如果启用自动下注，直接重置游戏状态并开始下一轮
+        if (betting.autoCashOutEnabled) {
+            setTimeout(() => {
+                this.resetForNextRound(entity);
+            }, 4000); // 给足够时间让GameResult界面显示3秒并关闭
         }
     }
 
@@ -187,45 +183,38 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         return true;
     }
 
-    private scheduleAutoRestart(entity: CrashGame): void {
-        // 延迟4秒后重置游戏，等待游戏结果界面的3秒倒计时完成
-        console.log(`CrashGameSystem: scheduleAutoRestart called, setting timeout for 4 seconds`);
-        setTimeout(() => {
-            console.log(`CrashGameSystem: Auto restart timeout fired, resetting game`);
-            
-            const gameState = entity.get(GameStateComp);
-            const betting = entity.get(BettingComp);
-            const multiplier = entity.get(MultiplierComp);
-            const localData = entity.get(LocalDataComp);
-            
-            // 检查自动下注是否仍然启用
-            if (!betting.autoCashOutEnabled) {
-                console.log(`CrashGameSystem: Auto betting disabled, not restarting`);
-                return;
-            }
-            
-            console.log(`CrashGameSystem: Current game state before reset: ${gameState.state}`);
-            console.log(`CrashGameSystem: Auto cashout still enabled: ${betting.autoCashOutEnabled}`);
-            
-            // 清理已处理状态的记录
-            this.processedStates.clear();
-            
-            // 重置游戏状态回到等待状态，以便自动开始下一轮
-            gameState.state = GameState.WAITING;
-            gameState.startTime = 0;
-            gameState.crashPoint = 0;
-            
-            // 重置倍数
-            multiplier.reset();
-            
-            // 生成新的崩盘倍数
-            localData.currentCrashMultiplier = localData.generateCrashMultiplier();
-            
-            // 重置下注状态但保持自动下注设置
-            betting.betAmount = 0;
-            betting.isHolding = false;
-            
-            console.log(`CrashGameSystem: Game reset complete. State: ${gameState.state}, Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
-        }, 4000);
+    private resetForNextRound(entity: CrashGame): void {
+        const gameState = entity.get(GameStateComp);
+        const betting = entity.get(BettingComp);
+        const multiplier = entity.get(MultiplierComp);
+        const localData = entity.get(LocalDataComp);
+
+        // 再次检查自动下注是否仍然启用
+        if (!betting.autoCashOutEnabled) {
+            console.log("CrashGameSystem: Auto betting disabled, not resetting for next round");
+            return;
+        }
+
+        console.log("CrashGameSystem: Resetting for next round");
+
+        // 清理已处理状态的记录
+        this.processedStates.clear();
+
+        // 重置游戏状态
+        gameState.state = GameState.WAITING;
+        gameState.startTime = 0;
+        gameState.crashPoint = 0;
+
+        // 重置倍数
+        multiplier.reset();
+
+        // 生成新的崩盘倍数
+        localData.currentCrashMultiplier = localData.generateCrashMultiplier();
+
+        // 重置下注状态但保持自动下注设置
+        betting.betAmount = 0;
+        betting.isHolding = false;
+
+        console.log(`CrashGameSystem: Game reset complete for auto betting. Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
     }
 }
