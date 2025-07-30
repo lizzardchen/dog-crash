@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, UITransform } from 'cc';
+import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, UITransform, Sprite, Color } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
@@ -52,6 +52,9 @@ export class MainGameUI extends CCComp {
 
     @property(Button)
     betButton: Button = null!;
+
+    @property(Button)
+    autoBetButton: Button = null!;
 
     @property(Node)
     betPanel: Node = null!;
@@ -270,6 +273,11 @@ export class MainGameUI extends CCComp {
         // 下注按钮事件
         if (this.betButton) {
             this.betButton.node.on(Button.EventType.CLICK, this.onBetButtonClick, this);
+        }
+
+        // 自动下注按钮事件
+        if (this.autoBetButton) {
+            this.autoBetButton.node.on(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
         }
 
         // 监听游戏事件
@@ -538,6 +546,37 @@ export class MainGameUI extends CCComp {
         }
     }
 
+    private onAutoBetButtonClick(): void {
+        if (!smc.crashGame) return;
+
+        const gameState = smc.crashGame.get(GameStateComp);
+        const betting = smc.crashGame.get(BettingComp);
+
+        // 只有在等待状态下才能切换自动下注
+        if (gameState.state !== GameState.WAITING) {
+            console.log("Cannot toggle auto bet during game");
+            return;
+        }
+
+        CrashGameAudio.playButtonClick();
+
+        if (betting) {
+            const status = betting.getAutoCashOutStatus();
+
+            if (status.enabled) {
+                // 当前已启用，关闭自动下注
+                betting.setAutoCashOut(false);
+                console.log("Auto bet disabled");
+            } else {
+                // 当前未启用，显示设置界面
+                this.showAutoCashOutUI();
+            }
+
+            // 更新按钮状态
+            this.updateAutoBetButtonState();
+        }
+    }
+
     /**
      * 初始化下注面板
      */
@@ -790,6 +829,9 @@ export class MainGameUI extends CCComp {
         // 更新下注按钮显示 - 使用短文本格式
         const shortText = this.formatValueToShortText(betting.currentBetItem.value);
         this.updateBetButtonDisplay(shortText);
+
+        // 更新AutoBet按钮状态
+        this.updateAutoBetButtonState();
     }
 
     private updatePotentialWin(): void {
@@ -910,6 +952,10 @@ export class MainGameUI extends CCComp {
 
         if (this.betButton) {
             this.betButton.node.off(Button.EventType.CLICK, this.onBetButtonClick, this);
+        }
+
+        if (this.autoBetButton) {
+            this.autoBetButton.node.off(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
         }
 
         // 清理下注面板中的按钮事件
@@ -1124,7 +1170,45 @@ export class MainGameUI extends CCComp {
         if (betting) {
             betting.setAutoCashOut(true, multiplier, totalBets);
             console.log(`Started auto cashout: ${multiplier}x, ${totalBets === -1 ? 'infinite' : totalBets} bets`);
+
+            // 更新按钮状态
+            this.updateAutoBetButtonState();
         }
+    }
+
+    /**
+     * 更新AutoBet按钮状态
+     */
+    private updateAutoBetButtonState(): void {
+        if (!this.autoBetButton || !smc.crashGame) return;
+
+        const betting = smc.crashGame.get(BettingComp);
+        if (!betting) return;
+
+        const status = betting.getAutoCashOutStatus();
+        const buttonLabel = this.autoBetButton.getComponentInChildren(Label);
+
+        if (buttonLabel) {
+            if (status.enabled) {
+                // 启用状态：显示"AUTO ON"和设置信息
+                buttonLabel.string = `AUTO\n${status.multiplier.toFixed(2)}x`;
+                // 设置按钮颜色为激活状态
+                const sprite = this.autoBetButton.node.getComponent(Sprite);
+                if (sprite) {
+                    sprite.color = new Color(0, 255, 0, 255); // 绿色
+                }
+            } else {
+                // 禁用状态：显示"AUTO"
+                buttonLabel.string = "AUTO";
+                // 设置按钮颜色为默认状态
+                const sprite = this.autoBetButton.node.getComponent(Sprite);
+                if (sprite) {
+                    sprite.color = new Color(255, 255, 255, 255); // 白色
+                }
+            }
+        }
+
+        console.log(`Updated auto bet button state: ${status.enabled ? 'ON' : 'OFF'}`);
     }
 
     // CCComp要求实现的reset方法

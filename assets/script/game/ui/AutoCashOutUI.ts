@@ -19,11 +19,11 @@ export class AutoCashOutUI extends CCComp {
     @property(Label)
     title_label: Label = null!;
 
-    @property(EditBox)
-    multiplier_input: EditBox = null!;
+    @property(Label)
+    multiplier_input: Label = null!;
 
-    @property(EditBox)
-    total_bets_input: EditBox = null!;
+    @property(Label)
+    total_bets_input: Label = null!;
 
     @property(Button)
     start_button: Button = null!;
@@ -227,13 +227,14 @@ export class AutoCashOutUI extends CCComp {
      * 关闭自动提现弹窗
      */
     private closeAutoCashOut(): void {
+        this.removeEventListeners();
         if (this._close_callback) {
             this._close_callback();
         }
     }
 
-    onDestroy() {
-        // 清理事件监听
+    private removeEventListeners(): void {
+       // 清理事件监听
         if (this.close_button) {
             this.close_button.node.off(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
@@ -241,7 +242,6 @@ export class AutoCashOutUI extends CCComp {
         if (this.start_button) {
             this.start_button.node.off(Button.EventType.CLICK, this.onStartButtonClick, this);
         }
-
         // 清理预设按钮事件
         const buttons = [
             this.multiplier_1_25_button, this.multiplier_1_5_button,
