@@ -80,7 +80,6 @@ export class MainGameUI extends CCComp {
     // 下注金额数据
     private betAmountData: BetAmountItem[] = [
         { display: "free", value: 90, isFree: true },
-        { display: "90", value: 90, isFree: false },
         { display: "100", value: 100, isFree: false },
         { display: "200", value: 200, isFree: false },
         { display: "500", value: 500, isFree: false },
@@ -96,8 +95,23 @@ export class MainGameUI extends CCComp {
         { display: "1M", value: 1000000, isFree: false }
     ];
 
-    private currentBetItem: BetAmountItem = this.betAmountData[1]; // 默认选择90
+    private currentBetItem: BetAmountItem = this.betAmountData[0]; // 默认选择free
     private isBetPanelVisible: boolean = false;
+
+    /**
+     * 将数值转换为短文本格式
+     * @param value 数值
+     * @returns 短文本 (如: 1000 -> "1K", 1000000 -> "1M")
+     */
+    private formatValueToShortText(value: number): string {
+        if (value >= 1000000) {
+            return (value / 1000000).toFixed(0) + "M";
+        } else if (value >= 1000) {
+            return (value / 1000).toFixed(0) + "K";
+        } else {
+            return value.toString();
+        }
+    }
 
 
 
@@ -753,8 +767,9 @@ export class MainGameUI extends CCComp {
         // 更新历史记录按钮
         this.updateHistoryButton();
 
-        // 更新下注按钮显示
-        this.updateBetButtonDisplay(this.currentBetItem.display);
+        // 更新下注按钮显示 - 使用短文本格式
+        const shortText = this.formatValueToShortText(this.currentBetItem.value);
+        this.updateBetButtonDisplay(shortText);
     }
 
     private updatePotentialWin(): void {
@@ -1004,13 +1019,14 @@ export class MainGameUI extends CCComp {
             this.betAmountInput.string = amount.toString();
         }
 
-        // 更新下注按钮显示
-        this.updateBetButtonDisplay(display);
+        // 更新下注按钮显示 - 使用短文本格式
+        const shortText = this.formatValueToShortText(amount);
+        this.updateBetButtonDisplay(shortText);
 
         // 更新潜在收益
         this.updatePotentialWin();
 
-        console.log(`Bet amount updated to: ${amount} (${display})`);
+        console.log(`Bet amount updated to: ${amount} (${display}) -> button shows: ${shortText}`);
     }
 
     /**
