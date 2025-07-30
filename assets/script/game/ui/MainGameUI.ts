@@ -295,6 +295,13 @@ export class MainGameUI extends CCComp {
         const multiplier = smc.crashGame.get(MultiplierComp);
 
         if (gameState.state === GameState.WAITING) {
+            // 用户手动按下HOLD按钮 - 禁用自动下注，切换到手动模式
+            if (betting.autoCashOutEnabled) {
+                console.log("MainGameUI: User pressed HOLD, disabling auto betting");
+                betting.setAutoCashOut(false);
+                this.updateAutoBetButtonState();
+            }
+
             // 开始游戏 - 按下按钮时开始
             const betAmount = betting.currentBetItem.value;
             const isFreeMode = betting.currentBetItem.isFree;
@@ -312,7 +319,7 @@ export class MainGameUI extends CCComp {
                 this.updateHoldButtonState();
                 this.addButtonPressedEffect();
 
-                console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed`);
+                console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
                 oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
             }
         }
@@ -326,6 +333,13 @@ export class MainGameUI extends CCComp {
         const multiplier = smc.crashGame.get(MultiplierComp);
 
         if (gameState.state === GameState.FLYING && betting.isHolding) {
+            // 用户手动提现 - 如果当前是自动模式，切换到手动模式
+            if (betting.autoCashOutEnabled) {
+                console.log("MainGameUI: User manually cashed out, disabling auto betting");
+                betting.setAutoCashOut(false);
+                this.updateAutoBetButtonState();
+            }
+
             // 提现 - 松开按钮时提现
             betting.isHolding = false;
             gameState.state = GameState.CASHED_OUT;
@@ -334,7 +348,7 @@ export class MainGameUI extends CCComp {
             this.removeButtonPressedEffect();
             this.processCashOut();
 
-            console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x - HOLD button released`);
+            console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x - HOLD button released (manual cashout)`);
         }
     }
 
@@ -592,28 +606,28 @@ export class MainGameUI extends CCComp {
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
 
-        // 只有在等待状态下才能切换自动下注
-        if (gameState.state !== GameState.WAITING) {
-            console.log("Cannot toggle auto bet during game");
-            return;
-        }
-
         CrashGameAudio.playButtonClick();
 
         if (betting) {
             const status = betting.getAutoCashOutStatus();
 
             if (status.enabled) {
-                // 当前已启用，关闭自动下注
+                // 当前已启用，关闭自动下注（允许在任何状态下关闭）
                 betting.setAutoCashOut(false);
-                console.log("Auto bet disabled");
+                console.log("MainGameUI: Auto bet disabled by user (via AUTO button)");
+                
+                // 更新按钮状态
+                this.updateAutoBetButtonState();
             } else {
-                // 当前未启用，显示设置界面
+                // 当前未启用，只有在等待状态下才能启用新的自动下注
+                if (gameState.state !== GameState.WAITING) {
+                    console.log("Cannot start auto bet during game - please wait for current game to finish");
+                    return;
+                }
+                
+                // 显示设置界面
                 this.showAutoCashOutUI();
             }
-
-            // 更新按钮状态
-            this.updateAutoBetButtonState();
         }
     }
 
