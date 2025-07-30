@@ -39,5 +39,7 @@
     "game_crashed": "GAME CRASHED!",
     "cash_out_at": "Cashed Out At",
     "crashed_at": "Crashed At",
-    "profit": "Profit"
+    "profit": "Profit",
+    "continue": "Continue",
+    "try_again": "Try Again"
 }

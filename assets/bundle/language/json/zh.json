@@ -39,5 +39,7 @@
     "game_crashed": "游戏崩盘！",
     "cash_out_at": "提现倍数",
     "crashed_at": "崩盘倍数",
-    "profit": "收益"
+    "profit": "收益",
+    "continue": "继续",
+    "try_again": "再试一次"
 }
