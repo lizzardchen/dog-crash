@@ -19,6 +19,15 @@ import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets
 
 const { ccclass, property } = _decorator;
 
+/**
+ * 下注金额项接口
+ */
+interface BetAmountItem {
+    display: string;    // 显示文本 (如 "free", "1K", "1M")
+    value: number;      // 实际数值 (如 90, 1000, 1000000)
+    isFree: boolean;    // 是否为免费模式
+}
+
 @ccclass('MainGameUI')
 @ecs.register('MainGameUI', false)
 export class MainGameUI extends CCComp {
@@ -548,6 +557,9 @@ export class MainGameUI extends CCComp {
         this.betPanel.active = true;
         this.isBetPanelVisible = true;
 
+        // 在动画期间禁用所有按钮交互
+        this.setBetItemsInteractable(false);
+
         // 设置初始位置 (屏幕右侧外)
         const startPos = new Vec3(1000, 0, 0);
         const endPos = new Vec3(0, 0, 0);
@@ -558,7 +570,8 @@ export class MainGameUI extends CCComp {
         tween(this.betPanel)
             .to(0.3, { position: endPos }, { easing: 'sineOut' })
             .call(() => {
-                // 滑入完成后，滚动到当前选中的下注金额
+                // 滑入完成后，启用按钮交互并滚动到当前选中的下注金额
+                this.setBetItemsInteractable(true);
                 this.scrollToCurrentBet();
             })
             .start();
@@ -611,7 +624,7 @@ export class MainGameUI extends CCComp {
                 itemNode.name = `BetItem_${betItem.display}`;
 
                 // 设置显示文本
-                const label = itemNode.getComponentInChildren(Label);
+                const label = itemNode.getComponent(Label);
                 if (label) {
                     label.string = betItem.display;
                 } else {
@@ -652,10 +665,8 @@ export class MainGameUI extends CCComp {
         // 更新UI显示
         this.updateBetAmount(betItem.value, betItem.display);
 
-        // 延迟隐藏面板
-        this.scheduleOnce(() => {
-            this.hideBetPanel();
-        }, 0.2);
+        // 选择完成后立即隐藏面板
+        this.hideBetPanel();
 
         console.log(`Selected bet: ${betItem.display} (value: ${betItem.value}, free: ${betItem.isFree})`);
     }
@@ -701,6 +712,23 @@ export class MainGameUI extends CCComp {
                 child.scale = new Vec3(1.0, 1.0, 1.0);
             }
         });
+    }
+
+    /**
+     * 设置下注选项按钮的交互状态
+     * @param interactable 是否可交互
+     */
+    private setBetItemsInteractable(interactable: boolean): void {
+        if (!this.betItemContainer) return;
+
+        this.betItemContainer.children.forEach((child) => {
+            const button = child.getComponent(Button);
+            if (button) {
+                button.interactable = interactable;
+            }
+        });
+
+        console.log(`Set bet items interactable: ${interactable}`);
     }
 
     private updateUI(): void {
@@ -1013,13 +1041,4 @@ export class MainGameUI extends CCComp {
     reset(): void {
         console.log("MainGameUI reset");
     }
-}
-
-/**
- * 下注金额项接口
- */
-interface BetAmountItem {
-    display: string;    // 显示文本 (如 "free", "1K", "1M")
-    value: number;      // 实际数值 (如 90, 1000, 1000000)
-    isFree: boolean;    // 是否为免费模式
 }
