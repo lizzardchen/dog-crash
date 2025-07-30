@@ -13,6 +13,9 @@ import { smc } from "../common/SingletonModuleComp";
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
 import { SceneData } from "../scene/SceneData";
 import { SceneScriptComp } from '../scene/SceneScriptComp';
+import { UIID } from "../common/config/GameUIConfig";
+import { GameResultUI, GameResultParams } from "./GameResultUI";
+import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets/core/gui/layer/Defines";
 
 const { ccclass, property } = _decorator;
 
@@ -303,7 +306,8 @@ export class MainGameUI extends CCComp {
         const gameHistory = smc.crashGame.get(GameHistoryComp);
 
         const winAmount = betting.betAmount * multiplier.cashOutMultiplier;
-        betting.balance += winAmount - betting.betAmount;
+        const profit = winAmount - betting.betAmount;
+        betting.balance += profit;
 
         // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
         if (gameHistory && localData) {
@@ -312,12 +316,15 @@ export class MainGameUI extends CCComp {
             console.log(`Recorded server crash multiplier: ${serverCrashMultiplier.toFixed(2)}x (player cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x)`);
         }
 
-        CrashGameAudio.playCashOutSuccess();
         console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x, won: ${winAmount.toFixed(0)}`);
 
+        // 延迟显示成功结果弹窗
         this.scheduleOnce(() => {
-            this.resetGame();
-        }, 2);
+            this.showGameResult({
+                isWin: true,
+                profit: profit
+            });
+        }, 0.2);
     }
 
     private onGameCrashed(_data: any): void {
@@ -341,9 +348,13 @@ export class MainGameUI extends CCComp {
         
         console.log(`Game crashed at ${serverCrashMultiplier.toFixed(2)}x`);
 
+        // 延迟显示失败结果弹窗
         this.scheduleOnce(() => {
-            this.resetGame();
-        }, 2);
+            this.showGameResult({
+                isWin: false,
+                profit: -betting.betAmount
+            });
+        }, 0.2);
     }
 
     private onGameCashedOut(data: any): void {
@@ -649,6 +660,30 @@ export class MainGameUI extends CCComp {
             // 设置当前的速度倍数，由SceneBackgroundSystem使用
             sceneComp.currentSpeedMultiplier = speedMultiplier;
         }
+    }
+
+    /**
+     * 显示游戏结果弹窗
+     * @param params 游戏结果参数
+     */
+    private showGameResult(params: GameResultParams): void {
+        console.log("Showing game result with params:", params);
+        
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node, params: any) => {
+                const gameResultUI = node.getComponent(GameResultUI);
+                if (gameResultUI) {
+                    gameResultUI.onOpen(params, () => {
+                        // 关闭弹窗回调
+                        oops.gui.remove(UIID.GameResult);
+                        // 重置游戏
+                        this.resetGame();
+                    });
+                }
+            }
+        };
+        
+        oops.gui.open(UIID.GameResult, params, callbacks);
     }
 
     // CCComp要求实现的reset方法

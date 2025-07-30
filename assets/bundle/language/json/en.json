@@ -34,5 +34,10 @@
     "game_in_progress": "Game In Progress",
     "history": "History",
     "crash_history": "Crash History",
-    "no_history_records": "No History Records"
+    "no_history_records": "No History Records",
+    "cash_out_success": "CASH OUT SUCCESS!",
+    "game_crashed": "GAME CRASHED!",
+    "cash_out_at": "Cashed Out At",
+    "crashed_at": "Crashed At",
+    "profit": "Profit"
 }

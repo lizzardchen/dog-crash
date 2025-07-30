@@ -29,10 +29,6 @@ export enum UIID {
     Settings,
     /** 游戏结果界面 */
     GameResult,
-    /** 历史记录界面 */
-    History,
-    /** 崩盘游戏加载界面 */
-    CrashGameLoading,
     /** 崩盘游戏主界面 */
     CrashGame
 }
@@ -48,7 +44,5 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.Leaderboard]: { layer: LayerType.UI, prefab: "gui/crash/leaderboard" },
     [UIID.Settings]: { layer: LayerType.UI, prefab: "gui/crash/settings" },
     [UIID.GameResult]: { layer: LayerType.Dialog, prefab: "gui/crash/game_result" },
-    [UIID.History]: { layer: LayerType.PopUp, prefab: "gui/crash/history" },
-    [UIID.CrashGameLoading]: { layer: LayerType.UI, prefab: "gui/crash/crash_game_loading" },
     [UIID.CrashGame]: { layer: LayerType.UI, prefab: "gui/crash/game" }
 }
