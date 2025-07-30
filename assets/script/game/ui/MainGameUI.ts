@@ -113,6 +113,16 @@ export class MainGameUI extends CCComp {
         }
     }
 
+    private formatValueFromShotText(value: string): number {
+        if (value.endsWith("M")) {
+            return parseFloat(value.slice(0, -1)) * 1000000;
+        } else if (value.endsWith("K")) {
+            return parseFloat(value.slice(0, -1)) * 1000;
+        } else {
+            return parseFloat(value);
+        }
+    }
+
 
 
     onLoad() {
@@ -777,10 +787,11 @@ export class MainGameUI extends CCComp {
 
         const betting = smc.crashGame.get(BettingComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
-        const betAmount = this.betAmountInput ? (parseFloat(this.betAmountInput.string) || 0) : 0;
+        const betAmount = this.betAmountInput ? (this.formatValueFromShotText(this.betAmountInput.string) || 0) : 0;
 
         const potentialWin = betAmount * multiplier.currentMultiplier;
-        this.potentialWinLabel.string = ` ${potentialWin.toFixed(0)}`;
+        const shortText = this.formatValueToShortText(Math.floor(potentialWin));
+        this.potentialWinLabel.string = ` ${shortText}`;
     }
 
     private updateHistoryButton(): void {
