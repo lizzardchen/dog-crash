@@ -2,7 +2,7 @@ import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Comp
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
-import { BettingComp } from "../comp/BettingComp";
+import { BettingComp, BetAmountItem } from "../comp/BettingComp";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
 import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
@@ -77,25 +77,6 @@ export class MainGameUI extends CCComp {
     @property({ type: [SceneData], tooltip: "场景配置数组，根据rocket状态自动排序 (ground->sky->atmosphere->space)" })
     sceneConfigs: SceneData[] = [];
 
-    // 下注金额数据
-    private betAmountData: BetAmountItem[] = [
-        { display: "free", value: 90, isFree: true },
-        { display: "100", value: 100, isFree: false },
-        { display: "200", value: 200, isFree: false },
-        { display: "500", value: 500, isFree: false },
-        { display: "1K", value: 1000, isFree: false },
-        { display: "2K", value: 2000, isFree: false },
-        { display: "5K", value: 5000, isFree: false },
-        { display: "10K", value: 10000, isFree: false },
-        { display: "20K", value: 20000, isFree: false },
-        { display: "50K", value: 50000, isFree: false },
-        { display: "100K", value: 100000, isFree: false },
-        { display: "200K", value: 200000, isFree: false },
-        { display: "500K", value: 500000, isFree: false },
-        { display: "1M", value: 1000000, isFree: false }
-    ];
-
-    private currentBetItem: BetAmountItem = this.betAmountData[0]; // 默认选择free
     private isBetPanelVisible: boolean = false;
 
     /**
@@ -104,56 +85,10 @@ export class MainGameUI extends CCComp {
      * @returns 短文本 (如: 1000 -> "1K", 1000000 -> "1M")
      */
     private formatValueToShortText(value: number): string {
-        if (value >= 1000000) {
-            return (value / 1000000).toFixed(0) + "M";
-        } else if (value >= 1000) {
-            return (value / 1000).toFixed(0) + "K";
-        } else {
-            return value.toString();
-        }
-    }
+        if (!smc.crashGame) return value.toString();
 
-    /**
-     * 加载保存的下注选择
-     */
-    private loadSavedBetSelection(): void {
-        if (!smc.crashGame) return;
-
-        const localData = smc.crashGame.get(LocalDataComp);
-        if (localData) {
-            const savedBet = localData.loadSelectedBet();
-            if (savedBet) {
-                // 在betAmountData中查找匹配的项
-                const matchedItem = this.betAmountData.find(item =>
-                    item.display === savedBet.display &&
-                    item.value === savedBet.value &&
-                    item.isFree === savedBet.isFree
-                );
-
-                if (matchedItem) {
-                    this.currentBetItem = matchedItem;
-                    console.log(`Restored saved bet selection: ${matchedItem.display} (${matchedItem.value})`);
-                } else {
-                    console.warn("Saved bet item not found in current data, using default");
-                }
-            }
-        }
-    }
-
-    /**
-     * 保存当前下注选择
-     */
-    private saveBetSelection(): void {
-        if (!smc.crashGame) return;
-
-        const localData = smc.crashGame.get(LocalDataComp);
-        if (localData) {
-            localData.saveSelectedBet({
-                display: this.currentBetItem.display,
-                value: this.currentBetItem.value,
-                isFree: this.currentBetItem.isFree
-            });
-        }
+        const betting = smc.crashGame.get(BettingComp);
+        return betting ? betting.formatValueToShortText(value) : value.toString();
     }
 
     private formatValueFromShotText(value: string): number {
@@ -197,8 +132,11 @@ export class MainGameUI extends CCComp {
             console.log(`Generated crash multiplier: ${localData.currentCrashMultiplier.toFixed(2)}x`);
         }
 
-        // 加载保存的下注选择
-        this.loadSavedBetSelection();
+        // 初始化下注组件
+        const betting = smc.crashGame.get(BettingComp);
+        if (betting) {
+            betting.init();
+        }
 
         // 初始化历史记录
         const gameHistory = smc.crashGame.get(GameHistoryComp);
@@ -349,8 +287,8 @@ export class MainGameUI extends CCComp {
 
         if (gameState.state === GameState.WAITING) {
             // 开始游戏 - 按下按钮时开始
-            const betAmount = this.currentBetItem.value;
-            const isFreeMode = this.currentBetItem.isFree;
+            const betAmount = betting.currentBetItem.value;
+            const isFreeMode = betting.currentBetItem.isFree;
 
             if (this.validateBetAmount(betAmount, isFreeMode)) {
                 CrashGameAudio.playButtonClick();
@@ -436,7 +374,7 @@ export class MainGameUI extends CCComp {
         let profit: number;
 
         // 免费模式：不扣除下注金额，收益就是全部奖金
-        if (this.currentBetItem.isFree) {
+        if (betting.currentBetItem.isFree) {
             profit = winAmount;
             betting.balance += winAmount; // 免费模式直接加奖金
         } else {
@@ -451,7 +389,7 @@ export class MainGameUI extends CCComp {
             console.log(`Recorded server crash multiplier: ${serverCrashMultiplier.toFixed(2)}x (player cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x)`);
         }
 
-        console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x, won: ${winAmount.toFixed(0)} (free: ${this.currentBetItem.isFree})`);
+        console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x, won: ${winAmount.toFixed(0)} (free: ${betting.currentBetItem.isFree})`);
 
         // 延迟显示成功结果弹窗
         this.scheduleOnce(() => {
@@ -472,7 +410,7 @@ export class MainGameUI extends CCComp {
         let loss: number;
 
         // 免费模式：不扣除余额，损失为0
-        if (this.currentBetItem.isFree) {
+        if (betting.currentBetItem.isFree) {
             loss = 0; // 免费模式没有实际损失
         } else {
             betting.balance -= betting.betAmount;
@@ -489,7 +427,7 @@ export class MainGameUI extends CCComp {
             gameHistory.addCrashRecord(serverCrashMultiplier, localData);
         }
 
-        console.log(`Game crashed at ${serverCrashMultiplier.toFixed(2)}x (free: ${this.currentBetItem.isFree})`);
+        console.log(`Game crashed at ${serverCrashMultiplier.toFixed(2)}x (free: ${betting.currentBetItem.isFree})`);
 
         // 延迟显示失败结果弹窗
         this.scheduleOnce(() => {
@@ -687,8 +625,20 @@ export class MainGameUI extends CCComp {
         // 清空现有子节点
         this.betItemContainer.removeAllChildren();
 
+        // 获取BettingComp
+        if (!smc.crashGame) {
+            console.warn("CrashGame not found - skipping bet scroll view fill");
+            return;
+        }
+
+        const betting = smc.crashGame.get(BettingComp);
+        if (!betting) {
+            console.warn("BettingComp not found - skipping bet scroll view fill");
+            return;
+        }
+
         // 创建下注选项
-        this.betAmountData.forEach((betItem, index) => {
+        betting.betAmountData.forEach((betItem, index) => {
             try {
                 const itemNode = instantiate(this.betItemPrefab);
                 itemNode.name = `BetItem_${betItem.display}`;
@@ -720,23 +670,27 @@ export class MainGameUI extends CCComp {
             }
         });
 
-        console.log(`Filled bet scroll view with ${this.betAmountData.length} items`);
+        console.log(`Filled bet scroll view with ${betting.betAmountData.length} items`);
     }
 
     /**
      * 下注选项点击事件
      */
     private onBetItemClick(betItem: BetAmountItem): void {
+        if (!smc.crashGame) return;
+
         CrashGameAudio.playButtonClick();
 
-        this.currentBetItem = betItem;
-        this.updateSelectedBetState();
+        const betting = smc.crashGame.get(BettingComp);
+        if (betting) {
+            // 使用BettingComp的方法设置选择
+            betting.setCurrentBetItem(betItem);
 
-        // 更新UI显示
-        this.updateBetAmount(betItem.value, betItem.display);
+            this.updateSelectedBetState();
 
-        // 保存选择到本地存储
-        this.saveBetSelection();
+            // 更新UI显示
+            this.updateBetAmount(betItem.value, betItem.display);
+        }
 
         // 选择完成后立即隐藏面板
         this.hideBetPanel();
@@ -748,9 +702,12 @@ export class MainGameUI extends CCComp {
      * 滚动到当前选中的下注金额
      */
     private scrollToCurrentBet(): void {
-        if (!this.betScrollView || !this.betItemContainer) return;
+        if (!this.betScrollView || !this.betItemContainer || !smc.crashGame) return;
 
-        const selectedIndex = this.betAmountData.indexOf(this.currentBetItem);
+        const betting = smc.crashGame.get(BettingComp);
+        if (!betting) return;
+
+        const selectedIndex = betting.betAmountData.indexOf(betting.currentBetItem);
         if (selectedIndex === -1) return;
 
         // 计算滚动位置 (简单实现，假设每个item宽度为120)
@@ -765,19 +722,22 @@ export class MainGameUI extends CCComp {
             this.betScrollView.scrollToPercentHorizontal(Math.max(0, Math.min(1, scrollRatio)), 0.3);
         }
 
-        console.log(`Scrolled to bet item: ${this.currentBetItem.display}`);
+        console.log(`Scrolled to bet item: ${betting.currentBetItem.display}`);
     }
 
     /**
      * 更新选中的下注状态
      */
     private updateSelectedBetState(): void {
-        if (!this.betItemContainer) return;
+        if (!this.betItemContainer || !smc.crashGame) return;
+
+        const betting = smc.crashGame.get(BettingComp);
+        if (!betting) return;
 
         this.betItemContainer.children.forEach((child, index) => {
-            const betItem = this.betAmountData[index];
+            const betItem = betting.betAmountData[index];
 
-            if (betItem === this.currentBetItem) {
+            if (betItem === betting.currentBetItem) {
                 // 选中状态 - 缩放效果
                 child.scale = new Vec3(1.1, 1.1, 1.1);
             } else {
@@ -827,7 +787,7 @@ export class MainGameUI extends CCComp {
         this.updateHistoryButton();
 
         // 更新下注按钮显示 - 使用短文本格式
-        const shortText = this.formatValueToShortText(this.currentBetItem.value);
+        const shortText = this.formatValueToShortText(betting.currentBetItem.value);
         this.updateBetButtonDisplay(shortText);
     }
 

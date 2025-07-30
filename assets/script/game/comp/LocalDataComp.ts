@@ -6,17 +6,12 @@ import { CrashRecord } from "./GameHistoryComp";
 @ecs.register('LocalData')
 export class LocalDataComp extends ecs.Comp {
     private static readonly CRASH_HISTORY_KEY = "crash_game_history";
-    private static readonly SELECTED_BET_KEY = "crash_game_selected_bet";
 
     /** 当前游戏会话的崩盘倍数（本地随机生成） */
     currentCrashMultiplier: number = 0;
 
-    /** 当前选择的下注项 */
-    selectedBetItem: { display: string; value: number; isFree: boolean } | null = null;
-
     reset() {
         this.currentCrashMultiplier = 0;
-        // 注意：不重置selectedBetItem，保持用户的选择
     }
 
     /** 生成本局游戏的崩盘倍数 */
@@ -57,38 +52,5 @@ export class LocalDataComp extends ecs.Comp {
         console.log("Cleared crash history from local storage");
     }
 
-    /** 保存选择的下注项到本地存储 */
-    saveSelectedBet(betItem: { display: string; value: number; isFree: boolean }): void {
-        try {
-            this.selectedBetItem = betItem;
-            const betData = JSON.stringify(betItem);
-            oops.storage.set(LocalDataComp.SELECTED_BET_KEY, betData);
-            console.log(`Saved selected bet: ${betItem.display} (${betItem.value}) to local storage`);
-        } catch (error) {
-            console.error("Failed to save selected bet:", error);
-        }
-    }
 
-    /** 从本地存储加载选择的下注项 */
-    loadSelectedBet(): { display: string; value: number; isFree: boolean } | null {
-        try {
-            const betData = oops.storage.get(LocalDataComp.SELECTED_BET_KEY);
-            if (betData) {
-                const betItem = JSON.parse(betData) as { display: string; value: number; isFree: boolean };
-                this.selectedBetItem = betItem;
-                console.log(`Loaded selected bet: ${betItem.display} (${betItem.value}) from local storage`);
-                return betItem;
-            }
-        } catch (error) {
-            console.error("Failed to load selected bet:", error);
-        }
-        return null;
-    }
-
-    /** 清空选择的下注项 */
-    clearSelectedBet(): void {
-        this.selectedBetItem = null;
-        oops.storage.remove(LocalDataComp.SELECTED_BET_KEY);
-        console.log("Cleared selected bet from local storage");
-    }
 }
