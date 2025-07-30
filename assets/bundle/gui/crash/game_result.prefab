@@ -1858,7 +1858,9 @@
     "dollar_amount_label": {
       "__id__": 35
     },
-    "close_button": null,
+    "close_button": {
+      "__id__": 60
+    },
     "win_icon": null,
     "lose_icon": null,
     "countdown_label": {

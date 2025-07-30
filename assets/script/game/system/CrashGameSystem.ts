@@ -62,7 +62,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
 
     private handleCashedOutState(entity: CrashGame): void {
         // 播放成功提现动画，结算收益
-        console.log("Game cashed out - playing success sound");
+        // console.log("Game cashed out - playing success sound");
         // TODO: 添加实际的音频资源后启用
         // oops.audio.playEffect("game/audio/cash_out_success");
     }

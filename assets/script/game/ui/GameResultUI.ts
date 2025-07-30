@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, Sprite, UIOpacity, Color } from 'cc';
+import { _decorator, Node, Label, Button, Sprite, UIOpacity } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
@@ -38,8 +38,7 @@ export class GameResultUI extends CCComp {
 
     private _close_callback: Function | null = null;
     private _can_close: boolean = false;
-    private _countdown_timer: number = 3.3; // 3秒倒计时
-    private _wait_after_zero: number = 0.3; // 倒计时到0后的等待时间
+    private _countdown_timer: number = 3; // 3秒倒计时
 
     reset(): void {
         this.node.destroy();
@@ -55,12 +54,16 @@ export class GameResultUI extends CCComp {
             // 更新倒计时显示
             if (this.countdown_label) {
                 const remainingTime = Math.ceil(this._countdown_timer);
-                this.countdown_label.string = remainingTime > 0 ? remainingTime.toString() : "0";
+                this.countdown_label.string = Math.max(0, remainingTime).toString();
             }
 
-            // 倒计时结束，自动关闭弹窗
+            // 倒计时结束，延迟一小段时间让用户看到"0"，然后关闭弹窗
             if (this._countdown_timer <= 0) {
-                this.closeResult();
+                this._countdown_timer = 0; // 确保不会继续减少
+                // 延迟0.3秒让用户看到"0"的显示
+                this.scheduleOnce(() => {
+                    this.closeResult();
+                }, 0.3);
             }
         }
 
@@ -115,6 +118,15 @@ export class GameResultUI extends CCComp {
         if (this.win_icon && this.lose_icon) {
             this.win_icon.node.active = params.isWin;
             this.lose_icon.node.active = !params.isWin;
+        }
+
+        // 设置关闭按钮文本
+        if (this.close_button) {
+            const buttonLabel = this.close_button.node.getComponentInChildren(Label);
+            if (buttonLabel) {
+                const buttonTextKey = params.isWin ? "continue" : "try_again";
+                buttonLabel.string = CrashGameLanguage.getText(buttonTextKey);
+            }
         }
 
         // 计算coin和dollar奖励数量
