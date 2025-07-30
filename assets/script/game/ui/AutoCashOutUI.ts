@@ -204,7 +204,8 @@ export class AutoCashOutUI extends CCComp {
             return;
         }
 
-        console.log(`Starting auto cashout: multiplier=${multiplier}, totalBets=${totalBets}`);
+        console.log(`AutoCashOutUI: Starting auto cashout with multiplier=${multiplier}, totalBets=${totalBets}`);
+        console.log(`AutoCashOutUI: multiplierStr="${multiplierStr}", totalBetsStr="${totalBetsStr}"`);
 
         // 调用开始回调
         if (this._start_callback) {

@@ -179,12 +179,17 @@ export class BettingComp extends ecs.Comp {
     incrementAutoCashOutBets(): void {
         if (this.autoCashOutEnabled) {
             this.autoCashOutCurrentBets++;
+            console.log(`BettingComp: Incremented auto cashout bets: ${this.autoCashOutCurrentBets}/${this.autoCashOutTotalBets === -1 ? 'infinite' : this.autoCashOutTotalBets}`);
 
             // 检查是否达到总次数限制
             if (this.autoCashOutTotalBets > 0 && this.autoCashOutCurrentBets >= this.autoCashOutTotalBets) {
                 this.autoCashOutEnabled = false;
-                console.log(`Auto cashout disabled: reached total bets limit (${this.autoCashOutTotalBets})`);
+                console.log(`BettingComp: Auto cashout disabled: reached total bets limit (${this.autoCashOutTotalBets})`);
+            } else {
+                console.log(`BettingComp: Auto cashout still enabled, continuing...`);
             }
+        } else {
+            console.log(`BettingComp: incrementAutoCashOutBets called but auto cashout is disabled`);
         }
     }
 

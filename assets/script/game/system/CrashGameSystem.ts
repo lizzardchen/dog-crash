@@ -8,6 +8,8 @@ import { LocalDataComp } from "../comp/LocalDataComp";
 
 @ecs.register('CrashGameSystem')
 export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
+    private processedStates = new Set<string>();
+    
     filter(): ecs.IMatcher {
         return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp);
     }
@@ -16,6 +18,12 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         const gameState = entity.get(GameStateComp);
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
+
+        // 减少日志频率，只在状态改变时或auto betting相关时记录
+        if (gameState.state !== this.lastLoggedState || betting.autoCashOutEnabled) {
+            console.log(`CrashGameSystem: update - state: ${gameState.state}, autoBetting: ${betting.autoCashOutEnabled}`);
+            this.lastLoggedState = gameState.state;
+        }
 
         switch (gameState.state) {
             case GameState.INIT:
@@ -36,6 +44,8 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         }
     }
 
+    private lastLoggedState: GameState = GameState.INIT;
+
     private handleInitState(entity: CrashGame): void {
         console.log("Game initialized - ready to start");
         oops.message.dispatchEvent("GAME_INITIALIZED", {});
@@ -53,10 +63,14 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         const gameState = entity.get(GameStateComp);
         const multiplier = entity.get(MultiplierComp);
         
-        if (betting.autoCashOutEnabled) {
+        // 防止在同一个等待周期内重复开始游戏
+        const waitingKey = `waiting_${Date.now()}`;
+        if (betting.autoCashOutEnabled && !betting.isHolding && gameState.startTime === 0) {
             // 自动开始游戏
             const betAmount = betting.currentBetItem.value;
             const isFreeMode = betting.currentBetItem.isFree;
+            
+            console.log(`CrashGameSystem: Starting auto bet with amount: ${betAmount}, free: ${isFreeMode}`);
             
             // 验证下注金额
             if (this.validateBetAmount(betAmount, isFreeMode, betting)) {
@@ -66,8 +80,12 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                 gameState.startTime = Date.now();
                 multiplier.startTime = Date.now();
                 
-                console.log(`Auto bet started: ${betAmount} (free: ${isFreeMode})`);
+                console.log(`CrashGameSystem: Auto bet started: ${betAmount} (free: ${isFreeMode})`);
                 oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
+            } else {
+                console.log(`CrashGameSystem: Auto bet validation failed`);
+                // 如果验证失败，禁用自动下注
+                betting.setAutoCashOut(false);
             }
         }
     }
@@ -91,38 +109,66 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
     }
 
     private handleCrashedState(entity: CrashGame): void {
+        const gameState = entity.get(GameStateComp);
+        const stateKey = `crashed_${gameState.startTime}`;
+        
+        // 防止重复处理同一次游戏的崩盘状态
+        if (this.processedStates.has(stateKey)) {
+            return;
+        }
+        this.processedStates.add(stateKey);
+        
         // 播放崩盘动画，结算游戏
-        console.log("Game crashed - playing crash sound");
-        // TODO: 添加实际的音频资源后启用
-        // oops.audio.playEffect("game/audio/crash_explosion");
+        console.log("CrashGameSystem: Game crashed - processing crash state");
         
         const betting = entity.get(BettingComp);
+        console.log(`CrashGameSystem: handleCrashedState - autoCashOutEnabled: ${betting.autoCashOutEnabled}`);
+        
         if (betting.autoCashOutEnabled) {
             // 增加自动下注计数
             betting.incrementAutoCashOutBets();
             
             // 如果自动下注仍然启用，延迟重置游戏继续下注
             if (betting.autoCashOutEnabled) {
+                console.log(`CrashGameSystem: Scheduling auto restart after crash`);
                 this.scheduleAutoRestart(entity);
+            } else {
+                console.log(`CrashGameSystem: Auto betting disabled after crash, not restarting`);
             }
+        } else {
+            console.log(`CrashGameSystem: Auto betting not enabled, not restarting`);
         }
     }
 
     private handleCashedOutState(entity: CrashGame): void {
+        const gameState = entity.get(GameStateComp);
+        const stateKey = `cashedout_${gameState.startTime}`;
+        
+        // 防止重复处理同一次游戏的提现状态
+        if (this.processedStates.has(stateKey)) {
+            return;
+        }
+        this.processedStates.add(stateKey);
+        
         // 播放成功提现动画，结算收益
-        // console.log("Game cashed out - playing success sound");
-        // TODO: 添加实际的音频资源后启用
-        // oops.audio.playEffect("game/audio/cash_out_success");
+        console.log("CrashGameSystem: Game cashed out - processing cashout state");
         
         const betting = entity.get(BettingComp);
+        console.log(`CrashGameSystem: handleCashedOutState - autoCashOutEnabled: ${betting.autoCashOutEnabled}`);
+        
         if (betting.autoCashOutEnabled) {
             // 增加自动下注计数
             betting.incrementAutoCashOutBets();
             
             // 如果自动下注仍然启用，延迟重置游戏继续下注
             if (betting.autoCashOutEnabled) {
+                console.log(`CrashGameSystem: Scheduling auto restart after cashout`);
                 this.scheduleAutoRestart(entity);
+            } else {
+                console.log(`CrashGameSystem: Auto betting disabled after cashout, not restarting`);
             }
+        } else {
+            console.log(`CrashGameSystem: Auto betting not enabled, not restarting`);
         }
     }
 
@@ -142,12 +188,27 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
     }
 
     private scheduleAutoRestart(entity: CrashGame): void {
-        // 延迟2秒后重置游戏，让玩家看到结果
+        // 延迟4秒后重置游戏，等待游戏结果界面的3秒倒计时完成
+        console.log(`CrashGameSystem: scheduleAutoRestart called, setting timeout for 4 seconds`);
         setTimeout(() => {
+            console.log(`CrashGameSystem: Auto restart timeout fired, resetting game`);
+            
             const gameState = entity.get(GameStateComp);
             const betting = entity.get(BettingComp);
             const multiplier = entity.get(MultiplierComp);
             const localData = entity.get(LocalDataComp);
+            
+            // 检查自动下注是否仍然启用
+            if (!betting.autoCashOutEnabled) {
+                console.log(`CrashGameSystem: Auto betting disabled, not restarting`);
+                return;
+            }
+            
+            console.log(`CrashGameSystem: Current game state before reset: ${gameState.state}`);
+            console.log(`CrashGameSystem: Auto cashout still enabled: ${betting.autoCashOutEnabled}`);
+            
+            // 清理已处理状态的记录
+            this.processedStates.clear();
             
             // 重置游戏状态回到等待状态，以便自动开始下一轮
             gameState.state = GameState.WAITING;
@@ -164,7 +225,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             betting.betAmount = 0;
             betting.isHolding = false;
             
-            console.log(`Auto bet: Game reset for next round. Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
-        }, 2000);
+            console.log(`CrashGameSystem: Game reset complete. State: ${gameState.state}, Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
+        }, 4000);
     }
 }

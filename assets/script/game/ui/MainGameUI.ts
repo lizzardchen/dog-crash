@@ -1169,7 +1169,11 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         if (betting) {
             betting.setAutoCashOut(true, multiplier, totalBets);
-            console.log(`Started auto cashout: ${multiplier}x, ${totalBets === -1 ? 'infinite' : totalBets} bets`);
+            console.log(`MainGameUI: Started auto cashout: ${multiplier}x, ${totalBets === -1 ? 'infinite' : totalBets} bets`);
+            
+            // 验证设置是否正确
+            const status = betting.getAutoCashOutStatus();
+            console.log(`MainGameUI: Auto cashout status after setting:`, status);
 
             // 更新按钮状态
             this.updateAutoBetButtonState();
