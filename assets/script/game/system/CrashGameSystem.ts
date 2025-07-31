@@ -5,6 +5,7 @@ import { GameStateComp, GameState } from "../comp/GameStateComp";
 import { BettingComp } from "../comp/BettingComp";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
+import { EnergyComp } from "../comp/EnergyComp";
 
 @ecs.register('CrashGameSystem')
 export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
@@ -14,13 +15,19 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
     private autoRestartDelay: number = 4000; // 4秒延迟
     
     filter(): ecs.IMatcher {
-        return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp);
+        return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp, EnergyComp);
     }
 
     update(entity: CrashGame): void {
         const gameState = entity.get(GameStateComp);
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
+        const energy = entity.get(EnergyComp);
+
+        // 定期检查能源自动恢复
+        if (energy) {
+            energy.checkAutoRecovery();
+        }
 
         // 处理自动重启计时器
         this.handleAutoRestartTimer(entity);
@@ -78,8 +85,8 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             
             console.log(`CrashGameSystem: Starting auto bet with amount: ${betAmount}, free: ${isFreeMode}`);
             
-            // 验证下注金额
-            if (this.validateBetAmount(betAmount, isFreeMode, betting)) {
+            // 验证下注金额和能源
+            if (this.validateBetAmount(betAmount, isFreeMode, betting) && this.validateAndConsumeEnergy(entity)) {
                 betting.betAmount = betAmount;
                 betting.isHolding = true;
                 gameState.state = GameState.FLYING;
@@ -89,7 +96,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                 console.log(`CrashGameSystem: Auto bet started: ${betAmount} (free: ${isFreeMode})`);
                 oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
             } else {
-                console.log(`CrashGameSystem: Auto bet validation failed`);
+                console.log(`CrashGameSystem: Auto bet validation failed (insufficient balance or energy)`);
                 // 如果验证失败，禁用自动下注
                 betting.setAutoCashOut(false);
             }
@@ -110,6 +117,10 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             multiplier.cashOutMultiplier = multiplier.currentMultiplier;
             
             console.log(`Auto cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x`);
+            
+            // 游戏成功：退还能源
+            this.refundEnergy(entity);
+            
             oops.message.dispatchEvent("GAME_CASHED_OUT", { cashOutMultiplier: multiplier.cashOutMultiplier });
         }
     }
@@ -257,6 +268,33 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             console.log("CrashGameSystem: Cancelling auto restart timer");
             this.autoRestartTimer = 0;
             this.autoRestartStartTime = 0;
+        }
+    }
+
+    /**
+     * 验证并消耗能源
+     * @param entity 游戏实体
+     * @returns 是否成功消耗能源
+     */
+    private validateAndConsumeEnergy(entity: CrashGame): boolean {
+        const energy = entity.get(EnergyComp);
+        if (energy) {
+            return energy.consumeEnergy(1);
+        }
+        
+        console.warn("CrashGameSystem: EnergyComp not found");
+        return false;
+    }
+
+    /**
+     * 退还能源（游戏成功时调用）
+     * @param entity 游戏实体
+     */
+    private refundEnergy(entity: CrashGame): void {
+        const energy = entity.get(EnergyComp);
+        if (energy) {
+            energy.recoverEnergy(1, "refund");
+            console.log("CrashGameSystem: Energy refunded (game won)");
         }
     }
 }

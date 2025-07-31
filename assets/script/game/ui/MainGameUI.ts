@@ -7,6 +7,7 @@ import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
 import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
 import { GameHistoryComp } from "../comp/GameHistoryComp";
+import { EnergyComp } from "../comp/EnergyComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { smc } from "../common/SingletonModuleComp";
@@ -55,6 +56,12 @@ export class MainGameUI extends CCComp {
 
     @property(Button)
     autoBetButton: Button = null!;
+
+    @property(Button)
+    energyButton: Button = null!;
+
+    @property(Label)
+    energyLabel: Label = null!;
 
     @property(Node)
     betPanel: Node = null!;
@@ -146,6 +153,12 @@ export class MainGameUI extends CCComp {
         const gameHistory = smc.crashGame.get(GameHistoryComp);
         if (gameHistory && localData) {
             gameHistory.initializeHistory(localData);
+        }
+
+        // 初始化能源系统
+        const energy = smc.crashGame.get(EnergyComp);
+        if (energy) {
+            energy.init();
         }
 
         // 初始化场景管理系统
@@ -280,10 +293,16 @@ export class MainGameUI extends CCComp {
             this.autoBetButton.node.on(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
         }
 
+        // 能源按钮事件
+        if (this.energyButton) {
+            this.energyButton.node.on(Button.EventType.CLICK, this.onEnergyButtonClick, this);
+        }
+
         // 监听游戏事件
         oops.message.on("GAME_CRASHED", this.onGameCrashed, this);
         oops.message.on("GAME_CASHED_OUT", this.onGameCashedOut, this);
         oops.message.on("GAME_STARTED", this.onGameStarted, this);
+        oops.message.on("ENERGY_CHANGED", this.onEnergyChanged, this);
         oops.message.on("SCENE_CHANGED", this.onSceneChanged, this);
     }
 
@@ -307,6 +326,13 @@ export class MainGameUI extends CCComp {
             const isFreeMode = betting.currentBetItem.isFree;
 
             if (this.validateBetAmount(betAmount, isFreeMode)) {
+                // 检查并消耗能源（每局游戏都消耗1个能源）
+                if (!this.consumeEnergy(1)) {
+                    console.warn("Not enough energy to start game");
+                    // TODO: 显示能源不足提示
+                    return;
+                }
+
                 CrashGameAudio.playButtonClick();
 
                 betting.betAmount = betAmount;
@@ -414,6 +440,11 @@ export class MainGameUI extends CCComp {
 
         console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x, won: ${winAmount.toFixed(0)} (free: ${betting.currentBetItem.isFree})`);
 
+        // 游戏成功：退还消耗的能源
+        if (this.refundEnergy(1)) {
+            console.log("Game won - energy refunded");
+        }
+
         // 延迟显示成功结果弹窗
         this.scheduleOnce(() => {
             this.showGameResult({
@@ -440,6 +471,9 @@ export class MainGameUI extends CCComp {
             betting.balance -= betting.betAmount;
             loss = betting.betAmount;
         }
+
+        // 游戏失败：能源已消耗，不退还
+        console.log("Game crashed - energy consumed (not refunded)");
 
         CrashGameAudio.playCrashExplosion();
 
@@ -487,6 +521,11 @@ export class MainGameUI extends CCComp {
         } else {
             profit = winAmount - betting.betAmount;
             betting.balance += profit; // 正常模式加净收益
+        }
+
+        // 游戏成功：退还消耗的能源
+        if (this.refundEnergy(1)) {
+            console.log("Game won - energy refunded");
         }
 
         // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
@@ -886,6 +925,9 @@ export class MainGameUI extends CCComp {
 
         // 更新AutoBet按钮状态
         this.updateAutoBetButtonState();
+
+        // 更新能源显示
+        this.updateEnergyDisplay();
     }
 
     private updatePotentialWin(): void {
@@ -991,7 +1033,13 @@ export class MainGameUI extends CCComp {
         oops.message.off("GAME_CRASHED", this.onGameCrashed, this);
         oops.message.off("GAME_CASHED_OUT", this.onGameCashedOut, this);
         oops.message.off("GAME_STARTED", this.onGameStarted, this);
+        oops.message.off("ENERGY_CHANGED", this.onEnergyChanged, this);
         oops.message.off("SCENE_CHANGED", this.onSceneChanged, this);
+
+        // 清理能源按钮事件
+        if (this.energyButton) {
+            this.energyButton.node.off(Button.EventType.CLICK, this.onEnergyButtonClick, this);
+        }
 
         // 清理按钮事件监听
         if (this.holdButton) {
@@ -1265,8 +1313,102 @@ export class MainGameUI extends CCComp {
                 }
             }
         }
+        // console.log(`Updated auto bet button state: ${status.enabled ? 'ON' : 'OFF'}`);
+    }
 
-        console.log(`Updated auto bet button state: ${status.enabled ? 'ON' : 'OFF'}`);
+    /**
+     * 能源按钮点击事件
+     */
+    private onEnergyButtonClick(): void {
+        if (!smc.crashGame) return;
+
+        CrashGameAudio.playButtonClick();
+        
+        const energy = smc.crashGame.get(EnergyComp);
+        if (energy) {
+            const status = energy.getEnergyStatus();
+            
+            if (status.canRecover) {
+                // 显示观看广告恢复能源的提示或直接恢复
+                console.log(`Energy recovery available. Current: ${status.current}/${status.max}`);
+                
+                // 这里可以集成广告系统，暂时直接恢复
+                energy.recoverEnergyByAd();
+                
+                // TODO: 集成真实的广告系统
+                // this.showAdForEnergyRecovery();
+            } else {
+                console.log("Energy is already full");
+                // TODO: 显示能源已满的提示
+            }
+        }
+    }
+
+    /**
+     * 能源状态改变事件
+     */
+    private onEnergyChanged(data: any): void {
+        this.updateEnergyDisplay();
+        console.log(`Energy changed: ${data.current}/${data.max}`);
+    }
+
+    /**
+     * 更新能源显示
+     */
+    private updateEnergyDisplay(): void {
+        if (!smc.crashGame || !this.energyLabel) return;
+
+        const energy = smc.crashGame.get(EnergyComp);
+        if (energy) {
+            const status = energy.getEnergyStatus();
+            this.energyLabel.string = `${status.current}/${status.max}`;
+            
+            // 更新能源按钮的可用状态
+            if (this.energyButton) {
+                this.energyButton.interactable = status.canRecover;
+                
+                // 根据能源状态设置按钮颜色
+                const sprite = this.energyButton.node.getComponent(Sprite);
+                if (sprite) {
+                    if (status.canRecover) {
+                        sprite.color = new Color(255, 255, 0, 255); // 黄色 - 可恢复
+                    } else {
+                        sprite.color = new Color(255, 255, 255, 255); // 白色 - 已满
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 检查并消耗能源
+     * @param amount 消耗的能源数量，默认为1
+     * @returns 是否成功消耗
+     */
+    private consumeEnergy(amount: number = 1): boolean {
+        if (!smc.crashGame) return false;
+
+        const energy = smc.crashGame.get(EnergyComp);
+        if (energy) {
+            return energy.consumeEnergy(amount);
+        }
+        return false;
+    }
+
+    /**
+     * 退还能源（游戏成功时调用）
+     * @param amount 退还的能源数量，默认为1
+     * @returns 是否成功退还
+     */
+    private refundEnergy(amount: number = 1): boolean {
+        if (!smc.crashGame) return false;
+
+        const energy = smc.crashGame.get(EnergyComp);
+        if (energy) {
+            energy.recoverEnergy(amount, "refund");
+            return true;
+        }
+        return false;
     }
 
 

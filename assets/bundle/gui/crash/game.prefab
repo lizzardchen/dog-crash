@@ -1395,7 +1395,7 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 21.211,
+      "x": 24.451,
       "y": 546.651,
       "z": 0
     },
@@ -1486,8 +1486,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 146.71875,
-      "height": 100.8
+      "width": 200,
+      "height": 100
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1525,11 +1525,11 @@
     "_string": "Gas",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 80,
-    "_fontSize": 80,
+    "_actualFontSize": 50,
+    "_fontSize": 50,
     "_fontFamily": "Arial",
     "_lineHeight": 80,
-    "_overflow": 0,
+    "_overflow": 1,
     "_enableWrapText": false,
     "_font": null,
     "_isSystemFontUsed": true,
@@ -1595,7 +1595,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 200,
+      "width": 206.48,
       "height": 200
     },
     "_anchorPoint": {
@@ -6420,6 +6420,12 @@
     },
     "autoBetButton": {
       "__id__": 123
+    },
+    "energyButton": {
+      "__id__": 61
+    },
+    "energyLabel": {
+      "__id__": 54
     },
     "betPanel": {
       "__id__": 77

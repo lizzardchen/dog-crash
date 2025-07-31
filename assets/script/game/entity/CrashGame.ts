@@ -7,6 +7,7 @@ import { LocalDataComp } from "../comp/LocalDataComp";
 import { GameHistoryComp } from "../comp/GameHistoryComp";
 import { SceneBackgroundComp } from "../comp/SceneBackgroundComp";
 import { RocketViewComp } from "../comp/RocketViewComp";
+import { EnergyComp } from "../comp/EnergyComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { MultiplierConfig } from "../config/MultiplierConfig";
 
@@ -21,6 +22,7 @@ export class CrashGame extends ecs.Entity {
         this.add(GameHistoryComp);
         this.add(RocketViewComp);
         this.add(SceneBackgroundComp);
+        this.add(EnergyComp);
         // 初始化音频系统
         CrashGameAudio.init();
     }
