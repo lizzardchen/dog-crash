@@ -161,26 +161,50 @@ userSchema.methods.hasEnoughBalance = function(amount) {
 
 // 静态方法 - 根据userId查找或创建用户
 userSchema.statics.findOrCreate = async function(userId) {
-    let user = await this.findOne({ userId });
-    
-    if (!user) {
-        user = new this({
-            userId,
-            username: `Player_${userId.substring(0, 8)}`,
-            balance: 1000,
-            createdAt: new Date(),
-            lastLoginAt: new Date(),
-            isActive: true
-        });
-        await user.save();
-        console.log(`Created new user: ${userId}`);
-    } else {
-        // 更新最后登录时间
-        await user.updateLastLogin();
-        console.log(`User logged in: ${userId}`);
+    try {
+        // 使用findOneAndUpdate的upsert选项，原子性地查找或创建用户
+        const user = await this.findOneAndUpdate(
+            { userId },
+            {
+                $setOnInsert: {
+                    userId,
+                    username: `Player_${userId.substring(0, 8)}`,
+                    balance: 1000,
+                    totalFlights: 0,
+                    flightsWon: 0,
+                    highestMultiplier: 1,
+                    highestBetAmount: 0,
+                    highestWinAmount: 0,
+                    isActive: true,
+                    createdAt: new Date()
+                },
+                $set: {
+                    lastLoginAt: new Date(),
+                    lastSyncTime: new Date()
+                }
+            },
+            {
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert: true
+            }
+        );
+        
+        console.log(`User handled: ${userId}`);
+        return user;
+        
+    } catch (error) {
+        // 如果是重复键错误，重试查找
+        if (error.code === 11000) {
+            console.log(`Duplicate key detected for user ${userId}, retrying...`);
+            const user = await this.findOne({ userId });
+            if (user) {
+                await user.updateLastLogin();
+                return user;
+            }
+        }
+        throw error;
     }
-    
-    return user;
 };
 
 // 静态方法 - 获取排行榜

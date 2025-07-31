@@ -6,6 +6,7 @@ import { BettingComp } from "../comp/BettingComp";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
 import { EnergyComp } from "../comp/EnergyComp";
+import { UserDataComp } from "../comp/UserDataComp";
 
 @ecs.register('CrashGameSystem')
 export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
@@ -15,7 +16,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
     private autoRestartDelay: number = 4000; // 4秒延迟
     
     filter(): ecs.IMatcher {
-        return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp, EnergyComp);
+        return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp, EnergyComp, UserDataComp);
     }
 
     update(entity: CrashGame): void {
@@ -139,6 +140,12 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         console.log("CrashGameSystem: Game crashed - processing crash state");
         
         const betting = entity.get(BettingComp);
+        const multiplier = entity.get(MultiplierComp);
+        const localData = entity.get(LocalDataComp);
+        
+        // 上传游戏结果到服务器
+        this.uploadGameResult(entity, false, multiplier.currentMultiplier, 0);
+        
         console.log(`CrashGameSystem: handleCrashedState - autoCashOutEnabled: ${betting.autoCashOutEnabled}`);
         
         if (betting.autoCashOutEnabled) {
@@ -167,6 +174,14 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         console.log("CrashGameSystem: Game cashed out - processing cashout state");
         
         const betting = entity.get(BettingComp);
+        const multiplier = entity.get(MultiplierComp);
+        
+        // 计算奖金
+        const winAmount = betting.betAmount * multiplier.cashOutMultiplier;
+        
+        // 上传游戏结果到服务器
+        this.uploadGameResult(entity, true, multiplier.cashOutMultiplier, winAmount);
+        
         console.log(`CrashGameSystem: handleCashedOutState - autoCashOutEnabled: ${betting.autoCashOutEnabled}`);
         
         if (betting.autoCashOutEnabled) {
@@ -295,6 +310,49 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         if (energy) {
             energy.recoverEnergy(1, "refund");
             console.log("CrashGameSystem: Energy refunded (game won)");
+        }
+    }
+
+    /**
+     * 上传游戏结果到服务器
+     * @param entity 游戏实体
+     * @param isWin 是否获胜
+     * @param crashMultiplier 崩盘倍数
+     * @param winAmount 奖金
+     */
+    private async uploadGameResult(entity: CrashGame, isWin: boolean, crashMultiplier: number, winAmount: number): Promise<void> {
+        const betting = entity.get(BettingComp);
+        const gameState = entity.get(GameStateComp);
+        const userDataComp = entity.get(UserDataComp);
+        
+        if (!betting || !gameState || !userDataComp) {
+            console.warn("CrashGameSystem: Missing components for game result upload");
+            return;
+        }
+
+        // 更新本地用户数据
+        userDataComp.updateGameStats(betting.betAmount, crashMultiplier, winAmount, isWin);
+
+        // 准备游戏结果数据
+        const gameResult = {
+            betAmount: betting.betAmount,
+            crashMultiplier: crashMultiplier,
+            winAmount: winAmount,
+            isWin: isWin,
+            duration: Date.now() - gameState.startTime,
+            isFreeMode: betting.currentBetItem.isFree
+        };
+
+        // 上传到服务器
+        try {
+            const success = await entity.uploadGameRecord(gameResult);
+            if (success) {
+                console.log("CrashGameSystem: Game result uploaded successfully");
+            } else {
+                console.log("CrashGameSystem: Game result saved locally (offline mode)");
+            }
+        } catch (error) {
+            console.error("CrashGameSystem: Failed to upload game result:", error);
         }
     }
 }
