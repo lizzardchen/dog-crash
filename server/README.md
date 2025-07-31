@@ -39,7 +39,7 @@ cp .env.example .env
 ```env
 PORT=3000
 NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/dog-crash-game
+MONGODB_URI=mongodb://dogcrash:5hRPJyResaF75MPh@124.223.21.118:27017/dogcrash
 ALLOWED_ORIGINS=http://localhost:7456,http://127.0.0.1:7456
 ```
 
@@ -264,7 +264,7 @@ server/
 |--------|------|--------|
 | `PORT` | 服务器端口 | `3000` |
 | `NODE_ENV` | 运行环境 | `development` |
-| `MONGODB_URI` | MongoDB连接字符串 | `mongodb://localhost:27017/dog-crash-game` |
+| `MONGODB_URI` | MongoDB连接字符串 | `mongodb://dogcrash:5hRPJyResaF75MPh@124.223.21.118:27017/dogcrash` |
 | `ALLOWED_ORIGINS` | 允许的CORS源 | `http://localhost:7456` |
 
 ### 测试
@@ -282,7 +282,7 @@ npm test
 ```bash
 export NODE_ENV=production
 export PORT=3000
-export MONGODB_URI=mongodb://your-mongo-host:27017/dog-crash-game
+export MONGODB_URI=mongodb://dogcrash:5hRPJyResaF75MPh@124.223.21.118:27017/dogcrash
 ```
 
 2. 启动服务器：

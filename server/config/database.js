@@ -3,13 +3,13 @@ require('dotenv').config();
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/dog-crash-game', {
+        const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://dogcrash:5hRPJyResaF75MPh@124.223.21.118:27017/dogcrash', {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
 
         console.log(`MongoDB Connected: ${conn.connection.host}`);
-        
+
         // 监听连接事件
         mongoose.connection.on('connected', () => {
             console.log('Mongoose connected to MongoDB');
