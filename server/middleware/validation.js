@@ -74,9 +74,11 @@ const strictRateLimit = createRateLimit({
 const userActionRateLimit = createRateLimit({
     windowMs: 1 * 60 * 1000, // 1分钟
     max: 30, // 每分钟最多30个请求
-    keyGenerator: (req) => {
-        // 根据用户ID和IP进行限制
-        return `${req.params.userId || 'anonymous'}_${req.ip}`;
+    keyGenerator: (req, res) => {
+        // 根据用户ID和IP进行限制，支持IPv6
+        const rateLimit = require('express-rate-limit');
+        const ip = rateLimit.ipKeyGenerator(req, res);
+        return `${req.params.userId || 'anonymous'}_${ip}`;
     }
 });
 
