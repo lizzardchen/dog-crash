@@ -318,6 +318,7 @@ class GameSessionCache {
         return {
             topLeaderboard: topLeaderboard,
             userRank: userData.rank,
+            userDisplayRank: userData.displayRank,
             userNetProfit: userData.netProfit,
             userSessionCount: userData.sessionCount,
             userContribution: userData.contributionToPool,
@@ -360,9 +361,15 @@ class GameSessionCache {
             const finalRank = positiveParticipants.length + userZeroRank;
             const totalParticipants = allParticipants.length + 1; // +1是当前用户
             
+            // 如果排名超过1000，给一个1000+的随机排名供客户端显示
+            const displayRank = finalRank > 1000 ? 
+                Math.floor(Math.random() * 9000) + 1001 : // 1001-10000随机
+                finalRank;
+            
             return {
                 ...userDefaultData,
                 rank: finalRank,
+                displayRank: displayRank,
                 totalParticipants: totalParticipants
             };
         }
@@ -381,9 +388,15 @@ class GameSessionCache {
         
         const rank = sortedParticipants.findIndex(p => p.userId === userId) + 1;
         
+        // 如果排名超过1000，给一个1000+的随机排名供客户端显示
+        const displayRank = rank > 1000 ? 
+            Math.floor(Math.random() * 9000) + 1001 : // 1001-10000随机
+            rank;
+        
         return {
             ...userData,
             rank: rank,
+            displayRank: displayRank,
             totalParticipants: allParticipants.length
         };
     }
