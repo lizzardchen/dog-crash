@@ -7,6 +7,11 @@ const gameSessionSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
+    raceId: {
+        type: String,
+        required: true,
+        index: true
+    },
     userId: {
         type: String,
         required: true,
@@ -68,6 +73,8 @@ const gameSessionSchema = new mongoose.Schema({
 // 索引
 gameSessionSchema.index({ userId: 1, createdAt: -1 });
 gameSessionSchema.index({ sessionId: 1 }, { unique: true });
+gameSessionSchema.index({ raceId: 1, userId: 1 }); // 比赛相关索引
+gameSessionSchema.index({ raceId: 1, createdAt: -1 }); // 按比赛时间查询
 gameSessionSchema.index({ gameStartTime: -1 });
 gameSessionSchema.index({ crashMultiplier: -1 });
 gameSessionSchema.index({ isWin: 1 });

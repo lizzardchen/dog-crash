@@ -10,11 +10,15 @@ const config = require('./config/server');
 // 路由导入
 const userRoutes = require('./routes/user');
 const gameRoutes = require('./routes/game');
+const raceRoutes = require('./routes/race');
 
 // 中间件导入
 const errorHandler = require('./middleware/errorHandler');
 const validation = require('./middleware/validation');
 const customBodyParser = require('./middleware/bodyParser');
+
+// 服务导入
+const raceManager = require('./services/raceManager');
 
 const app = express();
 
@@ -47,6 +51,7 @@ app.get('/health', (req, res) => {
 // API路由
 app.use(`${config.api.prefix}/user`, userRoutes);
 app.use(`${config.api.prefix}/game`, gameRoutes);
+app.use(`${config.api.prefix}/race`, raceRoutes);
 
 // 404处理
 app.use('*', (req, res) => {
