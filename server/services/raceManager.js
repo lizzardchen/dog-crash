@@ -100,7 +100,7 @@ class RaceManager {
     }
     
     /**
-     * 启动比赛定时器系统
+     * 启动比赛定时器系统（仅用作备份，正常情况下race结束会立即开始下一个）
      */
     startRaceTimer() {
         // 防止重复设置定时器
@@ -108,12 +108,17 @@ class RaceManager {
             clearInterval(this.raceTimer);
         }
         
-        // 设置定时器，每4小时启动新比赛
+        // 设置备份定时器，防止race意外中断导致无法自动开始下一个
+        // 这个定时器应该很少被触发，因为正常情况下race结束会立即开始下一个
         this.raceTimer = setInterval(() => {
-            this.startNewRace();
+            // 检查是否真的需要开始新race
+            if (!this.currentRace || this.getCurrentRace().remainingTime <= 0) {
+                console.log('🔄 Backup timer triggered - starting new race...');
+                this.startNewRace();
+            }
         }, this.config.raceInterval);
         
-        console.log(`🔄 Race timer started - new race every ${this.config.raceInterval / 1000 / 60 / 60} hours`);
+        console.log(`🔄 Backup race timer started - checks every ${this.config.raceInterval / 1000 / 60 / 60} hours`);
     }
     
     /**
@@ -232,6 +237,10 @@ class RaceManager {
             if (this.currentRace && this.currentRace.raceId === raceId) {
                 this.currentRace = null;
             }
+            
+            // 立即开始下一个比赛
+            console.log('🚀 Starting next race immediately...');
+            this.startNewRace();
             
         } catch (error) {
             console.error(`Error ending race ${raceId}:`, error);

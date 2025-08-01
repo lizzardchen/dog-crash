@@ -17,6 +17,7 @@ import { SceneScriptComp } from '../scene/SceneScriptComp';
 import { UIID } from "../common/config/GameUIConfig";
 import { GameResultUI, GameResultParams } from "./GameResultUI";
 import { AutoCashOutUI, AutoCashOutParams } from "./AutoCashOutUI";
+import { RaceUI } from "./RaceUI";
 import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets/core/gui/layer/Defines";
 
 const { ccclass, property } = _decorator;
@@ -63,6 +64,12 @@ export class MainGameUI extends CCComp {
     @property(Label)
     energyLabel: Label = null!;
 
+    @property(Button)
+    raceButton: Button = null!;
+
+    @property(Label)
+    raceCountdownLabel: Label = null!;
+
     @property(Node)
     betPanel: Node = null!;
 
@@ -89,6 +96,8 @@ export class MainGameUI extends CCComp {
     sceneConfigs: SceneData[] = [];
 
     private isBetPanelVisible: boolean = false;
+    private raceUpdateTimer: number = 0;
+    private readonly RACE_UPDATE_INTERVAL = 10000; // 10秒更新一次
 
     /**
      * 将数值转换为短文本格式
@@ -128,6 +137,9 @@ export class MainGameUI extends CCComp {
 
         // 初始化UI显示
         this.updateUI();
+        
+        // 初始化比赛倒计时显示
+        this.updateRaceCountdownDisplay();
     }
 
     private initGameData(): void {
@@ -291,6 +303,11 @@ export class MainGameUI extends CCComp {
         // 能源按钮事件
         if (this.energyButton) {
             this.energyButton.node.on(Button.EventType.CLICK, this.onEnergyButtonClick, this);
+        }
+
+        // 比赛按钮事件
+        if (this.raceButton) {
+            this.raceButton.node.on(Button.EventType.CLICK, this.onRaceButtonClick, this);
         }
 
         // 监听游戏事件
@@ -926,6 +943,9 @@ export class MainGameUI extends CCComp {
 
         // 更新能源显示
         this.updateEnergyDisplay();
+        
+        // 更新比赛倒计时显示
+        this.updateRaceCountdownDisplay();
     }
 
     private updatePotentialWin(): void {
@@ -1023,6 +1043,13 @@ export class MainGameUI extends CCComp {
                 this.updateSceneScrollSpeed(speedMultiplier);
             }
         }
+        
+        // 定期更新比赛倒计时
+        this.raceUpdateTimer += _deltaTime * 1000;
+        if (this.raceUpdateTimer >= this.RACE_UPDATE_INTERVAL) {
+            this.raceUpdateTimer = 0;
+            this.fetchAndUpdateRaceCountdown();
+        }
     }
 
     onDestroy() {
@@ -1036,6 +1063,11 @@ export class MainGameUI extends CCComp {
         // 清理能源按钮事件
         if (this.energyButton) {
             this.energyButton.node.off(Button.EventType.CLICK, this.onEnergyButtonClick, this);
+        }
+
+        // 清理比赛按钮事件
+        if (this.raceButton) {
+            this.raceButton.node.off(Button.EventType.CLICK, this.onRaceButtonClick, this);
         }
 
         // 清理按钮事件监听
@@ -1258,6 +1290,35 @@ export class MainGameUI extends CCComp {
     }
 
     /**
+     * 显示比赛界面
+     */
+    private showRaceUI(): void {
+        console.log("Showing race UI");
+
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node | null, params: any) => {
+                if (!node) {
+                    console.error("RaceUI node is null");
+                    return;
+                }
+                
+                const raceUI = node.getComponent(RaceUI);
+                if (raceUI) {
+                    // RaceUI不需要参数，直接初始化
+                    console.log("RaceUI component loaded successfully");
+                } else {
+                    console.error("Failed to get RaceUI component");
+                }
+            },
+            onRemoved: (node: Node | null, params: any) => {
+                console.log("RaceUI closed");
+            }
+        };
+
+        oops.gui.open(UIID.Race, null, callbacks);
+    }
+
+    /**
      * 开始自动提现
      * @param multiplier 自动提现倍数
      * @param totalBets 总下注次数
@@ -1339,6 +1400,71 @@ export class MainGameUI extends CCComp {
                 // TODO: 显示能源已满的提示
             }
         }
+    }
+
+    /**
+     * 比赛按钮点击事件
+     */
+    private onRaceButtonClick(): void {
+        CrashGameAudio.playButtonClick();
+        console.log("Race button clicked - opening race UI");
+        
+        this.showRaceUI();
+    }
+    
+    /**
+     * 获取并更新比赛倒计时
+     */
+    private async fetchAndUpdateRaceCountdown(): Promise<void> {
+        try {
+            const response = await fetch('http://localhost:3000/api/race/current');
+            const data = await response.json();
+            
+            if (data.success && data.data.hasActiveRace) {
+                const remainingTime = data.data.race.remainingTime;
+                this.updateRaceCountdownDisplay(remainingTime);
+            } else {
+                this.updateRaceCountdownDisplay(0);
+            }
+        } catch (error) {
+            console.error('Failed to fetch race countdown:', error);
+            this.updateRaceCountdownDisplay(0);
+        }
+    }
+    
+    /**
+     * 更新比赛倒计时显示
+     */
+    private updateRaceCountdownDisplay(remainingTime?: number): void {
+        if (!this.raceCountdownLabel) return;
+        
+        if (remainingTime !== undefined) {
+            if (remainingTime > 0) {
+                const timeText = this.formatRaceRemainingTime(remainingTime);
+                this.raceCountdownLabel.string = timeText;
+                this.raceCountdownLabel.node.active = true;
+            } else {
+                this.raceCountdownLabel.string = "No Race";
+                this.raceCountdownLabel.node.active = true;
+            }
+        } else {
+            // 初始化时获取一次数据
+            this.fetchAndUpdateRaceCountdown();
+        }
+    }
+    
+    /**
+     * 格式化比赛剩余时间显示
+     */
+    private formatRaceRemainingTime(milliseconds: number): string {
+        if (milliseconds <= 0) return "00:00:00";
+        
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
     /**

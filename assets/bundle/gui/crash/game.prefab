@@ -6805,6 +6805,12 @@
     "energyLabel": {
       "__id__": 54
     },
+    "raceButton": {
+      "__id__": 137
+    },
+    "raceCountdownLabel": {
+      "__id__": 130
+    },
     "betPanel": {
       "__id__": 77
     },

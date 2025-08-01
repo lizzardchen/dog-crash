@@ -90,6 +90,7 @@ router.get('/:raceId/leaderboard', [
                     topLeaderboard: leaderboardData.topLeaderboard,
                     userInfo: {
                         rank: leaderboardData.userRank,
+                        displayRank: leaderboardData.userDisplayRank,
                         netProfit: leaderboardData.userNetProfit,
                         sessionCount: leaderboardData.userSessionCount,
                         contribution: leaderboardData.userContribution
