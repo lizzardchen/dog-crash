@@ -1,5 +1,6 @@
 import { _decorator } from 'cc';
 import { RocketSceneState } from "../comp/RocketViewComp";
+import { oops }  from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 
 const { ccclass, property } = _decorator;
 
@@ -95,21 +96,48 @@ export class MultiplierConfig {
     /** 当前使用的崩盘概率配置 */
     private static currentCrashConfig: CrashProbabilityConfig[] = MultiplierConfig.DEFAULT_CRASH_PROBABILITY;
 
-    /** 初始化倍率配置（可从服务器加载） */
-    static async initialize(serverConfig?: any): Promise<void> {
-        if (serverConfig) {
-            // 从服务器配置更新
-            if (serverConfig.curveConfig) {
-                this.currentCurveConfig = serverConfig.curveConfig;
+    /** 初始化倍率配置（从服务器加载） */
+    static async initialize(): Promise<void> {
+        try {
+            // 从服务器获取配置
+            const serverConfig = await this.fetchConfigFromServer();
+            
+            if (serverConfig) {
+                // 从服务器配置更新
+                if (serverConfig.curveConfig) {
+                    this.currentCurveConfig = serverConfig.curveConfig;
+                }
+                if (serverConfig.crashConfig) {
+                    this.currentCrashConfig = serverConfig.crashConfig;
+                }
+                console.log("MultiplierConfig loaded from server", serverConfig);
+            } else {
+                // 使用默认配置
+                console.log("MultiplierConfig using default configuration (server unavailable)");
             }
-            if (serverConfig.crashConfig) {
-                this.currentCrashConfig = serverConfig.crashConfig;
-            }
-            console.log("MultiplierConfig loaded from server");
-        } else {
-            // 使用默认配置
-            console.log("MultiplierConfig using default configuration");
+        } catch (error) {
+            console.error("Failed to initialize MultiplierConfig from server:", error);
+            console.log("MultiplierConfig using default configuration (error fallback)");
         }
+    }
+
+    /** 从服务器获取配置 */
+    private static async fetchConfigFromServer(): Promise<any> {
+        return new Promise((resolve) => {
+            try {
+                oops.http.get(`game/multiplier-config`, (ret) => {
+                    if (ret.isSucc && ret.res && ret.res.data) {
+                        resolve(ret.res.data);
+                    } else {
+                        console.error("Failed to fetch multiplier config from server:", ret.err);
+                        resolve(null);
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching multiplier config:", error);
+                resolve(null);
+            }
+        });
     }
 
     /** 根据时间计算倍率 */

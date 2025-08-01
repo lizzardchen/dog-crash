@@ -2,6 +2,7 @@ import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ec
 import { MultiplierConfig } from "../config/MultiplierConfig";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { CrashRecord } from "./GameHistoryComp";
+import { smc } from "../common/SingletonModuleComp";
 
 @ecs.register('LocalData')
 export class LocalDataComp extends ecs.Comp {
@@ -14,9 +15,30 @@ export class LocalDataComp extends ecs.Comp {
         this.currentCrashMultiplier = 0;
     }
 
-    /** 生成本局游戏的崩盘倍数 */
+    /** 生成本局游戏的崩盘倍数（从服务器获取） */
+    async generateCrashMultiplierAsync(): Promise<number> {
+        try {
+            // 尝试从服务器获取崩盘倍数
+            if (smc.crashGame) {
+                const serverMultiplier = await smc.crashGame.fetchCrashMultiplierFromServer();
+                if (serverMultiplier !== null) {
+                    return serverMultiplier;
+                }
+            }
+            
+            // 服务器获取失败，使用本地生成作为备用方案
+            console.log("Using local crash multiplier generation as fallback");
+            return MultiplierConfig.generateCrashMultiplier();
+        } catch (error) {
+            console.error("Error generating crash multiplier:", error);
+            // 出错时使用本地生成
+            return MultiplierConfig.generateCrashMultiplier();
+        }
+    }
+
+    /** 生成本局游戏的崩盘倍数（同步方法，向后兼容） */
     generateCrashMultiplier(): number {
-        // return 251.0;
+        // 同步方法，只能使用本地生成
         return MultiplierConfig.generateCrashMultiplier();
     }
 

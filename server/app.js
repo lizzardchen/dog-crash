@@ -14,6 +14,7 @@ const gameRoutes = require('./routes/game');
 // 中间件导入
 const errorHandler = require('./middleware/errorHandler');
 const validation = require('./middleware/validation');
+const customBodyParser = require('./middleware/bodyParser');
 
 const app = express();
 
@@ -24,6 +25,11 @@ connectDB();
 app.use(helmet()); // 安全头
 app.use(cors(config.cors)); // CORS
 app.use(morgan('combined')); // 日志
+
+// 自定义body解析中间件（处理客户端HTTP框架的特殊格式）
+app.use(customBodyParser);
+
+// 标准body解析中间件
 app.use(express.json({ limit: '10mb' })); // JSON解析
 app.use(express.urlencoded({ extended: true })); // URL编码解析
 

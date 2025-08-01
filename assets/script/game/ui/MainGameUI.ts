@@ -135,13 +135,8 @@ export class MainGameUI extends CCComp {
             console.error("CrashGame entity not found in smc");
             return;
         }
-
-        // 初始化本地数据
+        // 初始化本地数据组件（不在这里生成崩盘倍率，由游戏系统处理）
         const localData = smc.crashGame.get(LocalDataComp);
-        if (localData && localData.currentCrashMultiplier === 0) {
-            localData.currentCrashMultiplier = localData.generateCrashMultiplier();
-            console.log(`Generated crash multiplier: ${localData.currentCrashMultiplier.toFixed(2)}x`);
-        }
 
         // 初始化下注组件
         const betting = smc.crashGame.get(BettingComp);
@@ -502,7 +497,6 @@ export class MainGameUI extends CCComp {
         if (!smc.crashGame) return;
 
         const betting = smc.crashGame.get(BettingComp);
-        const multiplier = smc.crashGame.get(MultiplierComp);
         const localData = smc.crashGame.get(LocalDataComp);
         const gameHistory = smc.crashGame.get(GameHistoryComp);
 
@@ -579,7 +573,6 @@ export class MainGameUI extends CCComp {
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
-        const localData = smc.crashGame.get(LocalDataComp);
         const sceneComp = smc.crashGame.get(SceneBackgroundComp);
 
         // 重置游戏状态
@@ -588,16 +581,13 @@ export class MainGameUI extends CCComp {
         multiplier.reset();
         sceneComp.reset();
 
-        // 生成新的崩盘倍数
-        localData.currentCrashMultiplier = localData.generateCrashMultiplier();
-
         // 重置场景到地面场景
         this.resetToGroundScene();
 
         this.updateHoldButtonState();
         this.updateUI();
 
-        console.log(`MainGameUI: Game reset, ready for next round. Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
+        console.log(`MainGameUI: Game reset, ready for next round`);
     }
 
     private onBetAmountChanged(): void {
@@ -726,7 +716,6 @@ export class MainGameUI extends CCComp {
     private hideBetPanel(): void {
         if (!this.betPanel) return;
 
-        const startPos = this.betPanel.position.clone();
         const endPos = new Vec3(1000, 0, 0);
 
         // 从左向右滑出动画
@@ -771,7 +760,7 @@ export class MainGameUI extends CCComp {
         }
 
         // 创建下注选项
-        betting.betAmountData.forEach((betItem, index) => {
+        betting.betAmountData.forEach((betItem) => {
             try {
                 const itemNode = instantiate(this.betItemPrefab);
                 itemNode.name = `BetItem_${betItem.display}`;
@@ -852,7 +841,7 @@ export class MainGameUI extends CCComp {
 
         if (containerWidth > viewWidth) {
             const scrollRatio = targetX / (containerWidth - viewWidth);
-            this.betScrollView.scrollToPercentHorizontal(Math.max(0, Math.min(1, scrollRatio)), 0.3);
+            this.betScrollView.scrollToPercentHorizontal(Math.max(0, Math.min(1, scrollRatio)), 0.3, true);
         }
 
         console.log(`Scrolled to bet item: ${betting.currentBetItem.display}`);
@@ -933,7 +922,6 @@ export class MainGameUI extends CCComp {
     private updatePotentialWin(): void {
         if (!smc.crashGame || !this.potentialWinLabel) return;
 
-        const betting = smc.crashGame.get(BettingComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
         const betAmount = this.betAmountInput ? (this.formatValueFromShotText(this.betAmountInput.string) || 0) : 0;
 

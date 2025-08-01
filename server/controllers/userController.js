@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const GameSession = require('../models/GameSession');
 const { validationResult } = require('express-validator');
+const gameSessionCache = require('../services/gameSessionCache');
 
 class UserController {
     /**
@@ -89,22 +90,21 @@ class UserController {
             // 更新游戏统计
             await user.updateGameStats(betAmount, multiplier, winAmount, isWin);
             
-            // 创建游戏会话记录
-            const gameSession = new GameSession({
+            // 添加游戏会话到内存缓存（后台异步保存到数据库）
+            const sessionData = {
                 sessionId: sessionId || `${userId}_${Date.now()}`,
                 userId,
                 betAmount,
                 crashMultiplier: multiplier,
                 cashOutMultiplier: isWin ? multiplier : 0,
                 isWin,
+                winAmount: winAmount || 0,
                 profit: isWin ? (winAmount - betAmount) : -betAmount,
-                gameStartTime: new Date(),
-                gameEndTime: new Date(),
                 gameDuration: gameDuration || 0,
                 isFreeMode: isFreeMode || false
-            });
+            };
             
-            await gameSession.save();
+            const cachedSession = gameSessionCache.addSession(sessionData);
             
             res.status(200).json({
                 success: true,

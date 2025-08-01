@@ -53,7 +53,7 @@ export class CrashGame extends ecs.Entity {
         // 添加Content-Type头
         oops.http.addHeader("Content-Type", "application/json");
         
-        // 初始化倍率配置系统
+        // 从服务器初始化倍率配置系统
         await MultiplierConfig.initialize();
         
         // 初始化用户数据和服务器连接
@@ -318,6 +318,34 @@ export class CrashGame extends ecs.Entity {
             } catch (error) {
                 this.isOnline = false;
                 resolve(false);
+            }
+        });
+    }
+
+    /**
+     * 从服务器获取崩盘倍数
+     */
+    public async fetchCrashMultiplierFromServer(): Promise<number | null> {
+        if (!this.isOnline) {
+            console.log("Offline mode - using local crash multiplier generation");
+            return null;
+        }
+
+        return new Promise((resolve) => {
+            try {
+                oops.http.get(`game/crash-multiplier`, (ret) => {
+                    if (ret.isSucc && ret.res && ret.res.data) {
+                        const crashMultiplier = ret.res.data.crashMultiplier;
+                        console.log(`Received crash multiplier from server: ${crashMultiplier}x`);
+                        resolve(crashMultiplier);
+                    } else {
+                        console.error("Failed to fetch crash multiplier from server:", ret.err);
+                        resolve(null);
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching crash multiplier from server:", error);
+                resolve(null);
             }
         });
     }

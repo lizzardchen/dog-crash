@@ -211,7 +211,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         return true;
     }
 
-    private resetForNextRound(entity: CrashGame): void {
+    private async resetForNextRound(entity: CrashGame): Promise<void> {
         const gameState = entity.get(GameStateComp);
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
@@ -236,8 +236,8 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         // 重置倍数
         multiplier.reset();
 
-        // 生成新的崩盘倍数
-        localData.currentCrashMultiplier = localData.generateCrashMultiplier();
+        // 从服务器生成新的崩盘倍数
+        localData.currentCrashMultiplier = await localData.generateCrashMultiplierAsync();
 
         // 重置下注状态但保持自动下注设置
         betting.betAmount = 0;
@@ -265,7 +265,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                 console.log("CrashGameSystem: Auto restart timer expired, resetting game");
                 this.autoRestartTimer = 0;
                 this.autoRestartStartTime = 0;
-                this.resetForNextRound(entity);
+                this.resetForNextRound(entity); // 异步调用，不等待
             }
         }
     }

@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
         minlength: 3,
         maxlength: 20,
         default: function() {
-            return `Player_${this.userId.substring(0, 8)}`;
+            return `Player_${(this.userId || '').substring(0, 8)}`;
         }
     },
     balance: {
@@ -168,7 +168,7 @@ userSchema.statics.findOrCreate = async function(userId) {
             {
                 $setOnInsert: {
                     userId,
-                    username: `Player_${userId.substring(0, 8)}`,
+                    username: `Player_${(userId || '').substring(0, 8)}`,
                     balance: 1000,
                     totalFlights: 0,
                     flightsWon: 0,
