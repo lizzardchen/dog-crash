@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, query } = require('express-validator');
 const GameSession = require('../models/GameSession');
+const gameSessionCache = require('../services/gameSessionCache');
 const path = require('path');
 const fs = require('fs');
 
@@ -110,17 +111,30 @@ router.get('/crash-multiplier', (req, res) => {
  */
 router.get('/stats', async (req, res) => {
     try {
-        const stats = await GameSession.getGameStats();
-        const recentCrashes = await GameSession.getRecentCrashes(10);
+        // 从内存缓存获取实时统计
+        const stats = gameSessionCache.getGlobalStats();
+        const recentCrashes = gameSessionCache.getRecentCrashes(10);
         
         res.status(200).json({
             success: true,
             data: {
-                stats,
+                stats: {
+                    totalSessions: stats.totalSessions,
+                    winRate: parseFloat(stats.winRate),
+                    totalBetAmount: parseFloat(stats.totalBetAmount),
+                    totalWinAmount: parseFloat(stats.totalWinAmount),
+                    avgMultiplier: parseFloat(stats.avgMultiplier),
+                    maxMultiplier: parseFloat(stats.maxMultiplier)
+                },
                 recentCrashes: recentCrashes.map(crash => ({
-                    multiplier: crash.crashMultiplier,
-                    timestamp: crash.gameStartTime
-                }))
+                    multiplier: crash.multiplier,
+                    timestamp: crash.timestamp,
+                    isWin: crash.isWin
+                })),
+                cacheInfo: {
+                    cacheSize: stats.cacheSize,
+                    pendingSaves: stats.pendingSaves
+                }
             },
             timestamp: new Date().toISOString()
         });
@@ -148,19 +162,34 @@ router.get('/history', [
     try {
         const { limit = 20 } = req.query;
         
-        const history = await GameSession.find({})
-            .sort({ createdAt: -1 })
-            .limit(parseInt(limit))
-            .select('crashMultiplier gameStartTime gameDuration isWin')
-            .lean();
+        // 首先从内存缓存获取最新的记录
+        let history = gameSessionCache.getRecentCrashes(parseInt(limit));
+        
+        // 如果缓存中记录不足，从数据库补充
+        if (history.length < parseInt(limit)) {
+            const dbHistory = await GameSession.find({})
+                .sort({ createdAt: -1 })
+                .limit(parseInt(limit) - history.length)
+                .select('crashMultiplier gameStartTime gameDuration isWin')
+                .lean();
+            
+            const dbHistoryFormatted = dbHistory.map(game => ({
+                multiplier: game.crashMultiplier,
+                timestamp: game.gameStartTime.getTime(),
+                duration: game.gameDuration,
+                isWin: game.isWin
+            }));
+            
+            history = [...history, ...dbHistoryFormatted];
+        }
         
         res.status(200).json({
             success: true,
             data: {
                 history: history.map(game => ({
-                    multiplier: game.crashMultiplier,
-                    timestamp: game.gameStartTime,
-                    duration: game.gameDuration,
+                    multiplier: game.multiplier,
+                    timestamp: game.timestamp,
+                    duration: game.duration || 0,
                     result: game.isWin ? 'win' : 'crash'
                 }))
             }
@@ -171,6 +200,33 @@ router.get('/history', [
         res.status(500).json({
             error: 'Internal Server Error',
             message: 'Failed to get game history'
+        });
+    }
+});
+
+/**
+ * @route   GET /api/game/cache-status
+ * @desc    获取缓存状态（调试用）
+ * @access  Public
+ */
+router.get('/cache-status', (req, res) => {
+    try {
+        const cacheStatus = gameSessionCache.getCacheStatus();
+        const globalStats = gameSessionCache.getGlobalStats();
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                ...cacheStatus,
+                stats: globalStats
+            },
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error getting cache status:', error);
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Failed to get cache status'
         });
     }
 });
@@ -192,7 +248,8 @@ router.get('/config', (req, res) => {
                 autoCashOut: true,
                 leaderboard: true,
                 gameHistory: true,
-                userStats: true
+                userStats: true,
+                memoryCache: true
             }
         }
     });

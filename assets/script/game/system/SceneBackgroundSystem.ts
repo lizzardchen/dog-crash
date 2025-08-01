@@ -57,7 +57,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         }
         this.isInitialized = false;
     }
-    
+
     public InitScenes(entity: CrashGame): void {
         const sceneComp = entity.get(SceneBackgroundComp);
         if (!sceneComp || !sceneComp.sceneConfigs || sceneComp.sceneConfigs.length === 0) {
@@ -65,7 +65,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             return;
         }
 
-         // 确保已初始化
+        // 确保已初始化
         if (!this.isInitialized) {
             this.initializeScenePositions(entity);
         }
@@ -79,7 +79,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         const sceneComp = entity.get(SceneBackgroundComp);
         const gameStateComp = entity.get(GameStateComp);
         const multiplierComp = entity.get(MultiplierComp);
-        
+
 
         if (gameStateComp.state === GameState.FLYING) {
             // 确保已初始化
@@ -367,6 +367,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             const frontOffset = yPosition * 1.1; // 前景层滚动稍快一点
             sceneInstance.frontNode.setPosition(0, frontOffset);
         }
+        console.log("scene instance back node posY: " + sceneInstance.backNode?.position.y);
     }
 
     /** 更新场景可见性 */
@@ -472,8 +473,8 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         console.log(`👁️ Visible scenes: [${visibleScenes.join(', ')}]`);
     }
 
-    private onGameInitialized(eventData:any): void {
-        this.InitScenes(smc.crashGame);   
+    private onGameInitialized(eventData: any): void {
+        this.InitScenes(smc.crashGame);
     }
 
     /** 处理 Rocket 场景状态变化事件 */

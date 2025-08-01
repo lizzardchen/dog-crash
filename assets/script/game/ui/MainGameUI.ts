@@ -315,34 +315,43 @@ export class MainGameUI extends CCComp {
                 betting.setAutoCashOut(false);
                 this.updateAutoBetButtonState();
             }
+            // 检查并消耗能源（每局游戏都消耗1个能源）
+            if (!this.consumeEnergy(1)) {
+                console.warn("Not enough energy to start game");
+                // TODO: 显示能源不足提示
+                oops.gui.toast("Energy not enough!");
+                return;
+            }
 
             // 开始游戏 - 按下按钮时开始
             const betAmount = betting.currentBetItem.value;
             const isFreeMode = betting.currentBetItem.isFree;
 
-            if (this.validateBetAmount(betAmount, isFreeMode)) {
-                // 检查并消耗能源（每局游戏都消耗1个能源）
-                if (!this.consumeEnergy(1)) {
-                    console.warn("Not enough energy to start game");
-                    // TODO: 显示能源不足提示
-                    return;
+            const localData = smc.crashGame.get(LocalDataComp);
+            localData.generateCrashMultiplierAsync().then((remote_mulitplier: number) => {
+                localData.currentCrashMultiplier = remote_mulitplier;
+                if (this.validateBetAmount(betAmount, isFreeMode)) {
+
+
+                    CrashGameAudio.playButtonClick();
+
+                    betting.betAmount = betAmount;
+                    betting.isHolding = true;
+                    gameState.state = GameState.FLYING;
+                    gameState.startTime = Date.now();
+                    multiplier.startTime = Date.now();
+
+                    CrashGameAudio.playDogRocketLaunch();
+                    this.updateHoldButtonState();
+                    this.addButtonPressedEffect();
+
+                    console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
+                    oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
                 }
 
-                CrashGameAudio.playButtonClick();
-
-                betting.betAmount = betAmount;
-                betting.isHolding = true;
-                gameState.state = GameState.FLYING;
-                gameState.startTime = Date.now();
-                multiplier.startTime = Date.now();
-
-                CrashGameAudio.playDogRocketLaunch();
-                this.updateHoldButtonState();
-                this.addButtonPressedEffect();
-
-                console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
-                oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
-            }
+            }).catch((error) => {
+                console.error("Failed to generate crash multiplier", error);
+            });
         }
     }
 
@@ -493,7 +502,7 @@ export class MainGameUI extends CCComp {
 
     private onGameCashedOut(data: any): void {
         console.log("MainGameUI: onGameCashedOut event received", data);
-        
+
         if (!smc.crashGame) return;
 
         const betting = smc.crashGame.get(BettingComp);
@@ -644,7 +653,7 @@ export class MainGameUI extends CCComp {
                 // 当前已启用，关闭自动下注（允许在任何状态下关闭）
                 betting.setAutoCashOut(false);
                 console.log("MainGameUI: Auto bet disabled by user (via AUTO button)");
-                
+
                 // 更新按钮状态
                 this.updateAutoBetButtonState();
             } else {
@@ -653,7 +662,7 @@ export class MainGameUI extends CCComp {
                     console.log("Cannot start auto bet during game - please wait for current game to finish");
                     return;
                 }
-                
+
                 // 显示设置界面
                 this.showAutoCashOutUI();
             }
@@ -1260,7 +1269,7 @@ export class MainGameUI extends CCComp {
         if (betting) {
             betting.setAutoCashOut(true, multiplier, totalBets);
             console.log(`MainGameUI: Started auto cashout: ${multiplier}x, ${totalBets === -1 ? 'infinite' : totalBets} bets`);
-            
+
             // 验证设置是否正确
             const status = betting.getAutoCashOutStatus();
             console.log(`MainGameUI: Auto cashout status after setting:`, status);
@@ -1311,18 +1320,18 @@ export class MainGameUI extends CCComp {
         if (!smc.crashGame) return;
 
         CrashGameAudio.playButtonClick();
-        
+
         const energy = smc.crashGame.get(EnergyComp);
         if (energy) {
             const status = energy.getEnergyStatus();
-            
+
             if (status.canRecover) {
                 // 显示观看广告恢复能源的提示或直接恢复
                 console.log(`Energy recovery available. Current: ${status.current}/${status.max}`);
-                
+
                 // 这里可以集成广告系统，暂时直接恢复
                 energy.recoverEnergyByAd();
-                
+
                 // TODO: 集成真实的广告系统
                 // this.showAdForEnergyRecovery();
             } else {
@@ -1350,11 +1359,11 @@ export class MainGameUI extends CCComp {
         if (energy) {
             const status = energy.getEnergyStatus();
             this.energyLabel.string = `${status.current}/${status.max}`;
-            
+
             // 更新能源按钮的可用状态
             if (this.energyButton) {
                 this.energyButton.interactable = status.canRecover;
-                
+
                 // 根据能源状态设置按钮颜色
                 const sprite = this.energyButton.node.getComponent(Sprite);
                 if (sprite) {

@@ -116,7 +116,7 @@ class UserController {
                     highestMultiplier: user.highestMultiplier,
                     winRate: user.winRate,
                     netProfit: user.netProfit,
-                    sessionId: gameSession.sessionId
+                    sessionId: cachedSession.id
                 },
                 message: 'User record updated successfully',
                 timestamp: new Date().toISOString()
@@ -204,8 +204,23 @@ class UserController {
                 });
             }
             
-            const history = await GameSession.getUserHistory(userId, parseInt(limit));
-            const stats = await GameSession.getGameStats(userId);
+            // 从内存缓存获取用户历史，如果缓存中没有足够数据则从数据库补充
+            let history = gameSessionCache.getUserSessions(userId, parseInt(limit));
+            
+            // 如果缓存中的记录不足，从数据库获取补充
+            if (history.length < parseInt(limit)) {
+                const dbHistory = await GameSession.getUserHistory(userId, parseInt(limit) - history.length);
+                history = [...history, ...dbHistory];
+            }
+            
+            // 从缓存获取实时统计
+            const globalStats = gameSessionCache.getGlobalStats();
+            const stats = {
+                totalSessions: user.totalFlights,
+                winRate: user.winRate,
+                totalBetAmount: globalStats.totalBetAmount,
+                avgMultiplier: globalStats.avgMultiplier
+            };
             
             res.status(200).json({
                 success: true,
