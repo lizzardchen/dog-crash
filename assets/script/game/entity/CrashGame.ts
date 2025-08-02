@@ -35,8 +35,8 @@ export class CrashGame extends ecs.Entity {
         CrashGameAudio.init();
     }
     // 服务器配置
-    private serverConfig = {
-        baseURL: "http://localhost:3000/api/",
+    public static serverConfig = {
+        baseURL: "http://crash.realfunplay.cn/api/",// "http://localhost:3000/api/",
         timeout: 10000,
         retryAttempts: 3
     };
@@ -47,8 +47,8 @@ export class CrashGame extends ecs.Entity {
 
     public async InitServer(): Promise<void> {
         // 配置 HTTP 服务器地址
-        oops.http.server = this.serverConfig.baseURL;
-        oops.http.timeout = this.serverConfig.timeout;
+        oops.http.server = CrashGame.serverConfig.baseURL;
+        oops.http.timeout = CrashGame.serverConfig.timeout;
         
         // 添加Content-Type头
         oops.http.addHeader("Content-Type", "application/json");

@@ -6,6 +6,7 @@ import { smc } from "../common/SingletonModuleComp";
 import { UserDataComp } from '../comp/UserDataComp';
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { UIID } from "../common/config/GameUIConfig";
+import { CrashGame } from '../entity/CrashGame';
 
 const { ccclass, property } = _decorator;
 
@@ -156,7 +157,7 @@ export class RaceUI extends CCComp {
      * 获取当前比赛信息的API调用
      */
     private async fetchCurrentRace(): Promise<any> {
-        const response = await fetch('http://localhost:3000/api/race/current');
+        const response = await fetch(`${CrashGame.serverConfig.baseURL}race/current`);
         return await response.json();
     }
 
@@ -164,7 +165,7 @@ export class RaceUI extends CCComp {
      * 获取比赛排行榜的API调用
      */
     private async fetchRaceLeaderboard(raceId: string, limit: number, userId: string): Promise<any> {
-        const response = await fetch(`http://localhost:3000/api/race/${raceId}/leaderboard?limit=${limit}&userId=${userId}`);
+        const response = await fetch(`${CrashGame.serverConfig.baseURL}race/${raceId}/leaderboard?limit=${limit}&userId=${userId}`);
         return await response.json();
     }
 

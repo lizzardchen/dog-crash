@@ -345,3 +345,58 @@ yum check-update
 ---
 
 **祝你部署成功！** 🎉
+
+1. 在你的 CentOS 服务器上运行部署：
+
+  # 1. 下载部署脚本
+  wget https://raw.githubusercontent.com/lizzardchen/dog-crash/main/server/deploy.sh
+
+  # 2. 给脚本执行权限
+  chmod +x deploy.sh
+
+  # 3. 运行部署（需要 root 权限）
+  ./deploy.sh
+
+  2. 部署完成后的管理命令：
+
+  # 启动服务
+  dogcrash start
+
+  # 停止服务
+  dogcrash stop
+
+  # 重启服务
+  dogcrash restart
+
+  # 查看状态
+  dogcrash status
+
+  # 查看日志
+  dogcrash logs
+
+  # 更新代码并重启
+  dogcrash update
+
+  # 监控界面
+  dogcrash monitor
+
+  new 2222:
+
+   # 1. 下载并运行部署脚本
+  wget https://raw.githubusercontent.com/lizzardchen/dog-crash/main/server/deploy.sh
+  chmod +x deploy.sh
+  ./deploy.sh
+
+  常用管理命令：
+
+  # 查看状态
+  pm2 status
+
+  # 查看日志
+  pm2 logs dog-crash-server
+
+  # 重启应用
+  pm2 restart dog-crash-server
+
+  # 更新代码
+  cd /www/wwwroot/dog-crash-server && ./update.sh

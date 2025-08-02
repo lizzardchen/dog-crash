@@ -19,6 +19,7 @@ import { GameResultUI, GameResultParams } from "./GameResultUI";
 import { AutoCashOutUI, AutoCashOutParams } from "./AutoCashOutUI";
 import { RaceUI } from "./RaceUI";
 import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets/core/gui/layer/Defines";
+import { CrashGame } from '../entity/CrashGame';
 
 const { ccclass, property } = _decorator;
 
@@ -1417,7 +1418,7 @@ export class MainGameUI extends CCComp {
      */
     private async fetchAndUpdateRaceCountdown(): Promise<void> {
         try {
-            const response = await fetch('http://localhost:3000/api/race/current');
+            const response = await fetch(`${CrashGame.serverConfig.baseURL}race/current`);
             const data = await response.json();
             
             if (data.success && data.data.hasActiveRace) {

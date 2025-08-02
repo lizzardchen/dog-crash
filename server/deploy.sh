@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Dog Crash Server 部署脚本
+# Dog Crash Server 简化部署脚本
 # 使用方法: chmod +x deploy.sh && ./deploy.sh
 
 set -e
@@ -15,87 +15,80 @@ NC='\033[0m' # No Color
 
 # 配置变量
 APP_NAME="dog-crash-server"
-APP_DIR="/opt/$APP_NAME"
-USER="root"
+APP_DIR="/www/wwwroot/dog-crash-server"
 PORT="3000"
-NODE_VERSION="18"
+GIT_REPO="https://github.com/lizzardchen/dog-crash.git"
+GIT_BRANCH="main"
 
-# 检查是否为root用户
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}请使用 root 用户执行此脚本${NC}"
-    exit 1
+echo -e "${YELLOW}1. 创建应用目录并克隆代码...${NC}"
+
+# 如果目录已存在，先备份
+if [ -d "$APP_DIR" ]; then
+    echo -e "${YELLOW}检测到现有部署，创建备份...${NC}"
+    mv "$APP_DIR" "${APP_DIR}.backup.$(date +%Y%m%d_%H%M%S)"
 fi
 
-echo -e "${YELLOW}1. 更新系统包...${NC}"
-yum update -y
+# 创建父目录
+mkdir -p "$(dirname "$APP_DIR")"
 
-echo -e "${YELLOW}2. 安装必要的系统依赖...${NC}"
-yum install -y curl git wget
+# 使用 sparse-checkout 只克隆 server 文件夹
+echo -e "${YELLOW}使用 sparse-checkout 克隆 server 文件夹...${NC}"
+git clone --no-checkout "$GIT_REPO" "$APP_DIR"
+cd "$APP_DIR"
 
-# 安装 Node.js
-echo -e "${YELLOW}3. 安装 Node.js $NODE_VERSION...${NC}"
-curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash -
-yum install -y nodejs
+# 配置 sparse-checkout
+git sparse-checkout init --cone
+git sparse-checkout set server
 
-# 验证安装
-node_version=$(node --version)
-npm_version=$(npm --version)
-echo -e "${GREEN}Node.js 版本: $node_version${NC}"
-echo -e "${GREEN}NPM 版本: $npm_version${NC}"
+# 检出文件
+git checkout "$GIT_BRANCH"
 
-# 安装 PM2
-echo -e "${YELLOW}4. 安装 PM2 进程管理器...${NC}"
-npm install -g pm2
+# 将 server 文件夹的内容移到根目录
+echo -e "${YELLOW}整理文件结构...${NC}"
+if [ -d "server" ]; then
+    # 移动 server 文件夹中的所有内容到当前目录
+    mv server/* ./ 2>/dev/null || true
+    mv server/.* ./ 2>/dev/null || true
+    # 删除空的 server 文件夹
+    rmdir server 2>/dev/null || true
+fi
 
-# 创建应用目录
-echo -e "${YELLOW}5. 创建应用目录...${NC}"
-mkdir -p $APP_DIR
-cd $APP_DIR
-
-# 如果是首次部署，需要手动上传代码
+# 验证 package.json 是否存在
 if [ ! -f "package.json" ]; then
-    echo -e "${RED}请先将服务器代码上传到 $APP_DIR${NC}"
-    echo -e "${YELLOW}上传方法:${NC}"
-    echo -e "  1. 使用 scp: scp -r ./server/* root@your-server:$APP_DIR/"
-    echo -e "  2. 使用 rsync: rsync -avz ./server/ root@your-server:$APP_DIR/"
-    echo -e "  3. 使用 Git: git clone <your-repo> $APP_DIR"
+    echo -e "${RED}错误: 未找到 package.json 文件${NC}"
+    echo -e "${YELLOW}请检查仓库中 server 文件夹是否包含正确的 Node.js 项目文件${NC}"
     exit 1
 fi
 
-# 安装项目依赖
-echo -e "${YELLOW}6. 安装项目依赖...${NC}"
+echo -e "${GREEN}代码克隆完成！${NC}"
+
+echo -e "${YELLOW}2. 安装项目依赖...${NC}"
 npm install --production
 
-# 创建 .env 文件
-echo -e "${YELLOW}7. 创建环境配置文件...${NC}"
+echo -e "${YELLOW}3. 创建环境配置文件...${NC}"
 cat > .env << EOF
 # 生产环境配置
 NODE_ENV=production
 PORT=$PORT
 
-# MongoDB 配置 (使用现有的远程数据库)
+# MongoDB 配置
 MONGODB_URI=mongodb://dogcrash:5hRPJyResaF75MPh@124.223.21.118:27017/dogcrash
 
-# CORS 配置 (根据你的客户端域名修改)
-ALLOWED_ORIGINS=http://your-client-domain.com,https://your-client-domain.com
+# CORS 配置
+ALLOWED_ORIGINS=http://crash.realfunplay.cn,https://crash.realfunplay.cn
 
 # 安全配置
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=100
 EOF
 
-echo -e "${YELLOW}8. 配置防火墙...${NC}"
-# 开放端口
-firewall-cmd --permanent --add-port=$PORT/tcp
-firewall-cmd --reload
-
-echo -e "${YELLOW}9. 创建 PM2 配置文件...${NC}"
+echo -e "${YELLOW}4. 创建 PM2 配置文件...${NC}"
 cat > ecosystem.config.js << EOF
 module.exports = {
   apps: [{
     name: '$APP_NAME',
     script: 'app.js',
-    instances: 'max',
+    instances: 1,
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
@@ -105,8 +98,7 @@ module.exports = {
     out_file: './logs/out.log',
     log_file: './logs/combined.log',
     time: true,
-    max_memory_restart: '500M',
-    node_args: '--max-old-space-size=400'
+    max_memory_restart: '512M'
   }]
 };
 EOF
@@ -114,126 +106,62 @@ EOF
 # 创建日志目录
 mkdir -p logs
 
-echo -e "${YELLOW}10. 启动应用...${NC}"
+echo -e "${YELLOW}5. 启动应用...${NC}"
 pm2 start ecosystem.config.js
 pm2 save
-pm2 startup
 
-echo -e "${YELLOW}11. 配置 Nginx 反向代理...${NC}"
-yum install -y nginx
-
-# 创建 Nginx 配置
-cat > /etc/nginx/conf.d/$APP_NAME.conf << EOF
-server {
-    listen 80;
-    server_name your-domain.com;  # 修改为你的域名
-    
-    # 客户端最大请求体大小
-    client_max_body_size 10M;
-    
-    # 反向代理到 Node.js 应用
-    location /api {
-        proxy_pass http://127.0.0.1:$PORT;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-        
-        # 超时设置
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-    
-    # 健康检查
-    location /health {
-        proxy_pass http://127.0.0.1:$PORT/health;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
-    
-    # 静态文件服务（如果需要）
-    location / {
-        root /var/www/html;
-        index index.html;
-        try_files \$uri \$uri/ =404;
-    }
-}
-EOF
-
-# 启动 Nginx
-systemctl enable nginx
-systemctl start nginx
-
-echo -e "${YELLOW}12. 创建系统服务监控脚本...${NC}"
-cat > /usr/local/bin/dogcrash-monitor.sh << 'EOF'
+echo -e "${YELLOW}6. 创建更新脚本...${NC}"
+cat > update.sh << EOF
 #!/bin/bash
-# Dog Crash Server 监控脚本
+# 快速更新脚本
 
-APP_NAME="dog-crash-server"
-LOG_FILE="/var/log/dogcrash-monitor.log"
+set -e
 
-# 检查 PM2 进程
-check_pm2() {
-    if ! pm2 list | grep -q "$APP_NAME.*online"; then
-        echo "[$(date)] PM2 进程异常，尝试重启..." >> $LOG_FILE
-        pm2 restart $APP_NAME
-    fi
-}
+echo "🔄 开始更新..."
 
-# 检查端口监听
-check_port() {
-    if ! netstat -tlnp | grep -q ":3000.*LISTEN"; then
-        echo "[$(date)] 端口3000未监听，尝试重启应用..." >> $LOG_FILE
-        pm2 restart $APP_NAME
-    fi
-}
+# 拉取最新代码
+git fetch origin
+git reset --hard origin/$GIT_BRANCH
 
-# 检查健康状态
-check_health() {
-    if ! curl -f http://localhost:3000/health > /dev/null 2>&1; then
-        echo "[$(date)] 健康检查失败，尝试重启应用..." >> $LOG_FILE
-        pm2 restart $APP_NAME
-    fi
-}
+# 整理文件结构
+if [ -d "server" ]; then
+    # 备份配置文件
+    [ -f ".env" ] && cp .env .env.backup
+    [ -f "ecosystem.config.js" ] && cp ecosystem.config.js ecosystem.config.js.backup
+    
+    # 移动新文件
+    mv server/* ./ 2>/dev/null || true
+    mv server/.* ./ 2>/dev/null || true
+    rmdir server 2>/dev/null || true
+    
+    # 恢复配置文件
+    [ -f ".env.backup" ] && mv .env.backup .env
+    [ -f "ecosystem.config.js.backup" ] && mv ecosystem.config.js.backup ecosystem.config.js
+fi
 
-# 执行检查
-check_pm2
-check_port
-check_health
+# 安装依赖
+npm install --production
 
-echo "[$(date)] 监控检查完成" >> $LOG_FILE
+# 重启应用
+pm2 restart $APP_NAME
+
+echo "✅ 更新完成！"
+pm2 status
 EOF
 
-chmod +x /usr/local/bin/dogcrash-monitor.sh
-
-# 添加到 crontab
-echo "*/5 * * * * /usr/local/bin/dogcrash-monitor.sh" | crontab -
+chmod +x update.sh
 
 echo -e "${GREEN}✅ 部署完成！${NC}"
 echo -e "${YELLOW}📝 部署信息:${NC}"
 echo -e "  应用目录: $APP_DIR"
 echo -e "  运行端口: $PORT"
-echo -e "  进程管理: PM2"
-echo -e "  反向代理: Nginx (端口80)"
-echo -e "  日志位置: $APP_DIR/logs/"
-echo -e "  监控脚本: 每5分钟自动检查"
+echo -e "  应用名称: $APP_NAME"
 
 echo -e "${YELLOW}🔧 常用命令:${NC}"
-echo -e "  查看应用状态: pm2 status"
-echo -e "  查看应用日志: pm2 logs $APP_NAME"
+echo -e "  查看状态: pm2 status"
+echo -e "  查看日志: pm2 logs $APP_NAME"
 echo -e "  重启应用: pm2 restart $APP_NAME"
 echo -e "  停止应用: pm2 stop $APP_NAME"
-echo -e "  查看监控日志: tail -f /var/log/dogcrash-monitor.log"
-
-echo -e "${YELLOW}⚠️  请注意:${NC}"
-echo -e "  1. 修改 /etc/nginx/conf.d/$APP_NAME.conf 中的域名"
-echo -e "  2. 修改 $APP_DIR/.env 中的 ALLOWED_ORIGINS"
-echo -e "  3. 确保防火墙开放了80和$PORT端口"
-echo -e "  4. 定期备份数据库和应用代码"
+echo -e "  更新代码: cd $APP_DIR && ./update.sh"
 
 echo -e "${GREEN}🎉 服务器部署成功！${NC}"
