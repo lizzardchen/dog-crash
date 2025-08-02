@@ -88,7 +88,7 @@ PORT=$PORT
 MONGODB_URI=mongodb://dogcrash:5hRPJyResaF75MPh@124.223.21.118:27017/dogcrash
 
 # CORS 配置
-ALLOWED_ORIGINS=http://crash.realfunplay.cn,https://crash.realfunplay.cn
+ALLOWED_ORIGINS=http://crash.realfunplay.cn,https://crash.realfunplay.cn,http://localhost:7456,http://127.0.0.1:7456
 
 # 安全配置
 RATE_LIMIT_WINDOW_MS=900000
