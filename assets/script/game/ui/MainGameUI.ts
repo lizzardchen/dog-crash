@@ -2,7 +2,7 @@ import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Comp
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
-import { BettingComp, BetAmountItem } from "../comp/BettingComp";
+import { BettingComp,BetAmountItem } from "../comp/BettingComp";
 import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
 import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
@@ -23,14 +23,14 @@ import { CrashGame } from '../entity/CrashGame';
 
 const { ccclass, property } = _decorator;
 
-/**
- * 下注金额项接口
- */
-interface BetAmountItem {
-    display: string;    // 显示文本 (如 "free", "1K", "1M")
-    value: number;      // 实际数值 (如 90, 1000, 1000000)
-    isFree: boolean;    // 是否为免费模式
-}
+// /**
+//  * 下注金额项接口
+//  */
+// interface BetAmountItem {
+//     display: string;    // 显示文本 (如 "free", "1K", "1M")
+//     value: number;      // 实际数值 (如 90, 1000, 1000000)
+//     isFree: boolean;    // 是否为免费模式
+// }
 
 @ccclass('MainGameUI')
 @ecs.register('MainGameUI', false)
@@ -71,6 +71,9 @@ export class MainGameUI extends CCComp {
     @property(Label)
     raceCountdownLabel: Label = null!;
 
+    @property(Button)
+    settingsButton: Button = null!;
+
     @property(Node)
     betPanel: Node = null!;
 
@@ -98,7 +101,9 @@ export class MainGameUI extends CCComp {
 
     private isBetPanelVisible: boolean = false;
     private raceUpdateTimer: number = 0;
-    private readonly RACE_UPDATE_INTERVAL = 10000; // 10秒更新一次
+    private readonly RACE_UPDATE_INTERVAL = 300000; // 5分钟更新一次 (300000ms)
+    private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
+    private raceCountdownTimer: number = 0; // 本地倒计时更新器
 
     /**
      * 将数值转换为短文本格式
@@ -309,6 +314,11 @@ export class MainGameUI extends CCComp {
         // 比赛按钮事件
         if (this.raceButton) {
             this.raceButton.node.on(Button.EventType.CLICK, this.onRaceButtonClick, this);
+        }
+
+        // 设置按钮事件
+        if (this.settingsButton) {
+            this.settingsButton.node.on(Button.EventType.CLICK, this.onSettingsButtonClick, this);
         }
 
         // 监听游戏事件
@@ -1045,11 +1055,24 @@ export class MainGameUI extends CCComp {
             }
         }
         
-        // 定期更新比赛倒计时
+        // 定期获取服务器比赛倒计时（5分钟一次）
         this.raceUpdateTimer += _deltaTime * 1000;
         if (this.raceUpdateTimer >= this.RACE_UPDATE_INTERVAL) {
             this.raceUpdateTimer = 0;
             this.fetchAndUpdateRaceCountdown();
+        }
+        
+        // 本地倒计时更新（每秒更新）
+        this.raceCountdownTimer += _deltaTime * 1000;
+        if (this.raceCountdownTimer >= 1000) { // 每秒更新一次
+            this.raceCountdownTimer = 0;
+            if (this.localRaceRemainingTime > 0) {
+                this.localRaceRemainingTime -= 1000;
+                if (this.localRaceRemainingTime <= 0) {
+                    this.localRaceRemainingTime = 0;
+                }
+                this.updateRaceCountdownDisplay(this.localRaceRemainingTime);
+            }
         }
     }
 
@@ -1069,6 +1092,11 @@ export class MainGameUI extends CCComp {
         // 清理比赛按钮事件
         if (this.raceButton) {
             this.raceButton.node.off(Button.EventType.CLICK, this.onRaceButtonClick, this);
+        }
+
+        // 清理设置按钮事件
+        if (this.settingsButton) {
+            this.settingsButton.node.off(Button.EventType.CLICK, this.onSettingsButtonClick, this);
         }
 
         // 清理按钮事件监听
@@ -1320,6 +1348,34 @@ export class MainGameUI extends CCComp {
     }
 
     /**
+     * 显示设置界面
+     */
+    private showSettingsUI(): void {
+        console.log("Showing settings UI");
+
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node | null, params: any) => {
+                if (!node) {
+                    console.error("SettingsUI node is null");
+                    return;
+                }
+                
+                const settingsUI = node.getComponent('SettingsUI' as any);
+                if (settingsUI) {
+                    console.log("SettingsUI component loaded successfully");
+                } else {
+                    console.error("Failed to get SettingsUI component");
+                }
+            },
+            onRemoved: (node: Node | null, params: any) => {
+                console.log("SettingsUI closed");
+            }
+        };
+
+        oops.gui.open(UIID.Settings, null, callbacks);
+    }
+
+    /**
      * 开始自动提现
      * @param multiplier 自动提现倍数
      * @param totalBets 总下注次数
@@ -1412,6 +1468,16 @@ export class MainGameUI extends CCComp {
         
         this.showRaceUI();
     }
+
+    /**
+     * 设置按钮点击事件
+     */
+    private onSettingsButtonClick(): void {
+        CrashGameAudio.playButtonClick();
+        console.log("Settings button clicked - opening settings UI");
+        
+        this.showSettingsUI();
+    }
     
     /**
      * 获取并更新比赛倒计时
@@ -1423,13 +1489,21 @@ export class MainGameUI extends CCComp {
             
             if (data.success && data.data.hasActiveRace) {
                 const remainingTime = data.data.race.remainingTime;
+                // 更新本地倒计时时间
+                this.localRaceRemainingTime = remainingTime;
                 this.updateRaceCountdownDisplay(remainingTime);
+                console.log(`Race countdown synced with server: ${this.formatRaceRemainingTime(remainingTime)}`);
             } else {
+                this.localRaceRemainingTime = 0;
                 this.updateRaceCountdownDisplay(0);
+                console.log('No active race found on server');
             }
         } catch (error) {
             console.error('Failed to fetch race countdown:', error);
-            this.updateRaceCountdownDisplay(0);
+            // 网络错误时保持本地倒计时继续运行，不重置为0
+            if (this.localRaceRemainingTime <= 0) {
+                this.updateRaceCountdownDisplay(0);
+            }
         }
     }
     

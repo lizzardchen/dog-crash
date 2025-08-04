@@ -1,10 +1,11 @@
-import { _decorator, Node, Label, Button, Toggle, Sprite, SpriteFrame } from 'cc';
+import { _decorator, Label, Button, Toggle, Sprite } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
 import { smc } from "../common/SingletonModuleComp";
 import { UserDataComp } from "../comp/UserDataComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
+import { UIID } from "../common/config/GameUIConfig";
 
 const { ccclass, property } = _decorator;
 
@@ -49,23 +50,10 @@ export class SettingsUI extends CCComp {
     @property(Button)
     closeButton: Button = null!;
     
-    // 头像选择面板（可选）
-    @property(Node)
-    avatarSelectionPanel: Node = null!;
-    
-    @property([SpriteFrame])
-    avatarFrames: SpriteFrame[] = [];
-    
-    @property(Node)
-    avatarContainer: Node = null!;
-    
-    @property(Button)
-    avatarSelectionCloseButton: Button = null!;
     
     // 用户数据组件引用和回调
     private userDataComp: UserDataComp | null = null;
     private closeCallback: Function | null = null;
-    private currentAvatarIndex: number = 0;
 
     onLoad() {
         console.log("SettingsUI loaded");
@@ -78,16 +66,8 @@ export class SettingsUI extends CCComp {
         // 设置UI事件监听
         this.setupUIEvents();
         
-        // 初始化头像选择
-        this.initAvatarSelection();
-        
         // 初始化UI显示
         this.updateUI();
-        
-        // 初始状态：隐藏头像选择面板
-        if (this.avatarSelectionPanel) {
-            this.avatarSelectionPanel.active = false;
-        }
     }
 
     /**
@@ -121,40 +101,8 @@ export class SettingsUI extends CCComp {
             this.closeButton.node.on(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
         
-        // 头像选择面板关闭按钮事件
-        if (this.avatarSelectionCloseButton) {
-            this.avatarSelectionCloseButton.node.on(Button.EventType.CLICK, this.onAvatarSelectionCloseClick, this);
-        }
     }
 
-    /**
-     * 初始化头像选择功能
-     */
-    private initAvatarSelection(): void {
-        if (!this.avatarContainer || this.avatarFrames.length === 0) {
-            console.warn("Avatar selection not properly configured");
-            return;
-        }
-        
-        // 清空现有头像选项
-        this.avatarContainer.removeAllChildren();
-        
-        // 创建头像选项按钮
-        this.avatarFrames.forEach((frame, index) => {
-            const avatarNode = new Node(`Avatar_${index}`);
-            const sprite = avatarNode.addComponent(Sprite);
-            const button = avatarNode.addComponent(Button);
-            
-            sprite.spriteFrame = frame;
-            button.node.on(Button.EventType.CLICK, () => {
-                this.onAvatarOptionClick(index);
-            }, this);
-            
-            this.avatarContainer.addChild(avatarNode);
-        });
-        
-        console.log(`Initialized ${this.avatarFrames.length} avatar options`);
-    }
 
     /**
      * 更新UI显示
@@ -198,12 +146,8 @@ export class SettingsUI extends CCComp {
      * 更新头像显示
      */
     private updateAvatarDisplay(): void {
-        if (!this.avatarSprite || this.avatarFrames.length === 0) return;
-        
-        // 使用当前选择的头像
-        if (this.currentAvatarIndex >= 0 && this.currentAvatarIndex < this.avatarFrames.length) {
-            this.avatarSprite.spriteFrame = this.avatarFrames[this.currentAvatarIndex];
-        }
+        // 头像显示已简化，不需要切换功能
+        console.log("Avatar display updated (static display only)");
     }
 
     /**
@@ -244,33 +188,6 @@ export class SettingsUI extends CCComp {
     }
 
 
-    /**
-     * 头像选项点击事件
-     */
-    private onAvatarOptionClick(index: number): void {
-        CrashGameAudio.playButtonClick();
-        
-        this.currentAvatarIndex = index;
-        this.updateAvatarDisplay();
-        
-        // 隐藏头像选择面板
-        if (this.avatarSelectionPanel) {
-            this.avatarSelectionPanel.active = false;
-        }
-        
-        console.log(`Avatar changed to index: ${index}`);
-    }
-
-    /**
-     * 头像选择面板关闭按钮点击事件
-     */
-    private onAvatarSelectionCloseClick(): void {
-        CrashGameAudio.playButtonClick();
-        
-        if (this.avatarSelectionPanel) {
-            this.avatarSelectionPanel.active = false;
-        }
-    }
 
     /**
      * 关闭按钮点击事件
@@ -288,37 +205,27 @@ export class SettingsUI extends CCComp {
         
         if (this.closeCallback) {
             this.closeCallback();
+        } else {
+            // 如果没有回调，直接关闭界面
+            oops.gui.remove(UIID.Settings);
         }
     }
 
     onDestroy() {
         // 清理按钮事件
-        if (this.soundToggle) {
+        if (this.soundToggle && this.soundToggle.node) {
             this.soundToggle.node.off(Toggle.EventType.TOGGLE, this.onSoundToggleChanged, this);
         }
         
-        if (this.musicToggle) {
+        if (this.musicToggle && this.musicToggle.node) {
             this.musicToggle.node.off(Toggle.EventType.TOGGLE, this.onMusicToggleChanged, this);
         }
         
         
-        if (this.closeButton) {
+        if (this.closeButton && this.closeButton.node) {
             this.closeButton.node.off(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
         
-        if (this.avatarSelectionCloseButton) {
-            this.avatarSelectionCloseButton.node.off(Button.EventType.CLICK, this.onAvatarSelectionCloseClick, this);
-        }
-        
-        // 清理头像选项按钮事件
-        if (this.avatarContainer) {
-            this.avatarContainer.children.forEach(child => {
-                const button = child.getComponent(Button);
-                if (button) {
-                    button.node.off(Button.EventType.CLICK);
-                }
-            });
-        }
     }
 
     // CCComp要求实现的reset方法

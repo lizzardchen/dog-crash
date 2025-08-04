@@ -1033,7 +1033,7 @@
     },
     "clickEvents": [],
     "_interactable": true,
-    "_transition": 2,
+    "_transition": 3,
     "_normalColor": {
       "__type__": "cc.Color",
       "r": 214,
@@ -1079,7 +1079,7 @@
       "__expectedType__": "cc.SpriteFrame"
     },
     "_duration": 0.1,
-    "_zoomScale": 1.2,
+    "_zoomScale": 0.97,
     "_target": {
       "__id__": 35
     },
@@ -2833,17 +2833,6 @@
     "closeButton": {
       "__id__": 40
     },
-    "avatarSelectionPanel": {
-      "__id__": 14
-    },
-    "avatarFrames": [
-      {
-        "__uuid__": "a69c3356-15e0-447d-ad89-88689484d953@f9941",
-        "__expectedType__": "cc.SpriteFrame"
-      }
-    ],
-    "avatarContainer": null,
-    "avatarSelectionCloseButton": null,
     "_id": ""
   },
   {

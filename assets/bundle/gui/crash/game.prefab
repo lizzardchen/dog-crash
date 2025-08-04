@@ -6811,6 +6811,9 @@
     "raceCountdownLabel": {
       "__id__": 130
     },
+    "settingsButton": {
+      "__id__": 38
+    },
     "betPanel": {
       "__id__": 77
     },

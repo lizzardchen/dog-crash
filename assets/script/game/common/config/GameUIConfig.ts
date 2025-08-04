@@ -54,7 +54,7 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.Account]: { layer: LayerType.UI, prefab: "gui/crash/account" },
     [UIID.Reward]: { layer: LayerType.UI, prefab: "gui/crash/reward" },
     [UIID.Leaderboard]: { layer: LayerType.UI, prefab: "gui/crash/leaderboard" },
-    [UIID.Settings]: { layer: LayerType.UI, prefab: "gui/crash/settings" },
+    [UIID.Settings]: { layer: LayerType.Dialog, prefab: "gui/crash/settings" },
     [UIID.GameResult]: { layer: LayerType.Dialog, prefab: "gui/crash/game_result" },
     [UIID.CrashGame]: { layer: LayerType.UI, prefab: "gui/crash/game" },
     [UIID.AutoCashOut]: { layer: LayerType.Dialog, prefab: "gui/crash/auto_cashout" },
