@@ -34,7 +34,15 @@ export enum UIID {
     /** 自动提现界面 */
     AutoCashOut,
     /** 比赛界面 */
-    Race
+    Race,
+    /** 用户资料界面 */
+    UserProfile,
+    /** 游戏规则界面 */
+    GameRules,
+    /** 联系我们界面 */
+    ContactUs,
+    /** 条款说明界面 */
+    TermsConditions
 }
 
 /** 打开界面方式的配置数据 */
@@ -50,5 +58,9 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.GameResult]: { layer: LayerType.Dialog, prefab: "gui/crash/game_result" },
     [UIID.CrashGame]: { layer: LayerType.UI, prefab: "gui/crash/game" },
     [UIID.AutoCashOut]: { layer: LayerType.Dialog, prefab: "gui/crash/auto_cashout" },
-    [UIID.Race]: { layer: LayerType.Dialog, prefab: "gui/crash/race" }
+    [UIID.Race]: { layer: LayerType.Dialog, prefab: "gui/crash/race" },
+    [UIID.UserProfile]: { layer: LayerType.Dialog, prefab: "gui/crash/user_profile" },
+    [UIID.GameRules]: { layer: LayerType.Dialog, prefab: "gui/crash/game_rules" },
+    [UIID.ContactUs]: { layer: LayerType.Dialog, prefab: "gui/crash/contact_us" },
+    [UIID.TermsConditions]: { layer: LayerType.Dialog, prefab: "gui/crash/terms_conditions" }
 }
