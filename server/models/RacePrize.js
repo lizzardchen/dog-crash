@@ -29,10 +29,10 @@ const racePrizeSchema = new mongoose.Schema({
         min: 0,
         max: 1
     },
-    // 奖励状态
+    // 奖励状态 - 只有待领取和已领取两种状态
     status: {
         type: String,
-        enum: ['pending', 'claimed', 'expired'],
+        enum: ['pending', 'claimed'],
         default: 'pending',
         index: true
     },
@@ -45,11 +45,6 @@ const racePrizeSchema = new mongoose.Schema({
     claimedAt: {
         type: Date,
         default: null
-    },
-    expiresAt: {
-        type: Date,
-        required: true,
-        index: true
     },
     // 比赛相关信息（便于查询和展示）
     raceStartTime: {
@@ -99,30 +94,13 @@ racePrizeSchema.index({ userId: 1, status: 1 });
 // 索引 - 按比赛查询所有奖励
 racePrizeSchema.index({ raceId: 1, rank: 1 });
 
-// 索引 - 清理过期奖励
-racePrizeSchema.index({ expiresAt: 1, status: 1 });
-
-// 虚拟字段 - 是否已过期
-racePrizeSchema.virtual('isExpired').get(function() {
-    return this.status === 'pending' && Date.now() > this.expiresAt;
-});
-
-// 虚拟字段 - 剩余有效时间
-racePrizeSchema.virtual('remainingTime').get(function() {
-    if (this.status !== 'pending') return 0;
-    const remaining = this.expiresAt.getTime() - Date.now();
-    return Math.max(0, remaining);
-});
+// 索引 - 按创建时间查询
+racePrizeSchema.index({ createdAt: -1 });
 
 // 实例方法 - 领取奖励
 racePrizeSchema.methods.claim = function() {
     if (this.status !== 'pending') {
-        throw new Error('Prize already claimed or expired');
-    }
-    
-    if (Date.now() > this.expiresAt) {
-        this.status = 'expired';
-        throw new Error('Prize has expired');
+        throw new Error('Prize already claimed');
     }
     
     this.status = 'claimed';
@@ -131,21 +109,11 @@ racePrizeSchema.methods.claim = function() {
     return this.save();
 };
 
-// 实例方法 - 标记为过期
-racePrizeSchema.methods.expire = function() {
-    if (this.status === 'pending') {
-        this.status = 'expired';
-        return this.save();
-    }
-    return Promise.resolve(this);
-};
-
 // 静态方法 - 获取用户的待领取奖励
 racePrizeSchema.statics.getUserPendingPrizes = async function(userId, limit = 50) {
     return this.find({ 
         userId: userId, 
-        status: 'pending',
-        expiresAt: { $gt: new Date() }
+        status: 'pending'
     })
     .sort({ createdAt: -1 })
     .limit(limit)
@@ -181,22 +149,6 @@ racePrizeSchema.statics.batchCreatePrizes = async function(prizes) {
     return result.insertedCount;
 };
 
-// 静态方法 - 清理过期奖励
-racePrizeSchema.statics.expirePendingPrizes = async function() {
-    const result = await this.updateMany(
-        { 
-            status: 'pending', 
-            expiresAt: { $lt: new Date() } 
-        },
-        { 
-            $set: { 
-                status: 'expired' 
-            } 
-        }
-    );
-    
-    return result.modifiedCount;
-};
 
 // 静态方法 - 获取奖励统计信息
 racePrizeSchema.statics.getPrizeStats = async function(raceId = null) {
@@ -219,16 +171,11 @@ racePrizeSchema.statics.getPrizeStats = async function(raceId = null) {
             totalAmount: stat.totalAmount
         };
         return acc;
-    }, { pending: { count: 0, totalAmount: 0 }, claimed: { count: 0, totalAmount: 0 }, expired: { count: 0, totalAmount: 0 } });
+    }, { pending: { count: 0, totalAmount: 0 }, claimed: { count: 0, totalAmount: 0 } });
 };
 
-// 预处理中间件 - 设置过期时间
+// 预处理中间件 - 数据验证
 racePrizeSchema.pre('save', function(next) {
-    // 如果是新创建的记录且没有设置过期时间，设置为7天后过期
-    if (this.isNew && !this.expiresAt) {
-        this.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7天
-    }
-    
     // 确保数值不为负数
     if (this.prizeAmount < 0) {
         this.prizeAmount = 0;
@@ -245,13 +192,7 @@ racePrizeSchema.pre('save', function(next) {
 
 // 确保返回的JSON格式正确
 racePrizeSchema.methods.toJSON = function() {
-    const prizeObject = this.toObject();
-    
-    // 添加虚拟字段
-    prizeObject.isExpired = this.isExpired;
-    prizeObject.remainingTime = this.remainingTime;
-    
-    return prizeObject;
+    return this.toObject();
 };
 
 const RacePrize = mongoose.model('RacePrize', racePrizeSchema);

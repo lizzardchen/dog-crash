@@ -1656,6 +1656,316 @@ export class NetworkSyncComp extends ecs.Comp {
     }
 }
 ```
+ 比赛系统API接口文档
+
+  1. 获取当前比赛信息
+
+  GET /api/race/current
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "hasActiveRace": true,
+      "race": {
+        "raceId": "race_20250104120000",
+        "startTime": "2025-01-04T12:00:00.000Z",
+        "endTime": "2025-01-04T16:00:00.000Z",
+        "remainingTime": 7200000,
+        "status": "active",
+        "prizePool": {
+          "totalPool": 75000,
+          "contributedAmount": 25000,
+          "minGuarantee": 50000,
+          "shouldDistributePrizes": true,
+          "participants": 156
+        }
+      }
+    },
+    "timestamp": "2025-01-04T14:00:00.000Z"
+  }
+
+  2. 获取比赛排行榜
+
+  GET /api/race/{raceId}/leaderboard?limit=10&userId=user123
+
+  参数：
+  - raceId (必需): 比赛ID
+  - limit (可选): 返回数量，默认10，最大100
+  - userId (可选): 包含指定用户信息
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "raceId": "race_20250104120000",
+      "topLeaderboard": [
+        {
+          "userId": "user456",
+          "rank": 1,
+          "netProfit": 15000,
+          "sessionCount": 45,
+          "contributionToPool": 750,
+          "totalBetAmount": 75000,
+          "totalWinAmount": 90000
+        }
+      ],
+      "userInfo": {
+        "rank": 25,
+        "displayRank": 25,
+        "netProfit": 2500,
+        "sessionCount": 12,
+        "contribution": 300
+      },
+      "totalParticipants": 156
+    }
+  }
+
+  3. 获取用户待领取奖励
+
+  GET /api/race/prizes/user/{userId}?limit=20
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "userId": "user123",
+      "pendingPrizes": [
+        {
+          "_id": "64f1a2b3c4d5e6f7g8h9i0j1",
+          "raceId": "race_20250104080000",
+          "userId": "user123",
+          "rank": 3,
+          "prizeAmount": 8250,
+          "percentage": 0.11,
+          "status": "pending",
+          "raceStartTime": "2025-01-04T08:00:00.000Z",
+          "raceEndTime": "2025-01-04T12:00:00.000Z",
+          "userNetProfit": 12500,
+          "userSessionCount": 38,
+          "createdAt": "2025-01-04T12:05:00.000Z"
+        }
+      ],
+      "totalPendingAmount": 8250,
+      "count": 1
+    }
+  }
+
+  4. 领取奖励
+
+  POST /api/race/prizes/{prizeId}/claim
+  Content-Type: application/json
+
+  {
+    "userId": "user123"
+  }
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "prizeId": "64f1a2b3c4d5e6f7g8h9i0j1",
+      "userId": "user123",
+      "raceId": "race_20250104080000",
+      "rank": 3,
+      "prizeAmount": 8250,
+      "claimedAt": "2025-01-04T14:30:00.000Z",
+      "message": "Successfully claimed 8250 coins!"
+    }
+  }
+
+  5. 获取用户奖励历史
+
+  GET /api/race/prizes/user/{userId}/history?limit=20
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "userId": "user123",
+      "prizeHistory": [
+        {
+          "_id": "64f1a2b3c4d5e6f7g8h9i0j1",
+          "raceId": "race_20250104080000",
+          "rank": 3,
+          "prizeAmount": 8250,
+          "status": "claimed",
+          "claimedAt": "2025-01-04T14:30:00.000Z"
+        }
+      ],
+      "stats": {
+        "totalPrizes": 3,
+        "totalEarned": 15750,
+        "totalPending": 5500,
+        "claimedCount": 2,
+        "pendingCount": 1
+      }
+    }
+  }
+
+  6. 获取比赛历史
+
+  GET /api/race/history?limit=5
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "history": [
+        {
+          "raceId": "race_20250104080000",
+          "startTime": "2025-01-04T08:00:00.000Z",
+          "endTime": "2025-01-04T12:00:00.000Z",
+          "finalPrizePool": 75000,
+          "totalParticipants": 156
+        }
+      ],
+      "count": 1
+    }
+  }
+
+  7. 获取用户在比赛中的详细信息
+
+  GET /api/race/{raceId}/user/{userId}
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "raceId": "race_20250104120000",
+      "userId": "user123",
+      "rank": 25,
+      "displayRank": 25,
+      "netProfit": 2500,
+      "sessionCount": 12,
+      "contributionToPool": 300,
+      "totalBetAmount": 30000,
+      "totalWinAmount": 32500,
+      "totalParticipants": 156
+    }
+  }
+
+  8. 获取奖励统计信息
+
+  GET /api/race/prizes/stats?raceId=race_20250104080000
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "raceId": "race_20250104080000",
+      "stats": {
+        "pending": {
+          "count": 5,
+          "totalAmount": 25000
+        },
+        "claimed": {
+          "count": 5,
+          "totalAmount": 50000
+        }
+      }
+    }
+  }
+
+  9. 获取指定比赛的奖励记录
+
+  GET /api/race/prizes/race/{raceId}
+
+  响应示例：
+  {
+    "success": true,
+    "data": {
+      "raceId": "race_20250104080000",
+      "prizes": [
+        {
+          "userId": "user456",
+          "rank": 1,
+          "prizeAmount": 37500,
+          "percentage": 0.5,
+          "status": "claimed"
+        }
+      ],
+      "stats": {
+        "totalPrizes": 10,
+        "totalAmount": 75000,
+        "claimedAmount": 50000,
+        "pendingAmount": 25000
+      }
+    }
+  }
+
+  客户端集成建议
+
+  1. 游戏界面显示
+
+  // 在游戏主界面显示当前比赛信息
+  async function updateRaceInfo() {
+      const response = await fetch('/api/race/current');
+      const data = await response.json();
+
+      if (data.success && data.data.hasActiveRace) {
+          const race = data.data.race;
+          // 显示比赛剩余时间
+          updateRaceTimer(race.remainingTime);
+          // 显示奖池金额
+          updatePrizePool(race.prizePool.totalPool);
+      }
+  }
+
+  2. 排行榜界面
+
+  // 获取并显示排行榜
+  async function loadLeaderboard(raceId: string, userId: string) {
+      const response = await fetch(`/api/race/${raceId}/leaderboard?limit=10&userId=${userId}`);
+      const data = await response.json();
+
+      if (data.success) {
+          // 显示Top10排行榜
+          displayLeaderboard(data.data.topLeaderboard);
+          // 显示用户排名
+          displayUserRank(data.data.userInfo);
+      }
+  }
+
+  3. 奖励中心
+
+  // 检查待领取奖励
+  async function checkPendingPrizes(userId: string) {
+      const response = await fetch(`/api/race/prizes/user/${userId}`);
+      const data = await response.json();
+
+      if (data.success && data.data.count > 0) {
+          // 显示奖励通知
+          showPrizeNotification(data.data.totalPendingAmount);
+          // 显示奖励列表
+          displayPendingPrizes(data.data.pendingPrizes);
+      }
+  }
+
+  // 领取奖励
+  async function claimPrize(prizeId: string, userId: string) {
+      const response = await fetch(`/api/race/prizes/${prizeId}/claim`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+          // 显示领取成功消息
+          showClaimSuccess(data.data.prizeAmount);
+          // 刷新奖励列表
+          checkPendingPrizes(userId);
+      }
+  }
+
+  4. 定时更新建议
+
+  // 建议的更新频率
+  setInterval(() => updateRaceInfo(), 30000);        // 30秒更新比赛信息
+  setInterval(() => loadLeaderboard(), 60000);       // 1分钟更新排行榜
+  setInterval(() => checkPendingPrizes(), 300000);   // 5分钟检查奖励
+
 
 ## 重要技术说明
 

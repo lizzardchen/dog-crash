@@ -1,5 +1,6 @@
 const gameSessionCache = require('./gameSessionCache');
 const Race = require('../models/Race');
+const RacePrize = require('../models/RacePrize');
 
 /**
  * 比赛管理器 - 负责自动创建和管理比赛周期
@@ -18,7 +19,8 @@ class RaceManager {
         this.config = {
             raceDuration: 4 * 60 * 60 * 1000,    // 4小时（毫秒）
             raceInterval: 4 * 60 * 60 * 1000,    // 4小时间隔
-            autoStartDelay: 5000                  // 服务器启动后5秒开始第一场比赛
+            autoStartDelay: 5000,                 // 服务器启动后5秒开始第一场比赛
+            prizeCleanupInterval: 60 * 60 * 1000  // 1小时清理一次过期奖励
         };
         
         console.log('RaceManager initialized');
@@ -213,7 +215,7 @@ class RaceManager {
                     });
                     
                     // 实际发放奖励到用户账户
-                    await this.distributePrizes(prizeDistribution.distributions);
+                    await this.distributePrizes(raceId, prizeDistribution.distributions, leaderboard, prizePool);
                 } else {
                     console.log(`❌ No prizes distributed (no contributions)`);
                 }
@@ -248,19 +250,104 @@ class RaceManager {
     }
     
     /**
-     * 分发奖励到用户账户
+     * 分发奖励到用户账户 - 创建奖励记录供用户领取
      */
-    async distributePrizes(distributions) {
-        for (const prize of distributions) {
-            try {
-                // TODO: 调用用户服务更新用户余额
-                console.log(`💸 Distributing ${prize.prizeAmount} coins to user ${prize.userId} (Rank ${prize.rank})`);
+    async distributePrizes(raceId, distributions, leaderboard, prizePool) {
+        if (!distributions || distributions.length === 0) {
+            console.log('No prizes to distribute');
+            return;
+        }
+
+        try {
+            // 获取比赛信息
+            const raceDoc = await Race.findOne({ raceId: raceId });
+            if (!raceDoc) {
+                console.error(`Race ${raceId} not found in database`);
+                return;
+            }
+
+            // 创建用户表现数据的映射
+            const userDataMap = new Map();
+            leaderboard.forEach(user => {
+                userDataMap.set(user.userId, user);
+            });
+
+            // 为每个获奖者创建奖励记录
+            const prizeRecords = [];
+            
+            for (const prize of distributions) {
+                const userData = userDataMap.get(prize.userId);
+                if (!userData) {
+                    console.warn(`User data not found for ${prize.userId}, skipping prize creation`);
+                    continue;
+                }
+
+                const prizeRecord = {
+                    raceId: raceId,
+                    userId: prize.userId,
+                    rank: prize.rank,
+                    prizeAmount: prize.prizeAmount,
+                    percentage: prize.percentage,
+                    status: 'pending',
+                    
+                    // 比赛信息
+                    raceStartTime: raceDoc.startTime,
+                    raceEndTime: raceDoc.endTime,
+                    
+                    // 用户比赛表现快照
+                    userNetProfit: userData.netProfit || 0,
+                    userSessionCount: userData.sessionCount || 0,
+                    userTotalBetAmount: userData.totalBetAmount || 0,
+                    userTotalWinAmount: userData.totalWinAmount || 0,
+                    
+                    createdBy: 'system'
+                };
+
+                prizeRecords.push(prizeRecord);
+                console.log(`💸 Created prize record for ${prize.userId} (Rank ${prize.rank}): ${prize.prizeAmount} coins`);
+            }
+
+            // 批量创建奖励记录
+            if (prizeRecords.length > 0) {
+                const createdCount = await RacePrize.batchCreatePrizes(prizeRecords);
+                console.log(`✅ Successfully created ${createdCount} prize records for race ${raceId}`);
                 
-                // 这里应该调用用户服务的API来增加用户余额
-                // await userService.addBalance(prize.userId, prize.prizeAmount, 'race_prize');
-                
-            } catch (error) {
-                console.error(`Failed to distribute prize to ${prize.userId}:`, error);
+                // 打印奖励汇总
+                const totalPrizes = prizeRecords.reduce((sum, p) => sum + p.prizeAmount, 0);
+                console.log(`💰 Total prizes created: ${totalPrizes} coins for ${prizeRecords.length} winners`);
+                console.log(`🎁 Prizes are permanently available for claim`);
+            }
+
+        } catch (error) {
+            console.error(`Failed to distribute prizes for race ${raceId}:`, error);
+            
+            // 如果批量创建失败，尝试逐个创建
+            console.log('Attempting individual prize creation as fallback...');
+            for (const prize of distributions) {
+                try {
+                    const userData = leaderboard.find(u => u.userId === prize.userId);
+                    if (!userData) continue;
+
+                    const racePrize = new RacePrize({
+                        raceId: raceId,
+                        userId: prize.userId,
+                        rank: prize.rank,
+                        prizeAmount: prize.prizeAmount,
+                        percentage: prize.percentage,
+                        raceStartTime: raceDoc.startTime,
+                        raceEndTime: raceDoc.endTime,
+                        userNetProfit: userData.netProfit || 0,
+                        userSessionCount: userData.sessionCount || 0,
+                        userTotalBetAmount: userData.totalBetAmount || 0,
+                        userTotalWinAmount: userData.totalWinAmount || 0
+                    });
+
+                    await racePrize.save();
+                    console.log(`✅ Individual prize created for ${prize.userId}`);
+                    
+                } catch (individualError) {
+                    console.error(`Failed to create individual prize for ${prize.userId}:`, individualError);
+                }
             }
         }
     }
