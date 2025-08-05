@@ -64,6 +64,16 @@ export class RaceUI extends CCComp {
         this.updateDisplayFromRaceComp();
     }
 
+    private onEnable() {
+       if (smc.crashGame) {
+            this.raceComp = smc.crashGame.get(RaceComp);
+        } 
+    }
+
+    private onDisable() {
+        this.raceComp = null;
+    }
+
     private setupEvents(): void {
         // 关闭按钮
         if (this.closeButton) {

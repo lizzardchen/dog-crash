@@ -202,7 +202,7 @@ export class CrashGame extends ecs.Entity {
 
                 console.log("Uploading game record:", recordData);
 
-                oops.http.post(`user/${userDataComp.getUserId()}/record`, recordData, (ret) => {
+                oops.http.post(`user/${userDataComp.getUserId()}/record`, (ret) => {
                     if (ret.isSucc) {
                         console.log("Game record uploaded successfully");
                         // 更新本地数据为服务器返回的数据

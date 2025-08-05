@@ -8,6 +8,7 @@ import { LocalDataComp } from "../comp/LocalDataComp";
 import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
 import { GameHistoryComp } from "../comp/GameHistoryComp";
 import { EnergyComp } from "../comp/EnergyComp";
+import { RaceComp } from "../comp/RaceComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { smc } from "../common/SingletonModuleComp";
@@ -100,8 +101,6 @@ export class MainGameUI extends CCComp {
     sceneConfigs: SceneData[] = [];
 
     private isBetPanelVisible: boolean = false;
-    private raceUpdateTimer: number = 0;
-    private readonly RACE_UPDATE_INTERVAL = 300000; // 5分钟更新一次 (300000ms)
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
 
@@ -143,9 +142,6 @@ export class MainGameUI extends CCComp {
 
         // 初始化UI显示
         this.updateUI();
-        
-        // 开始定期更新倒计时
-        this.fetchAndUpdateRaceCountdown();
     }
 
     private initGameData(): void {
@@ -327,6 +323,9 @@ export class MainGameUI extends CCComp {
         oops.message.on("GAME_STARTED", this.onGameStarted, this);
         oops.message.on("ENERGY_CHANGED", this.onEnergyChanged, this);
         oops.message.on("SCENE_CHANGED", this.onSceneChanged, this);
+        
+        // 监听比赛数据更新事件
+        oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
@@ -602,6 +601,18 @@ export class MainGameUI extends CCComp {
         const multiplier = data && data.multiplier ? data.multiplier : 1.0;
         console.log(`Scene changed from ${oldScene} to ${newScene} at ${multiplier.toFixed(2)}x`);
         // 场景切换由SceneBackgroundSystem自动处理，这里只需要记录日志
+    }
+
+    /**
+     * 比赛数据更新事件处理
+     */
+    private onRaceDataUpdated(event: string, data: any): void {
+        if (data && data.race && data.race.remainingTime !== undefined) {
+            // 更新本地比赛剩余时间
+            this.localRaceRemainingTime = data.race.remainingTime;
+            this.updateRaceCountdownDisplay(this.localRaceRemainingTime);
+            console.log(`Race countdown updated from RaceComp: ${this.formatRaceRemainingTime(this.localRaceRemainingTime)}`);
+        }
     }
 
     private resetGame(): void {
@@ -1051,14 +1062,7 @@ export class MainGameUI extends CCComp {
                 this.updateSceneScrollSpeed(speedMultiplier);
             }
         }
-        
-        // 定期获取服务器比赛倒计时（5分钟一次）
-        this.raceUpdateTimer += _deltaTime * 1000;
-        if (this.raceUpdateTimer >= this.RACE_UPDATE_INTERVAL) {
-            this.raceUpdateTimer = 0;
-            this.fetchAndUpdateRaceCountdown();
-        }
-        
+                
         // 本地倒计时更新（每秒更新）
         this.raceCountdownTimer += _deltaTime * 1000;
         if (this.raceCountdownTimer >= 1000) { // 每秒更新一次
@@ -1080,6 +1084,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("GAME_STARTED", this.onGameStarted, this);
         oops.message.off("ENERGY_CHANGED", this.onEnergyChanged, this);
         oops.message.off("SCENE_CHANGED", this.onSceneChanged, this);
+        oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
 
         // 清理能源按钮事件
         if (this.energyButton) {
@@ -1476,40 +1481,6 @@ export class MainGameUI extends CCComp {
         this.showSettingsUI();
     }
     
-    /**
-     * 获取并更新比赛倒计时
-     */
-    private async fetchAndUpdateRaceCountdown(): Promise<void> {
-        return new Promise((resolve) => {
-            oops.http.get(`race/current`, (ret) => {
-                try {
-                    if (!ret.isSucc) {
-                        throw new Error(ret.err);
-                    }
-                    const data = ret.res;
-                    
-                    if (data.success && data.data.hasActiveRace) {
-                        const remainingTime = data.data.race.remainingTime;
-                        // 更新本地倒计时时间
-                        this.localRaceRemainingTime = remainingTime;
-                        this.updateRaceCountdownDisplay(remainingTime);
-                        console.log(`Race countdown synced with server: ${this.formatRaceRemainingTime(remainingTime)}`);
-                    } else {
-                        this.localRaceRemainingTime = 0;
-                        this.updateRaceCountdownDisplay(0);
-                        console.log('No active race found on server');
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch race countdown:', error);
-                    // 网络错误时保持本地倒计时继续运行，不重置为0
-                    if (this.localRaceRemainingTime <= 0) {
-                        this.updateRaceCountdownDisplay(0);
-                    }
-                }
-                resolve();
-            });
-        });
-    }
     
     /**
      * 更新比赛倒计时显示

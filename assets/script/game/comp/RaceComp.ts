@@ -2,6 +2,7 @@ import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ec
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { CrashGame } from "../entity/CrashGame";
 import { UserDataComp } from "./UserDataComp";
+import { smc } from "../common/SingletonModuleComp";
 
 /**
  * 比赛排行榜项目接口
@@ -87,7 +88,12 @@ export class RaceComp extends ecs.Comp {
     
     // 更新时间控制
     public lastUpdateTime: number = 0;
-    public updateInterval: number = 5000; // 5秒更新一次
+    public updateInterval: number = 60000; // 1分钟更新一次
+    public lastPastTime:number = 0;
+    
+    // race/current接口独立时间控制
+    private lastRaceInfoUpdateTime: number = 0;
+    private raceInfoUpdateInterval: number = 300000; // 5分钟更新race/current接口
     
     // 比赛结束检测
     private lastCheckedRaceId: string = "";
@@ -100,6 +106,7 @@ export class RaceComp extends ecs.Comp {
         this.userPendingPrizes = [];
         this.totalPendingAmount = 0;
         this.lastUpdateTime = 0;
+        this.lastPastTime = 0;
         this.lastCheckedRaceId = "";
     }
 
@@ -123,25 +130,23 @@ export class RaceComp extends ecs.Comp {
     /**
      * 更新比赛数据（由CrashGameSystem调用）
      */
-    public async updateRaceData(currentTime: number): Promise<void> {
-        if (!this.shouldUpdate(currentTime)) {
+    public updateRaceData(currentTime: number) {
+        if(this.lastUpdateTime <= 0.001 && this.lastUpdateTime > -0.001) {
+            this.lastUpdateTime = currentTime;
+        }
+        this.lastPastTime += currentTime - this.lastUpdateTime;
+        if( this.lastPastTime >= this.updateInterval ){
+            this.lastPastTime = 0;
+            this.fetchRaceData();
+        } else{
             // 如果有活跃比赛，更新剩余时间并检查是否结束
             if (this.currentRace && this.state === RaceState.ACTIVE) {
                 const deltaTime = currentTime - this.lastUpdateTime;
-                const previousRemainingTime = this.currentRace.remainingTime;
                 this.currentRace.remainingTime = Math.max(0, this.currentRace.remainingTime - deltaTime);
-                
-                // 检查比赛是否刚刚结束
-                if (previousRemainingTime > 0 && this.currentRace.remainingTime <= 0) {
-                    console.log(`Race ${this.currentRace.raceId} just ended based on timer`);
-                    this.onRaceTimerEnded(this.currentRace.raceId);
-                }
             }
-            return;
         }
-
         this.lastUpdateTime = currentTime;
-        await this.fetchRaceData();
+        
     }
 
     /**
@@ -153,6 +158,10 @@ export class RaceComp extends ecs.Comp {
             
             // 获取当前比赛信息
             const raceResponse = await this.fetchCurrentRace();
+            console.log("fetchRaceData - raceResponse:", raceResponse);
+            console.log("fetchRaceData - raceResponse.success:", raceResponse.success);
+            console.log("fetchRaceData - raceResponse.data:", raceResponse.data);
+            
             if (!raceResponse.success || !raceResponse.data || !raceResponse.data.hasActiveRace) {
                 console.log("No active race found or API not ready");
                 this.state = RaceState.NO_RACE;
@@ -221,7 +230,7 @@ export class RaceComp extends ecs.Comp {
                 return;
             }
 
-            oops.http.post(`race/prizes/${prizeId}/claim`, { userId }, (ret) => {
+            oops.http.post(`race/prizes/${prizeId}/claim`, (ret) => {
                 if (ret.isSucc && ret.res && ret.res.success) {
                     const data = ret.res.data;
                     console.log(`Prize claimed: ${data.prizeAmount} coins`);
@@ -252,10 +261,8 @@ export class RaceComp extends ecs.Comp {
     private onRaceTimerEnded(raceId: string): void {
         console.log(`Race timer ended for: ${raceId}`);
         
-        // 强制刷新比赛数据以获取最新的奖励信息
-        this.fetchRaceData().then(() => {
-            console.log("Race data refreshed after timer ended");
-        });
+        // 不再强制刷新数据，等待下次定时更新获取奖励信息
+        console.log("Race timer ended, will fetch new data on next scheduled update");
     }
 
     /**
@@ -331,6 +338,12 @@ export class RaceComp extends ecs.Comp {
     private async fetchCurrentRace(): Promise<any> {
         return new Promise((resolve) => {
             oops.http.get(`race/current`, (ret) => {
+                console.log("=== fetchCurrentRace DEBUG ===");
+                console.log("ret object:", ret);
+                console.log("ret.isSucc:", ret.isSucc);
+                console.log("ret.res type:", typeof ret.res);
+                console.log("ret.res:", JSON.stringify(ret.res, null, 2));
+                
                 if (ret.isSucc && ret.res) {
                     resolve(ret.res);
                 } else {
@@ -379,7 +392,7 @@ export class RaceComp extends ecs.Comp {
     private getCurrentUserId(): string | null {
         try {
             // 获取CrashGame实体
-            const crashGameEntity = ecs.getEntity(CrashGame);
+            const crashGameEntity = smc.crashGame;
             if (!crashGameEntity) {
                 console.warn("CrashGame entity not found");
                 return this.generateTempUserId();
