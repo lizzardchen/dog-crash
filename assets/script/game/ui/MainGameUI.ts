@@ -149,7 +149,7 @@ export class MainGameUI extends CCComp {
             if (raceComp) {
                 await raceComp.showRaceResult(raceComp.currentRace?.raceId || "");
             }
-        }, 2);
+        },0);
     }
 
     private initGameData(): void {
@@ -335,7 +335,7 @@ export class MainGameUI extends CCComp {
         // 监听比赛数据更新事件
         oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
         // 监听显示比赛结果事件
-        oops.message.on("SHOW_RACE_RESULT", this.onShowRaceResult, this);
+        oops.message.on("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
@@ -623,34 +623,6 @@ export class MainGameUI extends CCComp {
             this.updateRaceCountdownDisplay(this.localRaceRemainingTime);
             console.log(`Race countdown updated from RaceComp: ${this.formatRaceRemainingTime(this.localRaceRemainingTime)}`);
         }
-    }
-
-    private onShowRaceResult(event: string, data: any): void {
-        console.log("Showing race result UI");
-
-        const callbacks: UICallbacks = {
-            onAdded: (node: Node | null, params: any) => {
-                if (!node) {
-                    console.error("RaceResultUI node is null");
-                    return;
-                }
-                
-                const raceResultUI = node.getComponent(RaceResultUI);
-                if (raceResultUI) {
-                    // RaceUI需要参数，直接初始化
-                    params.race = data;
-                    raceResultUI.onOpen(params);
-                    console.log("RaceUI component loaded successfully");
-                } else {
-                    console.error("Failed to get RaceUI component");
-                }
-            },
-            onRemoved: (node: Node | null, params: any) => {
-                console.log("RaceUI closed");
-            }
-        };
-
-        oops.gui.open(UIID.RaceReward, null, callbacks);
     }
 
     private resetGame(): void {
@@ -1123,7 +1095,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("ENERGY_CHANGED", this.onEnergyChanged, this);
         oops.message.off("SCENE_CHANGED", this.onSceneChanged, this);
         oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
-        oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResult, this);
+        oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
 
         // 清理能源按钮事件
         if (this.energyButton) {
@@ -1357,6 +1329,36 @@ export class MainGameUI extends CCComp {
         };
 
         oops.gui.open(UIID.AutoCashOut, params, callbacks);
+    }
+
+    private onShowRaceResultUI(event: string, data: any): void {
+        console.log("Showing race result UI");
+
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node | null, params: any) => {
+                if (!node) {
+                    console.error("RaceResultUI node is null");
+                    return;
+                }
+                
+                const raceResultUI = node.getComponent(RaceResultUI);
+                if (raceResultUI) {
+                    // RaceUI需要参数，直接初始化
+                    params.race = data;
+                    raceResultUI.onOpen(params,()=>{
+                        console.log("RaceResultUI removed");
+                        oops.gui.remove(UIID.RaceReward);
+                    });
+                } else {
+                    console.error("Failed to get RaceResultUI component");
+                }
+            },
+            onRemoved: (node: Node | null, params: any) => {
+                console.log("RaceResultUI closed");
+            }
+        };
+
+        oops.gui.open(UIID.RaceReward, null, callbacks);
     }
 
     /**

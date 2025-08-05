@@ -1,10 +1,10 @@
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
+import { smc } from "../common/SingletonModuleComp";
+import { LocalDataComp } from "./LocalDataComp";
 
 @ecs.register('Energy')
 export class EnergyComp extends ecs.Comp {
-    private static readonly ENERGY_STORAGE_KEY = "crash_game_energy";
-    private static readonly ENERGY_LAST_UPDATE_KEY = "crash_game_energy_last_update";
     
     // 能源配置
     readonly maxEnergy: number = 10;          // 最大能源数量
@@ -144,14 +144,13 @@ export class EnergyComp extends ecs.Comp {
      * 保存能源数据到本地存储
      */
     private saveEnergyData(): void {
-        try {
+        const localdata:LocalDataComp = smc.crashGame.get(LocalDataComp);
+        if (localdata) {
             const energyData = {
                 currentEnergy: this.currentEnergy,
                 lastUpdateTime: this.lastUpdateTime
             };
-            oops.storage.set(EnergyComp.ENERGY_STORAGE_KEY, JSON.stringify(energyData));
-        } catch (error) {
-            console.error("EnergyComp: Failed to save energy data:", error);
+            localdata.saveEnergyData(energyData);
         }
     }
     
@@ -159,10 +158,10 @@ export class EnergyComp extends ecs.Comp {
      * 从本地存储加载能源数据
      */
     private loadEnergyData(): void {
-        try {
-            const energyDataStr = oops.storage.get(EnergyComp.ENERGY_STORAGE_KEY);
-            if (energyDataStr) {
-                const energyData = JSON.parse(energyDataStr);
+        const localdata:LocalDataComp = smc.crashGame.get(LocalDataComp);
+        if (localdata) {
+            const energyData = localdata.loadEnergyData();
+            if (energyData) {
                 this.currentEnergy = Math.min(energyData.currentEnergy || this.initialEnergy, this.maxEnergy);
                 this.lastUpdateTime = energyData.lastUpdateTime || Date.now();
             } else {
@@ -171,11 +170,10 @@ export class EnergyComp extends ecs.Comp {
                 this.lastUpdateTime = Date.now();
                 this.saveEnergyData();
             }
-        } catch (error) {
-            console.error("EnergyComp: Failed to load energy data, using defaults:", error);
+        } else {
+            console.error("EnergyComp: LocalData component not available, using defaults");
             this.currentEnergy = this.initialEnergy;
             this.lastUpdateTime = Date.now();
-            this.saveEnergyData();
         }
     }
     
@@ -183,7 +181,10 @@ export class EnergyComp extends ecs.Comp {
      * 清空保存的能源数据（用于测试或重置）
      */
     clearEnergyData(): void {
-        oops.storage.remove(EnergyComp.ENERGY_STORAGE_KEY);
+        const localdata:LocalDataComp = smc.crashGame.get(LocalDataComp);
+        if (localdata) {
+            localdata.clearEnergyData();
+        }
         this.currentEnergy = this.initialEnergy;
         this.lastUpdateTime = Date.now();
         console.log("EnergyComp: Energy data cleared and reset to initial values");

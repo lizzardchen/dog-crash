@@ -7,9 +7,13 @@ import { smc } from "../common/SingletonModuleComp";
 @ecs.register('LocalData')
 export class LocalDataComp extends ecs.Comp {
     private static readonly CRASH_HISTORY_KEY = "crash_game_history";
+    private static readonly ENERGY_STORAGE_KEY = "crash_game_energy";
 
     /** 当前游戏会话的崩盘倍数（本地随机生成） */
     currentCrashMultiplier: number = 0;
+    
+    /** 缓存的能源数据 */
+    private cachedEnergyData: { currentEnergy: number; lastUpdateTime: number } | null = null;
 
     reset() {
         this.currentCrashMultiplier = 0;
@@ -74,5 +78,48 @@ export class LocalDataComp extends ecs.Comp {
         console.log("Cleared crash history from local storage");
     }
 
+    /** 保存能源数据到本地存储（仅在数据有变化时保存） */
+    saveEnergyData(energyData: { currentEnergy: number; lastUpdateTime: number }): boolean {
+        try {
+            // 检查是否需要保存
+            if (this.cachedEnergyData && 
+                this.cachedEnergyData.currentEnergy === energyData.currentEnergy ) {
+                // 数据相同，无需保存
+                return false;
+            }
+            
+            // 保存到存储
+            oops.storage.set(LocalDataComp.ENERGY_STORAGE_KEY, JSON.stringify(energyData));
+            // 更新缓存
+            this.cachedEnergyData = { ...energyData };
+            return true;
+        } catch (error) {
+            console.error("Failed to save energy data:", error);
+            return false;
+        }
+    }
+
+    /** 从本地存储加载能源数据 */
+    loadEnergyData(): { currentEnergy: number; lastUpdateTime: number } | null {
+        try {
+            const energyDataStr = oops.storage.get(LocalDataComp.ENERGY_STORAGE_KEY);
+            if (energyDataStr) {
+                const energyData = JSON.parse(energyDataStr);
+                // 更新缓存
+                this.cachedEnergyData = { ...energyData };
+                return energyData;
+            }
+        } catch (error) {
+            console.error("Failed to load energy data:", error);
+        }
+        return null;
+    }
+
+    /** 清空能源数据 */
+    clearEnergyData(): void {
+        oops.storage.remove(LocalDataComp.ENERGY_STORAGE_KEY);
+        this.cachedEnergyData = null;
+        console.log("Cleared energy data from local storage");
+    }
 
 }

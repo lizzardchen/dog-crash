@@ -103,8 +103,8 @@ export class RaceResultUI extends CCComp {
     /**
      * 响应显示比赛结果事件
      */
-    public onOpen(params: any): void {
-        this.showRaceResult(params.race.raceId);
+    public onOpen(params: any, callback: Function): void {
+        this.showRaceResult(params.race.raceId, callback);
     }
 
     /**
@@ -131,8 +131,6 @@ export class RaceResultUI extends CCComp {
         const userPrize = raceComp.getUserPrizeForRace(raceId);
         this._current_user_prize = userPrize;
         
-        // 显示弹窗
-        this.node.active = true;
         this.updateDisplay(topThree, userPrize);
         this.playShowAnimation();
     }
