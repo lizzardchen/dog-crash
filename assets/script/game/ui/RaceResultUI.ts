@@ -1,33 +1,11 @@
-import { Node, Label, Button, Sprite, _decorator, UIOpacity, tween, Vec3 } from 'cc';
+import { Node, Label, Button, _decorator, UIOpacity, tween, Vec3, Sprite } from 'cc';
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
+import { smc } from "../common/SingletonModuleComp";
+import { RaceComp, UserPrizeInfo } from '../comp/RaceComp';
 
 const { ccclass, property } = _decorator;
-
-// 比赛结果数据接口
-export interface RaceResultData {
-    raceId: string;
-    topThree: LeaderboardEntry[];
-    userPrize?: UserPrizeInfo;
-    userRank?: number;
-    totalParticipants: number;
-}
-
-export interface LeaderboardEntry {
-    userId: string;
-    username?: string;
-    rank: number;
-    netProfit: number;
-    prizeAmount?: number;
-}
-
-export interface UserPrizeInfo {
-    prizeId: string;
-    rank: number;
-    prizeAmount: number;
-    status: 'pending' | 'claimed';
-}
 
 /**
  * 比赛结果弹窗UI组件
@@ -80,6 +58,16 @@ export class RaceResultUI extends CCComp {
     @property(Label) 
     third_points_label: Label = null!;
     
+    // 前三名头像
+    @property(Sprite) 
+    first_avatar_sprite: Sprite = null!;
+    
+    @property(Sprite) 
+    second_avatar_sprite: Sprite = null!;
+    
+    @property(Sprite) 
+    third_avatar_sprite: Sprite = null!;
+    
     // 底部消息区域
     @property(Node) 
     bottom_message_node: Node = null!;
@@ -101,56 +89,76 @@ export class RaceResultUI extends CCComp {
     @property(Button) 
     close_button: Button = null!;
 
-    private _raceData: RaceResultData | null = null;
     private _close_callback: Function | null = null;
+    private _current_race_id: string = "";
+    private _current_user_prize: UserPrizeInfo | null = null;
 
     protected onLoad(): void {
         // 绑定按钮事件
         this.close_button.node.on('click', this.closePopup, this);
         this.claim_prize_button.node.on('click', this.onClaimPrize, this);
         
+        // 监听显示比赛结果事件
+        oops.message.on("SHOW_RACE_RESULT", this.onShowRaceResult, this);
+        
         // 初始化状态
-        this.resetUI();
+        this.node.active = false;
     }
 
     protected onDestroy(): void {
         this.close_button.node.off('click', this.closePopup, this);
         this.claim_prize_button.node.off('click', this.onClaimPrize, this);
+        oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResult, this);
     }
 
     /**
-     * 打开比赛结果弹窗
-     * @param raceData 比赛结果数据
+     * 响应显示比赛结果事件
+     */
+    private onShowRaceResult(event: string, data: { raceId: string; userPrize: any }): void {
+        console.log(`Auto showing race result for: ${data.raceId}`);
+        this.showRaceResult(data.raceId);
+    }
+
+    /**
+     * 显示比赛结果
+     * @param raceId 比赛ID
      * @param callback 关闭回调
      */
-    public showRaceResult(raceData: RaceResultData, callback?: Function): void {
-        this._raceData = raceData;
-        this._close_callback = callback;
+    public showRaceResult(raceId: string, callback?: Function): void {
+        this._close_callback = callback || null;
+        this._current_race_id = raceId;
         
-        console.log('Showing race result:', raceData);
+        console.log('Showing race result for race:', raceId);
+        
+        // 从 RaceComp 获取数据
+        const raceComp = smc.crashGame?.get(RaceComp);
+        if (!raceComp) {
+            console.error('RaceComp not available');
+            oops.gui.toast("Race data not available");
+            return;
+        }
+        
+        // 获取前三名和用户奖励
+        const topThree = raceComp.leaderboard.slice(0, 3);
+        const userPrize = raceComp.getUserPrizeForRace(raceId);
+        this._current_user_prize = userPrize;
         
         // 显示弹窗
         this.node.active = true;
-        
-        // 更新UI显示
-        this.updateRaceResultDisplay();
-        
-        // 播放弹窗动画
+        this.updateDisplay(topThree, userPrize);
         this.playShowAnimation();
     }
 
     /**
-     * 更新比赛结果显示
+     * 更新显示内容
      */
-    private updateRaceResultDisplay(): void {
-        if (!this._raceData) return;
-
+    private updateDisplay(topThree: any[], userPrize: UserPrizeInfo | null): void {
         // 显示前三名
-        this.displayTopThree();
+        this.displayTopThree(topThree);
         
         // 根据用户是否获奖显示不同内容
-        if (this._raceData.userPrize) {
-            this.displayUserPrize();
+        if (userPrize) {
+            this.displayUserPrize(userPrize, topThree);
         } else {
             this.displayNoReward();
         }
@@ -159,53 +167,39 @@ export class RaceResultUI extends CCComp {
     /**
      * 显示前三名信息
      */
-    private displayTopThree(): void {
-        const topThree = this._raceData!.topThree;
+    private displayTopThree(topThree: any[]): void {
+        const labels = [
+            { username: this.first_username_label, prize: this.first_prize_label, points: this.first_points_label, node: this.first_place_node },
+            { username: this.second_username_label, prize: this.second_prize_label, points: this.second_points_label, node: this.second_place_node },
+            { username: this.third_username_label, prize: this.third_prize_label, points: this.third_points_label, node: this.third_place_node }
+        ];
         
-        // 显示第一名
-        if (topThree.length > 0) {
-            const first = topThree[0];
-            this.first_username_label.string = first.username || this.generateDisplayName(first.userId);
-            this.first_prize_label.string = this.formatPrize(first.prizeAmount || 0);
-            this.first_points_label.string = `RANK POINTS: ${this.formatNumber(first.netProfit)}`;
-            this.first_place_node.active = true;
-        } else {
-            this.first_place_node.active = false;
-        }
-        
-        // 显示第二名
-        if (topThree.length > 1) {
-            const second = topThree[1];
-            this.second_username_label.string = second.username || this.generateDisplayName(second.userId);
-            this.second_prize_label.string = this.formatPrize(second.prizeAmount || 0);
-            this.second_points_label.string = `RANK POINTS: ${this.formatNumber(second.netProfit)}`;
-            this.second_place_node.active = true;
-        } else {
-            this.second_place_node.active = false;
-        }
-        
-        // 显示第三名
-        if (topThree.length > 2) {
-            const third = topThree[2];
-            this.third_username_label.string = third.username || this.generateDisplayName(third.userId);
-            this.third_prize_label.string = this.formatPrize(third.prizeAmount || 0);
-            this.third_points_label.string = `RANK POINTS: ${this.formatNumber(third.netProfit)}`;
-            this.third_place_node.active = true;
-        } else {
-            this.third_place_node.active = false;
-        }
+        labels.forEach((labelSet, index) => {
+            if (index < topThree.length) {
+                const player = topThree[index];
+                const raceComp = smc.crashGame?.get(RaceComp);
+                
+                labelSet.username.string = raceComp ? raceComp.formatUserId(player.userId) : player.userId;
+                labelSet.prize.string = raceComp ? raceComp.formatPrizeNumber(raceComp.calculatePrizeAmount(player.rank)) : player.rank.toString();
+                labelSet.points.string = `RANK POINTS: ${raceComp ? raceComp.formatPrizeNumber(player.netProfit) : player.netProfit}`;
+                labelSet.node.active = true;
+            } else {
+                labelSet.node.active = false;
+            }
+        });
     }
 
     /**
      * 显示用户奖励信息
      */
-    private displayUserPrize(): void {
-        const userPrize = this._raceData!.userPrize!;
+    private displayUserPrize(userPrize: UserPrizeInfo | null, topThree: any[]): void {
+        if (!userPrize) {
+            this.displayNoReward();
+            return;
+        }
         
         // 检查用户是否在前三名
-        const isInTopThree = this._raceData!.topThree.some(entry => 
-            entry.rank === userPrize.rank
-        );
+        const isInTopThree = topThree.some(entry => entry.rank === userPrize.rank);
         
         if (isInTopThree) {
             // 用户在前三名，隐藏底部消息
@@ -216,8 +210,11 @@ export class RaceResultUI extends CCComp {
             this.bottom_message_node.active = true;
             this.user_prize_node.active = true;
             
-            this.bottom_message_label.string = `CONGRATULATIONS!\nYOU WON ${this.formatPrize(userPrize.prizeAmount)} COINS!`;
-            this.user_prize_amount_label.string = this.formatPrize(userPrize.prizeAmount);
+            const raceComp = smc.crashGame?.get(RaceComp);
+            const prizeText = raceComp ? raceComp.formatPrizeNumber(userPrize.prizeAmount) : userPrize.prizeAmount.toString();
+            
+            this.bottom_message_label.string = `CONGRATULATIONS!\nYOU WON ${prizeText} COINS!`;
+            this.user_prize_amount_label.string = prizeText;
             
             // 根据奖励状态设置按钮
             if (userPrize.status === 'pending') {
@@ -242,121 +239,47 @@ export class RaceResultUI extends CCComp {
     /**
      * 领取奖励按钮点击事件
      */
-    private async onClaimPrize(): void {
-        if (!this._raceData?.userPrize) return;
+    private async onClaimPrize(): Promise<void> {
+        console.log('Claim prize button clicked');
         
-        const userPrize = this._raceData.userPrize;
+        if (!this._current_user_prize) {
+            console.error('No prize to claim');
+            return;
+        }
         
         try {
             // 禁用按钮防止重复点击
             this.claim_prize_button.interactable = false;
             this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIMING...';
             
-            // 调用奖励领取API
-            const success = await this.claimPrizeFromServer(userPrize.prizeId);
+            // 使用 RaceComp 领取奖励
+            const raceComp = smc.crashGame?.get(RaceComp);
+            if (!raceComp) {
+                throw new Error('RaceComp not available');
+            }
+            
+            const success = await raceComp.claimPrize(this._current_user_prize._id);
             
             if (success) {
-                // 领取成功，更新UI
                 this.claim_prize_button.node.active = false;
-                this.bottom_message_label.string = `REWARD CLAIMED!\n${this.formatPrize(userPrize.prizeAmount)} COINS ADDED TO YOUR BALANCE!`;
-                
-                // 播放成功音效
+                this.bottom_message_label.string = `REWARD CLAIMED!\nCOINS ADDED TO YOUR BALANCE!`;
                 oops.audio.playEffect("audio/cash_out_success");
-                
-                console.log(`Prize claimed successfully: ${userPrize.prizeAmount} coins`);
+                this._current_user_prize = null;
             } else {
-                // 领取失败，恢复按钮状态
-                this.claim_prize_button.interactable = true;
-                this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM REWARD';
-                
-                // 显示错误消息
-                oops.gui.toast("Failed to claim reward. Please try again.");
+                throw new Error('Failed to claim prize');
             }
             
         } catch (error) {
             console.error('Error claiming prize:', error);
-            
-            // 恢复按钮状态
             this.claim_prize_button.interactable = true;
             this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM REWARD';
-            
-            oops.gui.toast("Network error. Please try again.");
+            oops.gui.toast("Failed to claim reward");
         }
     }
 
-    /**
-     * 从服务器领取奖励
-     */
-    private async claimPrizeFromServer(prizeId: string): Promise<boolean> {
-        try {
-            // 获取用户ID（这里需要根据你的用户系统获取）
-            const userId = this.getCurrentUserId();
-            
-            const response = await fetch(`/api/race/prizes/${prizeId}/claim`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    userId: userId
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                // TODO: 更新本地用户余额
-                // await this.updateLocalBalance(data.data.prizeAmount);
-                return true;
-            } else {
-                console.error('Server error claiming prize:', data.message);
-                return false;
-            }
-            
-        } catch (error) {
-            console.error('Network error claiming prize:', error);
-            return false;
-        }
-    }
 
-    /**
-     * 获取当前用户ID
-     * TODO: 根据实际的用户系统实现
-     */
-    private getCurrentUserId(): string {
-        // 这里需要根据你的用户系统获取当前用户ID
-        // 可能从UserDataComp或本地存储中获取
-        return "current_user_id";
-    }
-
-    /**
-     * 生成用户显示名称
-     */
-    private generateDisplayName(userId: string): string {
-        // 截取userId的前8位作为显示名称
-        return userId.length > 8 ? userId.substring(0, 8) : userId;
-    }
-
-    /**
-     * 格式化奖励金额显示
-     */
-    private formatPrize(amount: number): string {
-        if (amount >= 1000) {
-            return `${(amount / 1000).toFixed(1)}K`;
-        }
-        return amount.toString();
-    }
-
-    /**
-     * 格式化数字显示
-     */
-    private formatNumber(num: number): string {
-        if (num >= 1000) {
-            return `${(num / 1000).toFixed(2)}K`;
-        }
-        return num.toFixed(0);
-    }
-
+    // === 动画方法 ===
+    
     /**
      * 播放弹窗显示动画
      */
@@ -373,7 +296,7 @@ export class RaceResultUI extends CCComp {
         // 内容弹出动画
         tween(this.content_node)
             .to(0.3, { scale: new Vec3(1, 1, 1) })
-            .easing('backOut')
+            .call(() => {})
             .start();
     }
 
@@ -412,73 +335,15 @@ export class RaceResultUI extends CCComp {
     }
 
     /**
-     * 重置UI状态
+     * 重置组件状态 - CCComp抽象方法实现
      */
-    private resetUI(): void {
+    reset(): void {
         this.node.active = false;
         this.bottom_message_node.active = false;
         this.user_prize_node.active = false;
         this.claim_prize_button.node.active = false;
-    }
-
-    /**
-     * 静态方法：显示比赛结果弹窗
-     */
-    public static async showRaceResult(raceId: string, userId: string): Promise<void> {
-        try {
-            console.log(`Loading race result for race: ${raceId}, user: ${userId}`);
-            
-            // 获取比赛排行榜前三名
-            const leaderboardResponse = await fetch(`/api/race/${raceId}/leaderboard?limit=3&userId=${userId}`);
-            const leaderboardData = await leaderboardResponse.json();
-            
-            if (!leaderboardData.success) {
-                console.error('Failed to load leaderboard:', leaderboardData.message);
-                return;
-            }
-            
-            // 获取用户的奖励信息
-            const prizesResponse = await fetch(`/api/race/prizes/user/${userId}`);
-            const prizesData = await prizesResponse.json();
-            
-            // 查找该比赛的奖励
-            let userPrize: UserPrizeInfo | undefined;
-            if (prizesData.success && prizesData.data.pendingPrizes) {
-                const raceReward = prizesData.data.pendingPrizes.find((prize: any) => prize.raceId === raceId);
-                if (raceReward) {
-                    userPrize = {
-                        prizeId: raceReward._id,
-                        rank: raceReward.rank,
-                        prizeAmount: raceReward.prizeAmount,
-                        status: raceReward.status
-                    };
-                }
-            }
-            
-            // 构建比赛结果数据
-            const raceResultData: RaceResultData = {
-                raceId: raceId,
-                topThree: leaderboardData.data.topLeaderboard.map((entry: any) => ({
-                    userId: entry.userId,
-                    username: entry.username,
-                    rank: entry.rank,
-                    netProfit: entry.netProfit,
-                    prizeAmount: entry.prizeAmount // 如果服务器返回奖励金额
-                })),
-                userPrize: userPrize,
-                userRank: leaderboardData.data.userInfo?.rank,
-                totalParticipants: leaderboardData.data.totalParticipants || 0
-            };
-            
-            // 使用oops.gui显示弹窗
-            const raceResultUI = await oops.gui.open("gui/race/RaceResultUI") as RaceResultUI;
-            if (raceResultUI) {
-                raceResultUI.showRaceResult(raceResultData);
-            }
-            
-        } catch (error) {
-            console.error('Error showing race result:', error);
-            oops.gui.toast("Failed to load race results");
-        }
+        this._close_callback = null;
+        this._current_race_id = "";
+        this._current_user_prize = null;
     }
 }

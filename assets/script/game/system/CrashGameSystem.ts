@@ -7,6 +7,7 @@ import { MultiplierComp } from "../comp/MultiplierComp";
 import { LocalDataComp } from "../comp/LocalDataComp";
 import { EnergyComp } from "../comp/EnergyComp";
 import { UserDataComp } from "../comp/UserDataComp";
+import { RaceComp } from "../comp/RaceComp";
 
 @ecs.register('CrashGameSystem')
 export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
@@ -16,7 +17,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
     private autoRestartDelay: number = 4000; // 4秒延迟
     
     filter(): ecs.IMatcher {
-        return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp, EnergyComp, UserDataComp);
+        return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp, EnergyComp, UserDataComp, RaceComp);
     }
 
     update(entity: CrashGame): void {
@@ -24,10 +25,16 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
         const energy = entity.get(EnergyComp);
+        const race = entity.get(RaceComp);
 
         // 定期检查能源自动恢复
         if (energy) {
             energy.checkAutoRecovery();
+        }
+
+        // 更新比赛数据
+        if (race) {
+            race.updateRaceData(Date.now());
         }
 
         // 处理自动重启计时器
@@ -355,4 +362,5 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             console.error("CrashGameSystem: Failed to upload game result:", error);
         }
     }
+
 }

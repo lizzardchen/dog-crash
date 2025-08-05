@@ -3,51 +3,12 @@ import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/modu
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
 import { smc } from "../common/SingletonModuleComp";
-import { UserDataComp } from '../comp/UserDataComp';
+import { RaceComp, RaceState, RaceInfo, RaceLeaderboardItem, UserRaceInfo } from '../comp/RaceComp';
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { UIID } from "../common/config/GameUIConfig";
-import { CrashGame } from '../entity/CrashGame';
 
 const { ccclass, property } = _decorator;
 
-/**
- * 比赛排行榜项目接口
- */
-interface RaceLeaderboardItem {
-    rank: number;
-    userId: string;
-    netProfit: number;
-    totalBetAmount: number;
-    sessionCount: number;
-}
-
-/**
- * 比赛信息接口
- */
-interface RaceInfo {
-    raceId: string;
-    startTime: string;
-    endTime: string;
-    remainingTime: number;
-    status: string;
-    prizePool: {
-        totalPool: number;
-        contributedAmount: number;
-        participants: number;
-        shouldDistributePrizes: boolean;
-    };
-}
-
-/**
- * 用户比赛信息接口
- */
-interface UserRaceInfo {
-    rank: number;
-    displayRank: number;
-    netProfit: number;
-    sessionCount: number;
-    contribution: number;
-}
 
 @ccclass('RaceUI')
 @ecs.register('RaceUI', false)
@@ -86,18 +47,21 @@ export class RaceUI extends CCComp {
     @property(Button)
     closeButton: Button = null!;
 
-    private updateTimer: number = 0;
-    private readonly UPDATE_INTERVAL = 5000; // 5秒更新一次
-    private currentRaceInfo: RaceInfo | null = null;
+    private raceComp: RaceComp | null = null;
 
     onLoad() {
         console.log("RaceUI loaded");
         
+        // 获取RaceComp引用
+        if (smc.crashGame) {
+            this.raceComp = smc.crashGame.get(RaceComp);
+        }
+        
         // 设置事件监听
         this.setupEvents();
         
-        // 开始获取比赛数据
-        this.fetchRaceData();
+        // 更新显示
+        this.updateDisplayFromRaceComp();
     }
 
     private setupEvents(): void {
@@ -105,6 +69,9 @@ export class RaceUI extends CCComp {
         if (this.closeButton) {
             this.closeButton.node.on(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
+        
+        // 监听比赛数据更新事件
+        oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
     }
 
     private onCloseButtonClick(): void {
@@ -116,74 +83,41 @@ export class RaceUI extends CCComp {
     }
 
     /**
-     * 获取比赛数据
+     * 比赛数据更新事件处理
      */
-    private async fetchRaceData(): Promise<void> {
-        try {
-            // 获取当前比赛信息
-            const raceResponse = await this.fetchCurrentRace();
-            if (!raceResponse.success || !raceResponse.data.hasActiveRace) {
+    private onRaceDataUpdated(data: any): void {
+        this.updateDisplayFromRaceComp();
+    }
+
+    /**
+     * 从RaceComp更新显示
+     */
+    private updateDisplayFromRaceComp(): void {
+        if (!this.raceComp) {
+            console.warn("RaceComp not available");
+            this.displayNoActiveRace();
+            return;
+        }
+        
+        switch (this.raceComp.state) {
+            case RaceState.ACTIVE:
+                if (this.raceComp.currentRace) {
+                    this.updateDisplay(
+                        this.raceComp.currentRace,
+                        this.raceComp.leaderboard,
+                        this.raceComp.userRaceInfo
+                    );
+                }
+                break;
+            case RaceState.LOADING:
+                this.displayLoading();
+                break;
+            case RaceState.NO_RACE:
+            case RaceState.ERROR:
+            default:
                 this.displayNoActiveRace();
-                return;
-            }
-            
-            this.currentRaceInfo = raceResponse.data.race;
-            
-            // 获取用户ID
-            const userId = this.getCurrentUserId();
-            if (!userId) {
-                console.warn("No user ID available");
-                return;
-            }
-            
-            // 获取排行榜和用户信息
-            const leaderboardResponse = await this.fetchRaceLeaderboard(
-                this.currentRaceInfo.raceId, 
-                11, // 获取前11名
-                userId
-            );
-            
-            if (leaderboardResponse.success) {
-                // 更新UI显示
-                this.updateDisplay(this.currentRaceInfo, leaderboardResponse.data.topLeaderboard, leaderboardResponse.data.userInfo);
-            }
-            
-        } catch (error) {
-            console.error("Failed to fetch race data:", error);
+                break;
         }
-    }
-
-    /**
-     * 获取当前比赛信息的API调用
-     */
-    private async fetchCurrentRace(): Promise<any> {
-        const response = await fetch(`${CrashGame.serverConfig.baseURL}race/current`);
-        return await response.json();
-    }
-
-    /**
-     * 获取比赛排行榜的API调用
-     */
-    private async fetchRaceLeaderboard(raceId: string, limit: number, userId: string): Promise<any> {
-        const response = await fetch(`${CrashGame.serverConfig.baseURL}race/${raceId}/leaderboard?limit=${limit}&userId=${userId}`);
-        return await response.json();
-    }
-
-    /**
-     * 获取当前用户ID
-     */
-    private getCurrentUserId(): string | null {
-        if (!smc.crashGame) return null;
-        
-        const userData = smc.crashGame.get(UserDataComp);
-        if (userData && userData.userId) {
-            return userData.userId;
-        }
-        
-        // 如果没有UserDataComp，尝试生成一个临时ID
-        const tempUserId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log(`Generated temporary user ID: ${tempUserId}`);
-        return tempUserId;
     }
 
     /**
@@ -210,23 +144,43 @@ export class RaceUI extends CCComp {
     }
 
     /**
+     * 显示加载状态
+     */
+    private displayLoading(): void {
+        if (this.titleLabel) {
+            this.titleLabel.string = "BLAST-OFF!\nRACES";
+        }
+        if (this.timeLabel) {
+            this.timeLabel.string = "Loading...";
+        }
+        if (this.prizePoolLabel) {
+            this.prizePoolLabel.string = "PRIZE POOL: 🪙 Loading...";
+        }
+        
+        this.clearPodiumDisplay();
+        if (this.leaderboardContent) {
+            this.leaderboardContent.removeAllChildren();
+        }
+    }
+    
+    /**
      * 更新所有显示信息
      */
-    private updateDisplay(raceInfo: RaceInfo, leaderboard: RaceLeaderboardItem[], userInfo: UserRaceInfo): void {
+    private updateDisplay(raceInfo: RaceInfo, leaderboard: RaceLeaderboardItem[], userInfo: UserRaceInfo | null): void {
         // 更新标题
         if (this.titleLabel) {
             this.titleLabel.string = "BLAST-OFF!\nRACES";
         }
 
         // 更新剩余时间
-        if (this.timeLabel) {
-            const remainingText = this.formatRemainingTime(raceInfo.remainingTime);
+        if (this.timeLabel && this.raceComp) {
+            const remainingText = this.raceComp.formatRemainingTime(raceInfo.remainingTime);
             this.timeLabel.string = `RACE ENDS IN: ${remainingText}`;
         }
 
         // 更新奖池
-        if (this.prizePoolLabel) {
-            const prizeText = this.formatPrizePool(raceInfo.prizePool.totalPool);
+        if (this.prizePoolLabel && this.raceComp) {
+            const prizeText = this.raceComp.formatPrizePool(raceInfo.prizePool.totalPool);
             this.prizePoolLabel.string = `PRIZE POOL: 🪙 ${prizeText} MSAT`;
         }
 
@@ -262,14 +216,14 @@ export class RaceUI extends CCComp {
     private updatePodiumNode(node: Node, item: RaceLeaderboardItem): void {
         // 设置用户名
         const nameLabel = node.getChildByName("NameLabel")?.getComponent(Label);
-        if (nameLabel) {
-            nameLabel.string = this.formatUserId(item.userId);
+        if (nameLabel && this.raceComp) {
+            nameLabel.string = this.raceComp.formatUserId(item.userId);
         }
         
         // 设置收益
         const profitLabel = node.getChildByName("ProfitLabel")?.getComponent(Label);
-        if (profitLabel) {
-            const profitText = this.formatPrizeNumber(item.netProfit);
+        if (profitLabel && this.raceComp) {
+            const profitText = this.raceComp.formatPrizeNumber(item.netProfit);
             profitLabel.string = `🏆 ${profitText}`;
             
             // 根据盈亏设置颜色
@@ -314,7 +268,7 @@ export class RaceUI extends CCComp {
         });
 
         // 如果用户不在前11名，添加第12位显示用户
-        if (userInfo.rank > 11) {
+        if (userInfo && userInfo.rank > 11) {
             const userItem: RaceLeaderboardItem = {
                 rank: userInfo.displayRank,
                 userId: "YOU",
@@ -344,15 +298,15 @@ export class RaceUI extends CCComp {
 
             // 设置用户名
             const nameLabel = itemNode.getChildByName("NameLabel")?.getComponent(Label);
-            if (nameLabel) {
-                nameLabel.string = isUser ? "YOU" : this.formatUserId(item.userId);
+            if (nameLabel && this.raceComp) {
+                nameLabel.string = isUser ? "YOU" : this.raceComp.formatUserId(item.userId);
             }
 
             // 设置收益
             const reward_node = itemNode.getChildByName("reward") as Node;
             const profitLabel = reward_node.getChildByName("ProfitLabel")?.getComponent(Label);
-            if (profitLabel) {
-                const profitText = this.formatPrizeNumber(item.netProfit);
+            if (profitLabel && this.raceComp) {
+                const profitText = this.raceComp.formatPrizeNumber(item.netProfit);
                 profitLabel.string = `🏆 ${profitText}`;
                 
                 // 根据盈亏设置颜色
@@ -381,75 +335,12 @@ export class RaceUI extends CCComp {
         }
     }
 
-    /**
-     * 格式化奖池数字显示（参考界面样式）
-     */
-    private formatPrizePool(value: number): string {
-        if (value >= 1000000) {
-            return `${(value / 1000000).toFixed(0)}M`;
-        } else if (value >= 1000) {
-            return `${(value / 1000).toFixed(0)}K`;
-        } else {
-            // 添加千位分隔符
-            return value.toLocaleString();
-        }
-    }
-
-    /**
-     * 格式化奖励数字显示（用于排行榜收益显示）
-     */
-    private formatPrizeNumber(value: number): string {
-        const absValue = Math.abs(value);
-        if (absValue >= 1000000) {
-            const formatted = `${(absValue / 1000000).toFixed(2)}M`;
-            return value < 0 ? `-${formatted}` : formatted;
-        } else if (absValue >= 1000) {
-            const formatted = `${(absValue / 1000).toFixed(2)}K`;
-            return value < 0 ? `-${formatted}` : formatted;
-        } else {
-            return value.toFixed(2);
-        }
-    }
-
-    /**
-     * 格式化剩余时间
-     */
-    private formatRemainingTime(milliseconds: number): string {
-        if (milliseconds <= 0) return "00:00:00";
-        
-        const totalSeconds = Math.floor(milliseconds / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-
-
-    /**
-     * 格式化用户ID显示
-     */
-    private formatUserId(userId: string): string {
-        if (userId.length > 8) {
-            return userId.substring(0, 6) + "...";
-        }
-        return userId;
-    }
 
     update(deltaTime: number) {
-        // 定期更新比赛数据
-        this.updateTimer += deltaTime * 1000; // 转换为毫秒
-        
-        if (this.updateTimer >= this.UPDATE_INTERVAL) {
-            this.updateTimer = 0;
-            this.fetchRaceData();
-        }
-
-        // 更新剩余时间倒计时
-        if (this.currentRaceInfo && this.timeLabel) {
-            this.currentRaceInfo.remainingTime -= deltaTime * 1000;
-            if (this.currentRaceInfo.remainingTime > 0) {
-                const remainingText = this.formatRemainingTime(this.currentRaceInfo.remainingTime);
+        // 更新剩余时间倒计时（使用RaceComp的数据）
+        if (this.raceComp && this.raceComp.currentRace && this.timeLabel) {
+            if (this.raceComp.currentRace.remainingTime > 0) {
+                const remainingText = this.raceComp.formatRemainingTime(this.raceComp.currentRace.remainingTime);
                 this.timeLabel.string = `RACE ENDS IN: ${remainingText}`;
             } else {
                 this.timeLabel.string = "Race Ended";
@@ -462,11 +353,12 @@ export class RaceUI extends CCComp {
         if (this.closeButton) {
             this.closeButton.node.off(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
+        
+        oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
     }
 
     reset(): void {
         console.log("RaceUI reset");
-        this.currentRaceInfo = null;
-        this.updateTimer = 0;
+        this.raceComp = null;
     }
 }

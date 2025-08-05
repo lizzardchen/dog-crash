@@ -9,6 +9,7 @@ import { GameHistoryComp } from "../comp/GameHistoryComp";
 import { SceneBackgroundComp } from "../comp/SceneBackgroundComp";
 import { RocketViewComp } from "../comp/RocketViewComp";
 import { EnergyComp } from "../comp/EnergyComp";
+import { RaceComp } from "../comp/RaceComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { MultiplierConfig } from "../config/MultiplierConfig";
 
@@ -24,6 +25,7 @@ export class CrashGame extends ecs.Entity {
         this.add(RocketViewComp);
         this.add(SceneBackgroundComp);
         this.add(EnergyComp);
+        this.add(RaceComp);
         
         // 初始化用户数据
         const userDataComp = this.get(UserDataComp);
@@ -58,6 +60,12 @@ export class CrashGame extends ecs.Entity {
         
         // 初始化用户数据和服务器连接
         await this.initializeUserData();
+        
+        // 初始化RaceComp
+        const raceComp = this.get(RaceComp);
+        if (raceComp) {
+            raceComp.initialize();
+        }
         
         console.log("CrashGame: Server initialization completed................");
     }
@@ -194,7 +202,7 @@ export class CrashGame extends ecs.Entity {
 
                 console.log("Uploading game record:", recordData);
 
-                oops.http.post(`user/${userDataComp.getUserId()}/record`, (ret) => {
+                oops.http.post(`user/${userDataComp.getUserId()}/record`, recordData, (ret) => {
                     if (ret.isSucc) {
                         console.log("Game record uploaded successfully");
                         // 更新本地数据为服务器返回的数据
@@ -292,7 +300,7 @@ export class CrashGame extends ecs.Entity {
             if (this.isOnline) {
                 this.syncUserData();
             }
-        }, 5 * 60 * 1000, true); // 5分钟间隔，重复执行
+        }, 5 * 60 * 1000); // 5分钟间隔
     }
 
     /**

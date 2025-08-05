@@ -144,8 +144,8 @@ export class MainGameUI extends CCComp {
         // 初始化UI显示
         this.updateUI();
         
-        // 初始化比赛倒计时显示
-        this.updateRaceCountdownDisplay();
+        // 开始定期更新倒计时
+        this.fetchAndUpdateRaceCountdown();
     }
 
     private initGameData(): void {
@@ -954,9 +954,6 @@ export class MainGameUI extends CCComp {
 
         // 更新能源显示
         this.updateEnergyDisplay();
-        
-        // 更新比赛倒计时显示
-        this.updateRaceCountdownDisplay();
     }
 
     private updatePotentialWin(): void {
@@ -1483,28 +1480,35 @@ export class MainGameUI extends CCComp {
      * 获取并更新比赛倒计时
      */
     private async fetchAndUpdateRaceCountdown(): Promise<void> {
-        try {
-            const response = await fetch(`${CrashGame.serverConfig.baseURL}race/current`);
-            const data = await response.json();
-            
-            if (data.success && data.data.hasActiveRace) {
-                const remainingTime = data.data.race.remainingTime;
-                // 更新本地倒计时时间
-                this.localRaceRemainingTime = remainingTime;
-                this.updateRaceCountdownDisplay(remainingTime);
-                console.log(`Race countdown synced with server: ${this.formatRaceRemainingTime(remainingTime)}`);
-            } else {
-                this.localRaceRemainingTime = 0;
-                this.updateRaceCountdownDisplay(0);
-                console.log('No active race found on server');
-            }
-        } catch (error) {
-            console.error('Failed to fetch race countdown:', error);
-            // 网络错误时保持本地倒计时继续运行，不重置为0
-            if (this.localRaceRemainingTime <= 0) {
-                this.updateRaceCountdownDisplay(0);
-            }
-        }
+        return new Promise((resolve) => {
+            oops.http.get(`race/current`, (ret) => {
+                try {
+                    if (!ret.isSucc) {
+                        throw new Error(ret.err);
+                    }
+                    const data = ret.res;
+                    
+                    if (data.success && data.data.hasActiveRace) {
+                        const remainingTime = data.data.race.remainingTime;
+                        // 更新本地倒计时时间
+                        this.localRaceRemainingTime = remainingTime;
+                        this.updateRaceCountdownDisplay(remainingTime);
+                        console.log(`Race countdown synced with server: ${this.formatRaceRemainingTime(remainingTime)}`);
+                    } else {
+                        this.localRaceRemainingTime = 0;
+                        this.updateRaceCountdownDisplay(0);
+                        console.log('No active race found on server');
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch race countdown:', error);
+                    // 网络错误时保持本地倒计时继续运行，不重置为0
+                    if (this.localRaceRemainingTime <= 0) {
+                        this.updateRaceCountdownDisplay(0);
+                    }
+                }
+                resolve();
+            });
+        });
     }
     
     /**
@@ -1522,9 +1526,6 @@ export class MainGameUI extends CCComp {
                 this.raceCountdownLabel.string = "No Race";
                 this.raceCountdownLabel.node.active = true;
             }
-        } else {
-            // 初始化时获取一次数据
-            this.fetchAndUpdateRaceCountdown();
         }
     }
     
