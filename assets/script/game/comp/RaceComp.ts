@@ -279,23 +279,10 @@ export class RaceComp extends ecs.Comp {
             this.lastCheckedRaceId = latestPrize.raceId;
             
             // 直接触发显示比赛结果
-            this.triggerRaceResultDisplay(latestPrize.raceId, latestPrize);
+            this.showRaceResult(latestPrize.raceId);
         }
     }
-
-    /**
-     * 触发比赛结果显示
-     */
-    private triggerRaceResultDisplay(raceId: string, userPrize: UserPrizeInfo): void { // userPrize is not used here, but kept for consistency
-        // 直接发送显示比赛结果的事件
-        oops.message.dispatchEvent("SHOW_RACE_RESULT", {
-            raceId: raceId,
-            userPrize: userPrize
-        });
-        
-        console.log(`Race result display triggered for: ${raceId}`);
-    }
-
+    
     /**
      * 标记比赛结果已显示
      */

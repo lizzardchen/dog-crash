@@ -64,13 +64,13 @@ export class RaceUI extends CCComp {
         this.updateDisplayFromRaceComp();
     }
 
-    private onEnable() {
+     onEnable() {
        if (smc.crashGame) {
             this.raceComp = smc.crashGame.get(RaceComp);
         } 
     }
 
-    private onDisable() {
+    onDisable() {
         this.raceComp = null;
     }
 
@@ -262,7 +262,7 @@ export class RaceUI extends CCComp {
     /**
      * 更新排行榜显示 - 显示4-11名（包括用户如果不在前11名）
      */
-    private updateLeaderboard(leaderboard: RaceLeaderboardItem[], userInfo: UserRaceInfo): void {
+    private updateLeaderboard(leaderboard: RaceLeaderboardItem[], userInfo: UserRaceInfo| null): void {
         if (!this.leaderboardContent || !this.leaderboardItemPrefab) {
             console.warn("Leaderboard content or prefab not found");
             return;
