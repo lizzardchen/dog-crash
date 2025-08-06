@@ -12,6 +12,7 @@ import { EnergyComp } from "../comp/EnergyComp";
 import { RaceComp } from "../comp/RaceComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { MultiplierConfig } from "../config/MultiplierConfig";
+import { SDKMgr } from "../common/SDKMgr";
 
 @ecs.register('CrashGame')
 export class CrashGame extends ecs.Entity {
@@ -35,6 +36,8 @@ export class CrashGame extends ecs.Entity {
         
         // 初始化音频系统
         CrashGameAudio.init();
+
+        SDKMgr.instance.init(true,true);
     }
     // 服务器配置
     public static serverConfig = {

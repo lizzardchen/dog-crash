@@ -36,13 +36,14 @@ class TipsManager {
      * @param onCancel  取消回调
      * @param title     窗口标题文本或多语言关键字
      * @param okWord    确认按钮文本或多语言关键字
+     * @param cancelWord 取消按钮文本或多语言关键字
      */
-    confirm(content: string, onOk?: Function, onCancel?: Function, title?: string, okWord?: string) {
+    confirm(content: string, onOk?: Function, onCancel?: Function, title?: string, okWord?: string, cancelWord?: string) {
         let operate: any = {
             title: title ? title : 'common_prompt_title',
             content: content,
             okWord: okWord ? okWord : 'common_prompt_ok',
-            cancelWord: 'common_prompt_cancal',
+            cancelWord: cancelWord ? cancelWord : 'common_prompt_cancal',
             okFunc: onOk,
             cancelFunc: onCancel,
             needCancel: true

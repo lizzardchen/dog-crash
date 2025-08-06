@@ -76,6 +76,11 @@ export class EnergyComp extends ecs.Comp {
      * 检查自动恢复
      */
     checkAutoRecovery(): void {
+        // 如果lastUpdateTime还没有初始化，设置为当前时间
+        if (this.lastUpdateTime === 0) {
+            this.lastUpdateTime = Date.now();
+        }
+        
         if (this.currentEnergy >= this.maxEnergy) {
             // 已满能源，更新最后更新时间但不恢复
             this.lastUpdateTime = Date.now();
@@ -94,7 +99,7 @@ export class EnergyComp extends ecs.Comp {
             if (energyToRecover > 0) {
                 this.recoverEnergy(energyToRecover, "auto");
                 // 更新最后更新时间，考虑剩余时间
-                this.lastUpdateTime = currentTime - (timeSinceLastUpdate % this.autoRecoveryInterval);
+                this.lastUpdateTime = currentTime;
                 this.saveEnergyData();
             }
         }
@@ -107,6 +112,12 @@ export class EnergyComp extends ecs.Comp {
     getTimeUntilNextRecovery(): number {
         if (this.currentEnergy >= this.maxEnergy) {
             return 0;
+        }
+        
+        // 如果lastUpdateTime还没有初始化，返回完整的恢复间隔时间
+        if (this.lastUpdateTime === 0) {
+            this.lastUpdateTime = Date.now();
+            return this.autoRecoveryInterval;
         }
         
         const currentTime = Date.now();
@@ -163,7 +174,7 @@ export class EnergyComp extends ecs.Comp {
             const energyData = localdata.loadEnergyData();
             if (energyData) {
                 this.currentEnergy = Math.min(energyData.currentEnergy || this.initialEnergy, this.maxEnergy);
-                this.lastUpdateTime = energyData.lastUpdateTime || Date.now();
+                this.lastUpdateTime = Date.now();
             } else {
                 // 首次运行，设置初始值
                 this.currentEnergy = this.initialEnergy;

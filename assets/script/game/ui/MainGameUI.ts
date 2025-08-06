@@ -8,10 +8,12 @@ import { LocalDataComp } from "../comp/LocalDataComp";
 import { SceneBackgroundComp, SceneInstance } from "../comp/SceneBackgroundComp";
 import { GameHistoryComp } from "../comp/GameHistoryComp";
 import { EnergyComp } from "../comp/EnergyComp";
+import { UserDataComp } from "../comp/UserDataComp";
 import { RaceComp } from "../comp/RaceComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { smc } from "../common/SingletonModuleComp";
+import { tips } from "../common/tips/TipsManager";
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
 import { SceneData } from "../scene/SceneData";
 import { SceneScriptComp } from '../scene/SceneScriptComp';
@@ -22,6 +24,7 @@ import { RaceUI } from "./RaceUI";
 import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets/core/gui/layer/Defines";
 import { CrashGame } from '../entity/CrashGame';
 import { RaceResultUI } from './RaceResultUI';
+import { SDKMgr } from '../../ADSDK/SDKMgr';
 
 const { ccclass, property } = _decorator;
 
@@ -446,10 +449,78 @@ export class MainGameUI extends CCComp {
         // 免费模式不需要检查余额
         if (!isFreeMode && amount > betting.balance) {
             console.warn("Insufficient balance:", amount, "vs", betting.balance);
+            // 金币不足，提示观看广告
+            this.showInsufficientCoinsDialog(amount - betting.balance);
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * 显示金币不足对话框
+     */
+    private showInsufficientCoinsDialog(neededAmount: number): void {
+        const rewardAmount = Math.max(100, Math.ceil(neededAmount / 100) * 100); // 向上取整到100的倍数
+        
+        tips.confirm(
+            `Insufficient coins! Need ${neededAmount} more coins. Watch ad to get ${rewardAmount} coins. Continue?`,
+            () => {
+                // 用户点击确认，播放广告
+                console.log("MainGameUI: User confirmed coins recovery ad");
+                this.showAdForCoins(rewardAmount);
+            },
+            () => {
+                // 用户点击取消
+                console.log("MainGameUI: User cancelled coins recovery ad");
+            },
+            "Insufficient Coins",
+            "Watch Ad"
+        );
+    }
+
+    /**
+     * 显示广告获取金币
+     */
+    private showAdForCoins(coinAmount: number): void {
+        console.log("MainGameUI: Showing ad for coins:", coinAmount);
+        SDKMgr.instance.showVideo(
+            () => {
+                // 广告观看成功 - 增加金币
+                if (smc.crashGame) {
+                    const betting = smc.crashGame.get(BettingComp);
+                    const userData = smc.crashGame.get(UserDataComp);
+                    
+                    if (betting) {
+                        betting.balance += coinAmount;
+                        console.log(`MainGameUI: Added ${coinAmount} coins, new balance: ${betting.balance}`);
+                    }
+                    
+                    if (userData) {
+                        userData.balance += coinAmount;
+                        userData.saveToLocal();
+                    }
+                    
+                    oops.gui.toast(`Congratulations! Got ${coinAmount} coins!`);
+                    
+                    // 发送金币更新事件
+                    oops.message.dispatchEvent("COINS_UPDATED", { 
+                        amount: coinAmount, 
+                        newBalance: betting ? betting.balance : 0 
+                    });
+                }
+            },
+            () => {
+                // 广告取消
+                console.log("MainGameUI: Coins ad cancelled");
+                oops.gui.toast("Ad cancelled");
+            },
+            () => {
+                // 广告错误
+                console.log("MainGameUI: Coins ad error");
+                oops.gui.toast("Ad failed to load, please try again later");
+            }
+        );
     }
 
     private processCashOut(): void {
@@ -1487,19 +1558,66 @@ export class MainGameUI extends CCComp {
             const status = energy.getEnergyStatus();
 
             if (status.canRecover) {
-                // 显示观看广告恢复能源的提示或直接恢复
-                console.log(`Energy recovery available. Current: ${status.current}/${status.max}`);
-
-                // 这里可以集成广告系统，暂时直接恢复
-                energy.recoverEnergyByAd();
-
-                // TODO: 集成真实的广告系统
-                // this.showAdForEnergyRecovery();
+                // 显示确认弹窗，询问是否观看广告
+                this.showEnergyRecoveryConfirm();
             } else {
                 console.log("Energy is already full");
-                // TODO: 显示能源已满的提示
+                oops.gui.toast("Energy is full!");
             }
         }
+    }
+
+    /**
+     * 显示能源恢复确认弹窗
+     */
+    private showEnergyRecoveryConfirm(): void {
+        console.log("MainGameUI: Showing energy recovery confirmation");
+        
+        tips.confirm(
+            "Watch ad to get 1 energy. Continue?",
+            () => {
+                // 用户点击确认，播放广告
+                console.log("MainGameUI: User confirmed energy recovery ad");
+                this.showAdForEnergyRecovery();
+            },
+            () => {
+                // 用户点击取消
+                console.log("MainGameUI: User cancelled energy recovery ad");
+            },
+            "Energy Recovery",
+            "Watch Ad",
+            "Cancel"
+        );
+    }
+
+    /**
+     * 显示广告恢复能源
+     */
+    private showAdForEnergyRecovery(): void {
+        console.log("MainGameUI: Showing ad for energy recovery");
+        SDKMgr.instance.showVideo(
+            () => {
+                // 广告观看成功 - 恢复能源
+                if (smc.crashGame) {
+                    const energy = smc.crashGame.get(EnergyComp);
+                    if (energy) {
+                        energy.recoverEnergyByAd();
+                        oops.gui.toast("Congratulations! Got 1 energy!");
+                        console.log("MainGameUI: Energy recovered via ad");
+                    }
+                }
+            },
+            () => {
+                // 广告取消
+                console.log("MainGameUI: Energy ad cancelled");
+                oops.gui.toast("Ad cancelled");
+            },
+            () => {
+                // 广告错误
+                console.log("MainGameUI: Energy ad error");
+                oops.gui.toast("Ad failed to load, please try again later");
+            }
+        );
     }
 
     /**
