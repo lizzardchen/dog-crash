@@ -66,18 +66,32 @@ export class MultiplierConfig {
             { time: 2, multiplier: 1.35, rocketState: RocketSceneState.GROUND },
             { time: 3, multiplier: 1.56, rocketState: RocketSceneState.GROUND },
             { time: 4, multiplier: 1.81, rocketState: RocketSceneState.GROUND },
-            { time: 5, multiplier: 2.10, rocketState: RocketSceneState.SKY },
-            { time: 6, multiplier: 2.43, rocketState: RocketSceneState.SKY },
+            { time: 5, multiplier: 2.10, rocketState: RocketSceneState.GROUND },
+            { time: 6, multiplier: 2.43, rocketState: RocketSceneState.GROUND },
             { time: 7, multiplier: 2.81, rocketState: RocketSceneState.SKY },
             { time: 8, multiplier: 3.25, rocketState: RocketSceneState.SKY },
             { time: 9, multiplier: 3.75, rocketState: RocketSceneState.SKY },
-            { time: 10, multiplier: 4.32, rocketState: RocketSceneState.ATMOSPHERE },
-            { time: 15, multiplier: 8.47, rocketState: RocketSceneState.ATMOSPHERE },
-            { time: 20, multiplier: 16.63, rocketState: RocketSceneState.ATMOSPHERE },
+            { time: 10, multiplier: 4.32, rocketState: RocketSceneState.SKY },
+            { time: 11, multiplier: 5.00, rocketState: RocketSceneState.SKY },
+            { time: 12, multiplier: 5.78, rocketState: RocketSceneState.SKY },
+            { time: 13, multiplier: 6.69, rocketState: RocketSceneState.SKY },
+            { time: 14, multiplier: 7.74, rocketState: RocketSceneState.SKY },
+            { time: 15, multiplier: 8.47, rocketState: RocketSceneState.SKY },
+            { time: 16, multiplier: 9.80, rocketState: RocketSceneState.SKY },
+            { time: 17, multiplier: 11.33, rocketState: RocketSceneState.SKY },
+            { time: 18, multiplier: 13.11, rocketState: RocketSceneState.SKY },
+            { time: 19, multiplier: 15.16, rocketState: RocketSceneState.SKY },
+            { time: 20, multiplier: 16.63, rocketState: RocketSceneState.SKY },
+            { time: 22, multiplier: 22.20, rocketState: RocketSceneState.ATMOSPHERE },
+            { time: 25, multiplier: 33.12, rocketState: RocketSceneState.ATMOSPHERE },
+            { time: 28, multiplier: 49.40, rocketState: RocketSceneState.ATMOSPHERE },
             { time: 30, multiplier: 64.65, rocketState: RocketSceneState.SPACE },
-            { time: 40, multiplier: 251.50, rocketState: RocketSceneState.SPACE }
+            { time: 35, multiplier: 148.41, rocketState: RocketSceneState.SPACE },
+            { time: 40, multiplier: 251.50, rocketState: RocketSceneState.SPACE },
+            { time: 45, multiplier: 665.14, rocketState: RocketSceneState.SPACE },
+            { time: 50, multiplier: 1808.04, rocketState: RocketSceneState.SPACE }
         ],
-        maxTime: 40,
+        maxTime: 50,
         interpolationType: 'exponential'
     };
 
@@ -100,7 +114,7 @@ export class MultiplierConfig {
     static async initialize(): Promise<void> {
         try {
             // 从服务器获取配置
-            const serverConfig = await this.fetchConfigFromServer();
+            const serverConfig = null;//await this.fetchConfigFromServer();
             
             if (serverConfig) {
                 // 从服务器配置更新
@@ -342,7 +356,7 @@ export class MultiplierConfig {
         switch (state) {
             case RocketSceneState.GROUND:
                 // Ground: 5 → 10，逐渐增加，克服重力+阻力
-                return (t: number) => 10 + 180 * t / duration;
+                return (t: number) => 50 + 140 * t / duration;
 
             case RocketSceneState.SKY:
                 // Sky: 10 → 12，快速增加，空气阻力急剧减少
@@ -350,11 +364,11 @@ export class MultiplierConfig {
 
             case RocketSceneState.ATMOSPHERE:
                 // Atmosphere: 12 → 6，缓慢下降但保持较高值
-                return (t: number) => -50 + 48 * t / duration;
+                return (t: number) => -100 + 98 * t / duration;
 
             case RocketSceneState.SPACE:
                 // Space: 6 → 1，趋向稳定但保持正值，避免减速
-                return (t: number) => -2 + 2 * t / duration;
+                return (t: number) => -2 + 3 * t / duration;
 
             default:
                 return (t: number) => 1;

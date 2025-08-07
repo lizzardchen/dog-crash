@@ -32,6 +32,11 @@ export class ThreeSliceStretch extends Component {
     updateLayout() {
         if (!this.top || !this.mid || !this.down) return;
 
+        const nodeWidget = this.node.getComponent(Widget);
+        if (nodeWidget) {
+            nodeWidget.updateAlignment();
+        }
+        
         // 计算top实际高度
         const topActualHeight = ScaleRatio.getScreenScaledHeight(this.topDesignHeight);
         
@@ -48,6 +53,17 @@ export class ThreeSliceStretch extends Component {
         const downTransform = this.down.getComponent(UITransform);
         if (downTransform) {
             downTransform.height = downActualHeight;
+        }
+
+        // 更新所有子节点的Widget
+        const topWidget = this.top.getComponent(Widget);
+        if (topWidget) {
+            topWidget.updateAlignment();
+        }
+        
+        const downWidget = this.down.getComponent(Widget);
+        if (downWidget) {
+            downWidget.updateAlignment();
         }
 
         // 设置mid的Widget边距

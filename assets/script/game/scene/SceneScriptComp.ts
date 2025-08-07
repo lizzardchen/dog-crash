@@ -62,6 +62,7 @@ export class SceneScriptComp extends Component {
     private nodeTweens: Map<Node, Tween<Node>> = new Map();
     private currentGlobalSpeed: number = 1.0;
     private scrollTween: Tween<Node> | null = null;
+    private nodeDataMap: Map<Node, {originalY: number}> = new Map();
 
     onLoad() {
         console.log(`SceneScriptComp loaded: ${this.node.name}`);
@@ -72,6 +73,10 @@ export class SceneScriptComp extends Component {
         // 初始化场景状态 - 默认不激活
         this.setActive(false);
         console.log(`SceneScriptComp started: ${this.node.name}, nodes: ${this.nodeConfigs.length}`);
+    }
+
+    protected update(dt: number): void {
+        this.updateScrollOffset();
     }
 
     /**
@@ -480,12 +485,7 @@ export class SceneScriptComp extends Component {
      * - 背景元素(isBackground=true)不需要移动，跟随整个预制体移动
      * - 非背景元素在预制体内独立移动，速度受currentSpeedMultiplier影响
      */
-    updateScrollOffset(offset: number): void {
-        // 确保场景已激活
-        if (!this.isActive) {
-            this.setActive(true);
-        }
-
+    updateScrollOffset(): void {
         // 只更新非背景元素的运动
         this.updateNonBackgroundElements();
     }
@@ -567,14 +567,15 @@ export class SceneScriptComp extends Component {
         // 浮动运动的频率也受速度影响
         const time = Date.now() * 0.001 * speed;
         const floatRange = 20;
-        const baseY = node.userData?.originalY || node.position.y;
-
-        // 保存原始Y位置
-        if (node.userData?.originalY === undefined) {
-            node.userData = node.userData || {};
-            node.userData.originalY = node.position.y;
+        
+        // 获取或创建节点数据
+        let nodeData = this.nodeDataMap.get(node);
+        if (!nodeData) {
+            nodeData = { originalY: node.position.y };
+            this.nodeDataMap.set(node, nodeData);
         }
-
+        
+        const baseY = nodeData.originalY;
         const floatY = baseY + Math.sin(time) * floatRange;
         node.setPosition(node.position.x, floatY);
     }
@@ -616,5 +617,6 @@ export class SceneScriptComp extends Component {
 
     onDestroy() {
         this.stopAllNodeMotions();
+        this.nodeDataMap.clear();
     }
 }
