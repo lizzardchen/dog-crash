@@ -193,8 +193,18 @@ export class CrashGame extends ecs.Entity {
                     }
                 }
 
+                let cur_betAmount:Number = Number(gameResult.betAmount);
+                if(cur_betAmount == 90){
+                    if(gameResult.isWin){
+                        cur_betAmount = 90;
+                    }
+                    else{
+                        cur_betAmount = 0;
+                    }
+                }
+
                 const recordData = {
-                    betAmount: Number(gameResult.betAmount),
+                    betAmount: Number(cur_betAmount),
                     multiplier: Number(gameResult.crashMultiplier),
                     winAmount: Number(gameResult.winAmount),
                     isWin: Boolean(gameResult.isWin),
@@ -235,34 +245,7 @@ export class CrashGame extends ecs.Entity {
             }
         });
     }
-
-    /**
-     * 获取排行榜
-     */
-    public async getLeaderboard(limit: number = 10): Promise<any[]> {
-        if (!this.isOnline) {
-            console.log("Offline mode - leaderboard unavailable");
-            return [];
-        }
-
-        return new Promise((resolve) => {
-            try {
-                oops.http.get(`user/leaderboard?limit=${limit}`, (ret) => {
-                    if (ret.isSucc && ret.res && ret.res.data) {
-                        resolve(ret.res.data.leaderboard || []);
-                    } else {
-                        console.error("Failed to get leaderboard:", ret.err);
-                        resolve([]);
-                    }
-                });
-            } catch (error) {
-                console.error("Failed to get leaderboard:", error);
-                this.isOnline = false;
-                resolve([]);
-            }
-        });
-    }
-
+    
     /**
      * 手动同步用户数据
      */

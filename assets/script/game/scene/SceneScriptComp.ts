@@ -1,8 +1,9 @@
-import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite } from 'cc';
+import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite, view } from 'cc';
 import { SceneBackgroundComp, SceneLayer } from '../comp/SceneBackgroundComp';
 import { smc } from '../common/SingletonModuleComp';
 import { ScenePhysicalResult } from '../config/MultiplierConfig';
 import { RocketSceneState } from '../comp/RocketViewComp';
+import { ThreeSliceStretch } from '../../utils/ThreeSliceStretch';
 
 const { ccclass, property } = _decorator;
 
@@ -51,6 +52,9 @@ export class SceneScriptComp extends Component {
 
     @property({ type: Node, tooltip: "可滚动的内容节点" })
     scrollContent: Node = null!;
+
+    @property({type:ThreeSliceStretch})
+    bgStretch: ThreeSliceStretch = null!;
 
     // 运行时数据 - 这些信息由外部系统设置
     private sceneInfo: { type: string, layer: string } = { type: "unknown", layer: "unknown" };
@@ -160,9 +164,9 @@ export class SceneScriptComp extends Component {
         // 记录旧的高度
         const oldHeight = uitransform.contentSize.height;
         let newHeight = physicInfo.sceneHeight;
-        if (physicInfo.rocketState == RocketSceneState.GROUND) {
+        if (physicInfo.rocketState == RocketSceneState.GROUND && this.node.parent) {
             const parent_uitransform = this.node.parent.getComponent(UITransform);
-            newHeight = parent_uitransform?.contentSize.height + newHeight;
+            newHeight = (parent_uitransform?.contentSize.height || 0) + (newHeight < 0 ? 0 : newHeight);
             physicInfo.sceneHeight = newHeight;
         }
 
@@ -172,7 +176,7 @@ export class SceneScriptComp extends Component {
         }
 
         // 设置新的高度和宽度（宽度等于高度）
-        uitransform.setContentSize(newHeight, newHeight);
+        uitransform.setContentSize(view.getVisibleSize().width, newHeight);
 
         // 计算位置缩放比例：y2/(newHeight/2) = y1/(oldHeight/2) => y2 = y1 * newHeight / oldHeight
         const scaleRatio = newHeight / oldHeight;
@@ -197,6 +201,9 @@ export class SceneScriptComp extends Component {
         // 如果有滚动内容，也需要立即刷新
         if (this.scrollContent) {
             this.scrollContent.updateWorldTransform();
+        }
+         if( this.bgStretch ){
+            this.bgStretch.updateLayout();
         }
     }
 

@@ -230,20 +230,15 @@ export class RaceUI extends CCComp {
             nameLabel.string = this.raceComp.formatUserId(item.userId);
         }
         
-        // 设置收益
+        // 设置奖励
         const profitLabel = node.getChildByName("ProfitLabel")?.getComponent(Label);
         if (profitLabel && this.raceComp) {
-            const profitText = this.raceComp.formatPrizeNumber(item.netProfit);
-            profitLabel.string = `🏆 ${profitText}`;
+            const prizeAmount = this.raceComp.calculatePrizeAmount(item.rank);
+            const prizeText = this.raceComp.formatPrizeNumber(prizeAmount);
+            profitLabel.string = `🏆 ${prizeText}`;
             
-            // 根据盈亏设置颜色
-            if (item.netProfit > 0) {
-                profitLabel.color = new Color(255, 215, 0, 255); // 金色
-            } else if (item.netProfit < 0) {
-                profitLabel.color = new Color(255, 100, 100, 255); // 红色
-            } else {
-                profitLabel.color = new Color(255, 255, 255, 255); // 白色
-            }
+            // 前三名固定金色
+            profitLabel.color = new Color(255, 215, 0, 255); // 金色
         }
     }
     
@@ -312,20 +307,19 @@ export class RaceUI extends CCComp {
                 nameLabel.string = isUser ? "YOU" : this.raceComp.formatUserId(item.userId);
             }
 
-            // 设置收益
+            // 设置奖励
             const reward_node = itemNode.getChildByName("reward") as Node;
             const profitLabel = reward_node.getChildByName("ProfitLabel")?.getComponent(Label);
             if (profitLabel && this.raceComp) {
-                const profitText = this.raceComp.formatPrizeNumber(item.netProfit);
-                profitLabel.string = `🏆 ${profitText}`;
+                const prizeAmount = this.raceComp.calculatePrizeAmount(item.rank);
+                const prizeText = this.raceComp.formatPrizeNumber(prizeAmount);
+                profitLabel.string = `🏆 ${prizeText}`;
                 
-                // 根据盈亏设置颜色
-                if (item.netProfit > 0) {
+                // 4-10名有奖励显示金色，11名以后无奖励显示灰色
+                if (prizeAmount > 0) {
                     profitLabel.color = new Color(255, 215, 0, 255); // 金色
-                } else if (item.netProfit < 0) {
-                    profitLabel.color = new Color(255, 100, 100, 255); // 红色
                 } else {
-                    profitLabel.color = new Color(255, 255, 255, 255); // 白色
+                    profitLabel.color = new Color(150, 150, 150, 255); // 灰色
                 }
             }
 
