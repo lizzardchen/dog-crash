@@ -149,7 +149,12 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             }
             const scenescriptComp = sceneInstance.backNode?.getComponent(SceneScriptComp);
             if (scenescriptComp) {
+                const front_scene = sceneInstance.frontNode?.getComponent(SceneScriptComp);
+                if(front_scene) {
+                    front_scene.ResetScenePhysicInfo(scenePhysicInfo);
+                }
                 scenescriptComp.ResetScenePhysicInfo(scenePhysicInfo);
+                
             }
             // 查找该场景对应的时间段
             const sceneTimePoints = timePoints.filter(tp => tp.rocketState === sceneConfig.rocketState);

@@ -1,9 +1,10 @@
-import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite, view } from 'cc';
+import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite, view, Vec3 } from 'cc';
 import { SceneBackgroundComp, SceneLayer } from '../comp/SceneBackgroundComp';
 import { smc } from '../common/SingletonModuleComp';
 import { ScenePhysicalResult } from '../config/MultiplierConfig';
 import { RocketSceneState } from '../comp/RocketViewComp';
 import { ThreeSliceStretch } from '../../utils/ThreeSliceStretch';
+import { GameState, GameStateComp } from '../comp/GameStateComp';
 
 const { ccclass, property } = _decorator;
 
@@ -63,6 +64,7 @@ export class SceneScriptComp extends Component {
     private currentGlobalSpeed: number = 1.0;
     private scrollTween: Tween<Node> | null = null;
     private nodeDataMap: Map<Node, {originalY: number}> = new Map();
+    private lastGameState: GameState | null = null;
 
     onLoad() {
         console.log(`SceneScriptComp loaded: ${this.node.name}`);
@@ -76,7 +78,31 @@ export class SceneScriptComp extends Component {
     }
 
     protected update(dt: number): void {
-        this.updateScrollOffset();
+        if (smc.crashGame) {
+            const gameStateComp = smc.crashGame.get(GameStateComp);
+            if (gameStateComp) {
+                const currentState = gameStateComp.state;
+                // 检测状态变化
+                if (currentState !== this.lastGameState) {
+                    this.onGameStateChanged(this.lastGameState, currentState);
+                    this.lastGameState = currentState;
+                }
+            }
+        }
+    }
+
+    /**
+     * 游戏状态变化处理
+     */
+    private onGameStateChanged(oldState: GameState | null, newState: GameState): void {
+        if (newState === GameState.WAITING || newState === GameState.INIT) {
+            // 停止场景效果（包括非背景节点动画）
+            this.stopSceneEffects();
+        } else if (newState === GameState.FLYING) {
+            // 启动场景效果（包括非背景节点动画）
+            this.stopSceneEffects();
+            this.startSceneEffects();
+        }
     }
 
     /**
@@ -87,12 +113,6 @@ export class SceneScriptComp extends Component {
     setSceneInfo(sceneType: string, sceneLayer: string): void {
         this.sceneInfo = { type: sceneType, layer: sceneLayer };
         console.log(`Scene info set for ${this.node.name}: ${sceneType}_${sceneLayer}`);
-
-        // 如果场景已经激活，重新启动效果以应用新的场景信息
-        if (this.isActive) {
-            this.stopSceneEffects();
-            this.startSceneEffects();
-        }
     }
 
     /** 初始化所有子节点 */
@@ -157,6 +177,10 @@ export class SceneScriptComp extends Component {
             this.stopSceneEffects();
             console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} deactivated`);
         }
+        const gameStateComp = smc.crashGame.get(GameStateComp);
+        if (gameStateComp) {
+            this.lastGameState = gameStateComp.state;
+        }
     }
 
     ResetScenePhysicInfo(physicInfo: ScenePhysicalResult): void {
@@ -211,30 +235,6 @@ export class SceneScriptComp extends Component {
             this.bgStretch.updateLayout();
         }
     }
-
-    /**
-     * 更新场景速度 - 根据SceneBackgroundComp的数值
-     */
-    updateFromSceneComp(): void {
-        if (!smc.crashGame) return;
-
-        const sceneComp = smc.crashGame.get(SceneBackgroundComp);
-        if (!sceneComp) return;
-
-        // 获取当前层级的速度
-        const layer = this.sceneInfo.layer === "back" ? SceneLayer.BACK : SceneLayer.FRONT;
-        const currentSpeed = sceneComp.getCurrentScrollSpeed(layer);
-
-        // 计算速度倍数
-        const baseSpeed = this.sceneInfo.layer === "back" ? sceneComp.baseBackScrollSpeed : sceneComp.baseFrontScrollSpeed;
-        this.currentGlobalSpeed = baseSpeed > 0 ? currentSpeed / baseSpeed : 1.0;
-
-        // 更新所有子节点的运动
-        if (this.isActive) {
-            this.updateAllNodeMotions();
-        }
-    }
-
     /**
      * 启动场景效果
      */
@@ -285,6 +285,7 @@ export class SceneScriptComp extends Component {
         }
     }
 
+
     /** 更新所有子节点的运动 */
     private updateAllNodeMotions(): void {
         this.nodeConfigs.forEach(config => {
@@ -294,7 +295,7 @@ export class SceneScriptComp extends Component {
 
     /** 启动单个节点的运动 */
     private startNodeMotion(config: SceneNodeConfig): void {
-        if (!config.targetNode) return;
+        if (!config.targetNode || config.isBackground) return;
 
         const finalSpeed = config.affectedByGlobalSpeed ?
             config.speedMultiplier * this.currentGlobalSpeed :
@@ -338,24 +339,23 @@ export class SceneScriptComp extends Component {
     /** 滚动运动 */
     private startScrollMotion(config: SceneNodeConfig, speed: number): void {
         const node = config.targetNode;
-        const uiTransform = node.getComponent(UITransform);
-        if (!uiTransform) return;
+        
+        // 使用SceneScriptComp节点的高度作为滚动范围
+        const sceneHeight = this.node.getComponent(UITransform)?.contentSize.height || 0;
+        if (sceneHeight <= 0) return;
 
-        const contentHeight = uiTransform.contentSize.height;
-        if (contentHeight <= 0) return;
+        const scrollSpeed = speed * 100; // 基础滚动速度
+        const scrollTime = sceneHeight / scrollSpeed;
 
-        const scrollSpeed = speed * 50; // 基础滚动速度
-        const scrollTime = contentHeight / scrollSpeed;
-
-        // 创建无缝循环滚动
-        const initialY = node.position.y;
+        // 创建相对位移的无缝循环滚动（在整个场景高度范围内滚动）
         const scrollTween = tween(node)
             .repeatForever(
                 tween(node)
-                    .to(scrollTime, { position: node.position.clone().add3f(0, -contentHeight, 0) })
+                    .by(scrollTime, { y: -sceneHeight })
                     .call(() => {
-                        // 重置到起始位置，创建无缝循环
-                        node.setPosition(node.position.x, initialY);
+                        // 相对位移重置：向上移动sceneHeight，形成无缝循环
+                        const currentPos = node.position;
+                        node.setPosition(currentPos.x, currentPos.y + sceneHeight, currentPos.z);
                     })
             )
             .start();
@@ -366,14 +366,29 @@ export class SceneScriptComp extends Component {
     /** 浮动运动 */
     private startFloatMotion(config: SceneNodeConfig, speed: number): void {
         const node = config.targetNode;
-        const floatRange = 20 * speed;
-        const floatTime = 2.0 / speed;
+        const horizontalRange = 300; // 左右浮动范围
+        const verticalRange = 30; // 上下轻微起伏
+        const floatTime = 3.0; // 更慢的浮动时间，不受speed影响
 
         const floatTween = tween(node)
             .repeatForever(
                 tween(node)
-                    .to(floatTime, { position: node.position.clone().add3f(0, floatRange, 0) })
-                    .to(floatTime, { position: node.position.clone().add3f(0, -floatRange, 0) })
+                    // 向右上浮动
+                    .to(floatTime, { 
+                        position: node.position.clone().add3f(horizontalRange, verticalRange, 0) 
+                    }, { easing: 'sineInOut' })
+                    // 向左下浮动  
+                    .to(floatTime, { 
+                        position: node.position.clone().add3f(-horizontalRange, -verticalRange, 0) 
+                    }, { easing: 'sineInOut' })
+                    // 回到右下
+                    .to(floatTime, { 
+                        position: node.position.clone().add3f(horizontalRange, -verticalRange, 0) 
+                    }, { easing: 'sineInOut' })
+                    // 回到左上
+                    .to(floatTime, { 
+                        position: node.position.clone().add3f(-horizontalRange, verticalRange, 0) 
+                    }, { easing: 'sineInOut' })
             )
             .start();
 
@@ -478,135 +493,6 @@ export class SceneScriptComp extends Component {
             this.sceneAnimation.play(effectName);
         }
     }
-
-    /**
-     * 更新滚动偏移（由 SceneBackgroundSystem 调用）
-     * 新的逻辑：
-     * - 背景元素(isBackground=true)不需要移动，跟随整个预制体移动
-     * - 非背景元素在预制体内独立移动，速度受currentSpeedMultiplier影响
-     */
-    updateScrollOffset(): void {
-        // 只更新非背景元素的运动
-        this.updateNonBackgroundElements();
-    }
-
-    /**
-     * 更新非背景元素的运动
-     * 这些元素在场景预制体内独立移动，速度受currentSpeedMultiplier影响
-     */
-    private updateNonBackgroundElements(): void {
-        if (!smc.crashGame) return;
-
-        const sceneComp = smc.crashGame.get(SceneBackgroundComp);
-        if (!sceneComp) return;
-
-        // 获取当前的速度倍数
-        const speedMultiplier = sceneComp.currentSpeedMultiplier || 1.0;
-
-        // 更新所有非背景元素
-        this.nodeConfigs.forEach(config => {
-            if (!config.isBackground && config.targetNode && config.affectedByGlobalSpeed) {
-                this.updateNonBackgroundNode(config, speedMultiplier);
-            }
-        });
-    }
-
-    /**
-     * 更新单个非背景节点的运动
-     */
-    private updateNonBackgroundNode(config: SceneNodeConfig, speedMultiplier: number): void {
-        const node = config.targetNode;
-        const finalSpeed = config.speedMultiplier * speedMultiplier;
-
-        // 根据运动类型更新节点
-        switch (config.motionType) {
-            case NodeMotionType.SCROLL:
-                this.updateScrollingNode(node, finalSpeed);
-                break;
-            case NodeMotionType.FLOAT:
-                // 浮动运动的速度也受speedMultiplier影响
-                this.updateFloatingNode(node, finalSpeed);
-                break;
-            case NodeMotionType.ROTATE:
-                // 旋转运动的速度也受speedMultiplier影响
-                this.updateRotatingNode(node, finalSpeed);
-                break;
-            // 其他运动类型...
-        }
-    }
-
-    /**
-     * 更新滚动类型的非背景节点
-     * 实现元素在场景内的循环滚动
-     */
-    private updateScrollingNode(node: Node, speed: number): void {
-        // 获取场景的边界（用于循环）
-        const sceneBounds = this.getSceneBounds();
-        if (!sceneBounds) return;
-
-        // 计算移动距离
-        const deltaTime = 1 / 60; // 假设60FPS
-        const moveDistance = speed * deltaTime * 50; // 调整移动速度
-
-        // 向下移动
-        const currentY = node.position.y;
-        const newY = currentY - moveDistance;
-
-        // 检查是否超出下边界，如果是则从上方重新进入
-        if (newY < sceneBounds.bottom) {
-            node.setPosition(node.position.x, sceneBounds.top);
-        } else {
-            node.setPosition(node.position.x, newY);
-        }
-    }
-
-    /**
-     * 更新浮动类型的非背景节点
-     */
-    private updateFloatingNode(node: Node, speed: number): void {
-        // 浮动运动的频率也受速度影响
-        const time = Date.now() * 0.001 * speed;
-        const floatRange = 20;
-        
-        // 获取或创建节点数据
-        let nodeData = this.nodeDataMap.get(node);
-        if (!nodeData) {
-            nodeData = { originalY: node.position.y };
-            this.nodeDataMap.set(node, nodeData);
-        }
-        
-        const baseY = nodeData.originalY;
-        const floatY = baseY + Math.sin(time) * floatRange;
-        node.setPosition(node.position.x, floatY);
-    }
-
-    /**
-     * 更新旋转类型的非背景节点
-     */
-    private updateRotatingNode(node: Node, speed: number): void {
-        // 旋转速度也受speedMultiplier影响
-        const rotateSpeed = speed * 50; // 度/秒
-        const deltaTime = 1 / 60;
-        const currentAngle = node.angle;
-        const newAngle = (currentAngle + rotateSpeed * deltaTime) % 360;
-        node.angle = newAngle;
-    }
-
-    /**
-     * 获取场景边界
-     */
-    private getSceneBounds(): { top: number, bottom: number } | null {
-        const uiTransform = this.node.getComponent(UITransform);
-        if (!uiTransform) return null;
-
-        const height = uiTransform.contentSize.height || 1334;
-        return {
-            top: height / 2,
-            bottom: -height / 2
-        };
-    }
-
-
 
     /**
      * 获取场景信息

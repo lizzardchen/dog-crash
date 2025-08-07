@@ -15,6 +15,9 @@ export class ThreeSliceStretch extends Component {
     @property(Node)
     down: Node = null!;
 
+    @property(Node)
+    front:Node = null!;
+
     @property
     topDesignHeight: number = 100;
 
@@ -31,6 +34,11 @@ export class ThreeSliceStretch extends Component {
 
     updateLayout() {
         if (!this.top || !this.mid || !this.down) return;
+
+        if( this.front ){
+            const front_widget = this.front.getComponent(Widget);
+            front_widget && front_widget.updateAlignment();
+        }
 
         const nodeWidget = this.node.getComponent(Widget);
         if (nodeWidget) {
