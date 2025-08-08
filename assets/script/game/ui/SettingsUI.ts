@@ -32,16 +32,8 @@ export class SettingsUI extends CCComp {
     @property(Label)
     usernameLabel: Label = null!;
     
-    // 音效开关
-    @property(Label)
-    soundLabel: Label = null!;
-    
     @property(Toggle)
     soundToggle: Toggle = null!;
-    
-    // 音乐开关
-    @property(Label)
-    musicLabel: Label = null!;
     
     @property(Toggle)
     musicToggle: Toggle = null!;
@@ -122,18 +114,6 @@ export class SettingsUI extends CCComp {
             this.usernameLabel.string = this.userDataComp.username || this.userDataComp.getUserId().substring(0, 12);
         }
         
-        // 更新音效标签和开关状态
-        if (this.soundLabel) {
-            this.soundLabel.string = "SOUND";
-        }
-        if (this.soundToggle) {
-            this.soundToggle.isChecked = settings.soundEnabled;
-        }
-        
-        // 更新音乐标签和开关状态
-        if (this.musicLabel) {
-            this.musicLabel.string = "MUSIC";
-        }
         if (this.musicToggle) {
             this.musicToggle.isChecked = settings.musicEnabled;
         }

@@ -15,9 +15,6 @@ const { ccclass, property } = _decorator;
 export class RaceUI extends CCComp {
     // 顶部信息
     @property(Label)
-    titleLabel: Label = null!;
-
-    @property(Label)
     timeLabel: Label = null!;
 
     @property(Label)
@@ -43,9 +40,20 @@ export class RaceUI extends CCComp {
     @property(Prefab)
     leaderboardItemPrefab: Prefab = null!;
 
+    @property(Node)
+    detail_panel:Node = null!;
+
+    // 打开detail按钮
+    @property(Button)
+    openDetailButton: Button = null!;
+
     // 关闭按钮
     @property(Button)
     closeButton: Button = null!;
+
+    // 关闭detail按钮
+    @property(Button)
+    closeDetailButton: Button = null!;
 
     private raceComp: RaceComp | null = null;
 
@@ -79,9 +87,31 @@ export class RaceUI extends CCComp {
         if (this.closeButton) {
             this.closeButton.node.on(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
+        if(this.openDetailButton){
+            this.openDetailButton.node.on(Button.EventType.CLICK, this.onShowDetailButtonClick, this);
+        }
+        if(this.closeDetailButton){
+            this.closeDetailButton.node.on(Button.EventType.CLICK, this.onCloseDetailButtonClick, this);
+        }
         
         // 监听比赛数据更新事件
         oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
+    }
+
+    private onShowDetailButtonClick(): void {
+        CrashGameAudio.playButtonClick();
+        console.log("Race open detail button clicked");
+        if(this.detail_panel){
+            this.detail_panel.active = true;
+        }
+    }
+
+    private onCloseDetailButtonClick(): void {
+        CrashGameAudio.playButtonClick();
+        console.log("Race close detail button clicked");
+        if(this.detail_panel){
+            this.detail_panel.active = false;
+        }
     }
 
     private onCloseButtonClick(): void {
@@ -134,9 +164,9 @@ export class RaceUI extends CCComp {
      * 显示没有活跃比赛的状态
      */
     private displayNoActiveRace(): void {
-        if (this.titleLabel) {
-            this.titleLabel.string = "BLAST-OFF!\nRACES";
-        }
+        // if (this.titleLabel) {
+        //     this.titleLabel.string = "BLAST-OFF!\nRACES";
+        // }
         if (this.timeLabel) {
             this.timeLabel.string = "No active race";
         }
@@ -157,9 +187,9 @@ export class RaceUI extends CCComp {
      * 显示加载状态
      */
     private displayLoading(): void {
-        if (this.titleLabel) {
-            this.titleLabel.string = "BLAST-OFF!\nRACES";
-        }
+        // if (this.titleLabel) {
+        //     this.titleLabel.string = "BLAST-OFF!\nRACES";
+        // }
         if (this.timeLabel) {
             this.timeLabel.string = "Loading...";
         }
@@ -178,9 +208,9 @@ export class RaceUI extends CCComp {
      */
     private updateDisplay(raceInfo: RaceInfo, leaderboard: RaceLeaderboardItem[], userInfo: UserRaceInfo | null): void {
         // 更新标题
-        if (this.titleLabel) {
-            this.titleLabel.string = "BLAST-OFF!\nRACES";
-        }
+        // if (this.titleLabel) {
+        //     this.titleLabel.string = "BLAST-OFF!\nRACES";
+        // }
 
         // 更新剩余时间
         if (this.timeLabel && this.raceComp) {
@@ -225,13 +255,15 @@ export class RaceUI extends CCComp {
      */
     private updatePodiumNode(node: Node, item: RaceLeaderboardItem): void {
         // 设置用户名
-        const nameLabel = node.getChildByName("NameLabel")?.getComponent(Label);
+        const content_node = node.getChildByName("Content");
+        if (!content_node) return;
+        const nameLabel = content_node.getChildByName("NameLabel")?.getComponent(Label);
         if (nameLabel && this.raceComp) {
             nameLabel.string = this.raceComp.formatUserId(item.userId);
         }
         
         // 设置奖励
-        const profitLabel = node.getChildByName("ProfitLabel")?.getComponent(Label);
+        const profitLabel = content_node.getChildByName("ProfitLabel")?.getComponent(Label);
         if (profitLabel && this.raceComp) {
             const prizeAmount = this.raceComp.calculatePrizeAmount(item.rank);
             const prizeText = this.raceComp.formatPrizeNumber(prizeAmount);
@@ -295,21 +327,23 @@ export class RaceUI extends CCComp {
             const itemNode = instantiate(this.leaderboardItemPrefab);
             itemNode.name = `LeaderboardItem_${displayPosition}`;
 
+            const content_node = itemNode.getChildByName("Content");
+            if (!content_node) return;
+
             // 设置排名
-            const rankLabel = itemNode.getChildByName("RankLabel")?.getComponent(Label);
+            const rankLabel = content_node.getChildByName("RankLabel")?.getComponent(Label);
             if (rankLabel) {
                 rankLabel.string = item.rank.toString();
             }
 
             // 设置用户名
-            const nameLabel = itemNode.getChildByName("NameLabel")?.getComponent(Label);
+            const nameLabel = content_node.getChildByName("NameLabel")?.getComponent(Label);
             if (nameLabel && this.raceComp) {
                 nameLabel.string = isUser ? "YOU" : this.raceComp.formatUserId(item.userId);
             }
 
             // 设置奖励
-            const reward_node = itemNode.getChildByName("reward") as Node;
-            const profitLabel = reward_node.getChildByName("ProfitLabel")?.getComponent(Label);
+            const profitLabel = content_node.getChildByName("ProfitLabel")?.getComponent(Label);
             if (profitLabel && this.raceComp) {
                 const prizeAmount = this.raceComp.calculatePrizeAmount(item.rank);
                 const prizeText = this.raceComp.formatPrizeNumber(prizeAmount);
@@ -325,9 +359,14 @@ export class RaceUI extends CCComp {
 
             // 如果是用户自己，设置特殊背景色
             if (isUser) {
-                const bgSprite = itemNode.getComponent(Sprite);
-                if (bgSprite) {
-                    bgSprite.color = new Color(255, 255, 0, 100); // 半透明黄色
+                const self_bg = itemNode.getChildByName('bg');
+                if(self_bg){
+                    self_bg.active = true;
+                }
+            }else{
+                const self_bg = itemNode.getChildByName('bg');
+                if(self_bg){
+                    self_bg.active = false; // 非用户不显示背景
                 }
             }
 
@@ -356,6 +395,14 @@ export class RaceUI extends CCComp {
         // 清理事件监听
         if (this.closeButton) {
             this.closeButton.node.off(Button.EventType.CLICK, this.onCloseButtonClick, this);
+        }
+
+        if(this.openDetailButton){
+            this.openDetailButton.node.off(Button.EventType.CLICK, this.onShowDetailButtonClick, this);
+        }
+
+        if(this.closeDetailButton){
+            this.closeDetailButton.node.off(Button.EventType.CLICK, this.onCloseDetailButtonClick, this);
         }
         
         oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
