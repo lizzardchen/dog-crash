@@ -255,7 +255,7 @@ export class RaceUI extends CCComp {
      */
     private updatePodiumNode(node: Node, item: RaceLeaderboardItem): void {
         // 设置用户名
-        const content_node = node.getChildByName("Content");
+        const content_node = node.getChildByName("content");
         if (!content_node) return;
         const nameLabel = content_node.getChildByName("NameLabel")?.getComponent(Label);
         if (nameLabel && this.raceComp) {
@@ -267,10 +267,10 @@ export class RaceUI extends CCComp {
         if (profitLabel && this.raceComp) {
             const prizeAmount = this.raceComp.calculatePrizeAmount(item.rank);
             const prizeText = this.raceComp.formatPrizeNumber(prizeAmount);
-            profitLabel.string = `🏆 ${prizeText}`;
+            profitLabel.string = `${prizeText}`;
             
-            // 前三名固定金色
-            profitLabel.color = new Color(255, 215, 0, 255); // 金色
+            // // 前三名固定金色
+            // profitLabel.color = new Color(255, 215, 0, 255); // 金色
         }
     }
     
@@ -327,7 +327,7 @@ export class RaceUI extends CCComp {
             const itemNode = instantiate(this.leaderboardItemPrefab);
             itemNode.name = `LeaderboardItem_${displayPosition}`;
 
-            const content_node = itemNode.getChildByName("Content");
+            const content_node = itemNode.getChildByName("content");
             if (!content_node) return;
 
             // 设置排名
@@ -347,14 +347,14 @@ export class RaceUI extends CCComp {
             if (profitLabel && this.raceComp) {
                 const prizeAmount = this.raceComp.calculatePrizeAmount(item.rank);
                 const prizeText = this.raceComp.formatPrizeNumber(prizeAmount);
-                profitLabel.string = `🏆 ${prizeText}`;
+                profitLabel.string = `${prizeText}`;
                 
                 // 4-10名有奖励显示金色，11名以后无奖励显示灰色
-                if (prizeAmount > 0) {
-                    profitLabel.color = new Color(255, 215, 0, 255); // 金色
-                } else {
-                    profitLabel.color = new Color(150, 150, 150, 255); // 灰色
-                }
+                // if (prizeAmount > 0) {
+                //     profitLabel.color = new Color(255, 215, 0, 255); // 金色
+                // } else {
+                //     profitLabel.color = new Color(150, 150, 150, 255); // 灰色
+                // }
             }
 
             // 如果是用户自己，设置特殊背景色

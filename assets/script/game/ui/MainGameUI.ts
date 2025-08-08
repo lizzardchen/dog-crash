@@ -532,16 +532,9 @@ export class MainGameUI extends CCComp {
         const gameHistory = smc.crashGame.get(GameHistoryComp);
 
         const winAmount = betting.betAmount * multiplier.cashOutMultiplier;
-        let profit: number;
 
-        // 免费模式：不扣除下注金额，收益就是全部奖金
-        if (betting.currentBetItem.isFree) {
-            profit = winAmount;
-            betting.balance += winAmount; // 免费模式直接加奖金
-        } else {
-            profit = winAmount - betting.betAmount;
-            betting.balance += profit; // 正常模式加净收益
-        }
+        let profit: number = winAmount - betting.betAmount;
+        betting.balance += profit; // 正常模式加净收益
 
         // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
         if (gameHistory && localData) {
@@ -562,6 +555,8 @@ export class MainGameUI extends CCComp {
             this.showGameResult({
                 isWin: true,
                 profit: profit
+            },()=>{
+                console.log("GameResultUI closed, game won!!");
             });
         }, 0.2);
     }
@@ -573,17 +568,15 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         const gameHistory = smc.crashGame.get(GameHistoryComp);
         const localData = smc.crashGame.get(LocalDataComp);
+         const multiplier = smc.crashGame.get(MultiplierComp);
+        const winAmount = betting.betAmount * multiplier.cashOutMultiplier;
 
-        let loss: number;
+        let loss: number = winAmount; // 默认损失为当前可能的奖励金额
 
         // 免费模式：不扣除余额，损失为0
-        if (betting.currentBetItem.isFree) {
-            loss = 0; // 免费模式没有实际损失
-        } else {
+        if (!betting.currentBetItem.isFree) {
             betting.balance -= betting.betAmount;
-            loss = betting.betAmount;
         }
-
         // 游戏失败：能源已消耗，不退还
         console.log("Game crashed - energy consumed (not refunded)");
 
@@ -604,6 +597,8 @@ export class MainGameUI extends CCComp {
             this.showGameResult({
                 isWin: false,
                 profit: -loss
+            },()=>{
+                console.log("GameResultUI closed, game failed!!");
             });
         }, 0.2);
     }
@@ -623,16 +618,8 @@ export class MainGameUI extends CCComp {
 
         // 计算收益并更新余额（和processCashOut相同的逻辑）
         const winAmount = betting.betAmount * cashOutMultiplier;
-        let profit: number;
-
-        // 免费模式：不扣除下注金额，收益就是全部奖金
-        if (betting.currentBetItem.isFree) {
-            profit = winAmount;
-            betting.balance += winAmount; // 免费模式直接加奖金
-        } else {
-            profit = winAmount - betting.betAmount;
-            betting.balance += profit; // 正常模式加净收益
-        }
+        let profit: number = winAmount - betting.betAmount;
+        betting.balance += profit; // 正常模式加净收益
 
         // 游戏成功：退还消耗的能源
         if (this.refundEnergy(1)) {
@@ -653,6 +640,8 @@ export class MainGameUI extends CCComp {
             this.showGameResult({
                 isWin: true,
                 profit: profit
+            },()=>{
+                console.log("GameResultUI closed, game won!!");
             });
         }, 0.2);
     }
@@ -1344,7 +1333,7 @@ export class MainGameUI extends CCComp {
      * 显示游戏结果弹窗
      * @param params 游戏结果参数
      */
-    private showGameResult(params: GameResultParams): void {
+    private showGameResult(params: GameResultParams,onCloseGameResult: () => void): void {
         console.log("Showing game result with params:", params);
 
         const callbacks: UICallbacks = {
@@ -1354,6 +1343,8 @@ export class MainGameUI extends CCComp {
                     gameResultUI.onOpen(params, () => {
                         // 关闭弹窗回调
                         oops.gui.remove(UIID.GameResult);
+                        //callback
+                        onCloseGameResult?.();
                         // 重置游戏
                         this.resetGame();
                     });

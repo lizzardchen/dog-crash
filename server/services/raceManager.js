@@ -14,7 +14,7 @@ class RaceManager {
         this.currentRace = null;
         this.raceHistory = [];
         this.raceTimer = null;
-        
+
         // 比赛配置
         this.config = {
             raceDuration: 4 * 60 * 60 * 1000,    // 4小时（毫秒）
@@ -22,33 +22,33 @@ class RaceManager {
             autoStartDelay: 5000,                 // 服务器启动后5秒开始第一场比赛
             prizeCleanupInterval: 60 * 60 * 1000  // 1小时清理一次过期奖励
         };
-        
+
         console.log('RaceManager initialized');
-        
+
         // 服务器启动后延迟恢复数据并启动比赛
         setTimeout(() => {
             this.initializeFromDatabase();
         }, this.config.autoStartDelay);
     }
-    
+
     /**
      * 从数据库初始化/恢复比赛数据
      */
     async initializeFromDatabase() {
         try {
             console.log('🔄 Initializing race manager from database...');
-            
+
             // 查找当前活跃的比赛
             const activeRace = await Race.getCurrentRace();
-            
+
             if (activeRace) {
                 const now = Date.now();
                 const raceEndTime = new Date(activeRace.endTime).getTime();
-                
+
                 // 检查比赛是否还在进行中
                 if (now < raceEndTime) {
                     console.log(`📥 Found active race: ${activeRace.raceId}`);
-                    
+
                     // 恢复当前比赛状态
                     this.currentRace = {
                         raceId: activeRace.raceId,
@@ -57,19 +57,19 @@ class RaceManager {
                         status: 'active',
                         dbId: activeRace._id
                     };
-                    
+
                     // 恢复缓存管理器的数据
                     await gameSessionCache.restoreFromDatabase(activeRace.raceId);
-                    
+
                     // 计算剩余时间并设置结束定时器
                     const remainingTime = raceEndTime - now;
                     setTimeout(() => {
                         this.endRaceById(activeRace.raceId);
                     }, remainingTime);
-                    
+
                     console.log(`✅ Restored active race: ${activeRace.raceId}`);
                     console.log(`⏰ Remaining time: ${Math.round(remainingTime / 1000 / 60)} minutes`);
-                    
+
                     // 启动定时器系统
                     this.startRaceTimer();
                 } else {
@@ -83,7 +83,7 @@ class RaceManager {
                 console.log('🆕 No active race found, starting first race...');
                 this.startFirstRace();
             }
-            
+
         } catch (error) {
             console.error('❌ Error initializing from database:', error);
             // 如果数据库恢复失败，直接开始新比赛
@@ -91,7 +91,7 @@ class RaceManager {
             this.startFirstRace();
         }
     }
-    
+
     /**
      * 启动第一场比赛
      */
@@ -100,7 +100,7 @@ class RaceManager {
         this.startNewRace();
         this.startRaceTimer();
     }
-    
+
     /**
      * 启动比赛定时器系统（仅用作备份，正常情况下race结束会立即开始下一个）
      */
@@ -109,7 +109,7 @@ class RaceManager {
         if (this.raceTimer) {
             clearInterval(this.raceTimer);
         }
-        
+
         // 设置备份定时器，防止race意外中断导致无法自动开始下一个
         // 这个定时器应该很少被触发，因为正常情况下race结束会立即开始下一个
         this.raceTimer = setInterval(() => {
@@ -119,10 +119,10 @@ class RaceManager {
                 this.startNewRace();
             }
         }, this.config.raceInterval);
-        
+
         console.log(`🔄 Backup race timer started - checks every ${this.config.raceInterval / 1000 / 60 / 60} hours`);
     }
-    
+
     /**
      * 开始新比赛
      */
@@ -130,14 +130,14 @@ class RaceManager {
         try {
             const now = new Date();
             const raceId = this.generateRaceId(now.getTime());
-            
+
             console.log(`\n🏁 Starting new race: ${raceId}`);
-            
+
             // 如果有当前比赛，先结束它
             if (this.currentRace) {
                 await this.endCurrentRace();
             }
-            
+
             // 在数据库中创建新比赛记录
             const raceDoc = new Race({
                 raceId: raceId,
@@ -146,9 +146,9 @@ class RaceManager {
                 status: 'active',
                 createdBy: 'system'
             });
-            
+
             await raceDoc.save();
-            
+
             // 更新内存中的当前比赛引用
             this.currentRace = {
                 raceId: raceId,
@@ -157,24 +157,24 @@ class RaceManager {
                 status: 'active',
                 dbId: raceDoc._id
             };
-            
+
             // 设置当前比赛到缓存管理器
             gameSessionCache.setCurrentRace(raceId);
-            
+
             // 设置这轮比赛的结束定时器
             setTimeout(() => {
                 this.endRaceById(raceId);
             }, this.config.raceDuration);
-            
+
             console.log(`✅ Race ${raceId} started successfully`);
             console.log(`📅 Duration: ${this.config.raceDuration / 1000 / 60 / 60} hours`);
             console.log(`⏰ Will end at: ${new Date(this.currentRace.endTime).toLocaleString()}`);
-            
+
         } catch (error) {
             console.error('Error starting new race:', error);
         }
     }
-    
+
     /**
      * 结束当前比赛
      */
@@ -183,43 +183,43 @@ class RaceManager {
             console.log('No current race to end');
             return;
         }
-        
+
         await this.endRaceById(this.currentRace.raceId);
     }
-    
+
     /**
      * 结束指定比赛
      */
     async endRaceById(raceId) {
         try {
-            console.log(`\n🏆 Ending race: ${raceId}`);
-            
+            console.log(`\n Ending race: ${raceId}`);
+
             // 获取比赛最终数据
             const finalData = await gameSessionCache.finalizeRace(raceId);
-            
+
             if (finalData) {
                 const { leaderboard, prizePool } = finalData;
-                
+
                 console.log(`📊 Race ${raceId} Results:`);
                 console.log(`   Participants: ${leaderboard.length}`);
                 console.log(`   Prize Pool: ${prizePool.totalPool} coins`);
                 console.log(`   Contributed: ${prizePool.contributedAmount} coins`);
-                
+
                 // 计算奖励分配
                 const prizeDistribution = gameSessionCache.calculatePrizeDistribution(raceId);
-                
+
                 if (prizeDistribution.distributions.length > 0) {
                     console.log(`💰 Prize Distribution:`);
                     prizeDistribution.distributions.forEach(prize => {
                         console.log(`   Rank ${prize.rank}: ${prize.userId} - ${prize.prizeAmount} coins`);
                     });
-                    
+
                     // 实际发放奖励到用户账户
                     await this.distributePrizes(raceId, prizeDistribution.distributions, leaderboard, prizePool);
                 } else {
                     console.log(`❌ No prizes distributed (no contributions)`);
                 }
-                
+
                 // 更新数据库中的比赛记录
                 const raceDoc = await Race.findOne({ raceId: raceId });
                 if (raceDoc) {
@@ -228,27 +228,27 @@ class RaceManager {
                         prizePool: prizePool,
                         prizeDistribution: prizeDistribution.distributions
                     });
-                    
+
                     console.log(`💾 Race ${raceId} data saved to database`);
                 }
-                
+
                 console.log(`✅ Race ${raceId} ended successfully`);
             }
-            
+
             // 清理当前比赛引用
             if (this.currentRace && this.currentRace.raceId === raceId) {
                 this.currentRace = null;
             }
-            
+
             // 立即开始下一个比赛
             console.log('🚀 Starting next race immediately...');
             this.startNewRace();
-            
+
         } catch (error) {
             console.error(`Error ending race ${raceId}:`, error);
         }
     }
-    
+
     /**
      * 分发奖励到用户账户 - 创建奖励记录供用户领取
      */
@@ -274,7 +274,7 @@ class RaceManager {
 
             // 为每个获奖者创建奖励记录
             const prizeRecords = [];
-            
+
             for (const prize of distributions) {
                 const userData = userDataMap.get(prize.userId);
                 if (!userData) {
@@ -289,17 +289,17 @@ class RaceManager {
                     prizeAmount: prize.prizeAmount,
                     percentage: prize.percentage,
                     status: 'pending',
-                    
+
                     // 比赛信息
                     raceStartTime: raceDoc.startTime,
                     raceEndTime: raceDoc.endTime,
-                    
+
                     // 用户比赛表现快照
                     userNetProfit: userData.netProfit || 0,
                     userSessionCount: userData.sessionCount || 0,
                     userTotalBetAmount: userData.totalBetAmount || 0,
                     userTotalWinAmount: userData.totalWinAmount || 0,
-                    
+
                     createdBy: 'system'
                 };
 
@@ -311,7 +311,7 @@ class RaceManager {
             if (prizeRecords.length > 0) {
                 const createdCount = await RacePrize.batchCreatePrizes(prizeRecords);
                 console.log(`✅ Successfully created ${createdCount} prize records for race ${raceId}`);
-                
+
                 // 打印奖励汇总
                 const totalPrizes = prizeRecords.reduce((sum, p) => sum + p.prizeAmount, 0);
                 console.log(`💰 Total prizes created: ${totalPrizes} coins for ${prizeRecords.length} winners`);
@@ -320,7 +320,7 @@ class RaceManager {
 
         } catch (error) {
             console.error(`Failed to distribute prizes for race ${raceId}:`, error);
-            
+
             // 如果批量创建失败，尝试逐个创建
             console.log('Attempting individual prize creation as fallback...');
             for (const prize of distributions) {
@@ -344,14 +344,14 @@ class RaceManager {
 
                     await racePrize.save();
                     console.log(`✅ Individual prize created for ${prize.userId}`);
-                    
+
                 } catch (individualError) {
                     console.error(`Failed to create individual prize for ${prize.userId}:`, individualError);
                 }
             }
         }
     }
-    
+
     /**
      * 生成比赛ID
      */
@@ -363,10 +363,10 @@ class RaceManager {
         const hour = String(date.getHours()).padStart(2, '0');
         const minute = String(date.getMinutes()).padStart(2, '0');
         const second = String(date.getSeconds()).padStart(2, '0');
-        
+
         return `race_${year}${month}${day}${hour}${minute}${second}`;
     }
-    
+
     /**
      * 获取当前比赛信息
      */
@@ -374,17 +374,17 @@ class RaceManager {
         if (!this.currentRace) {
             return null;
         }
-        
+
         const now = Date.now();
         const remainingTime = Math.max(0, this.currentRace.endTime - now);
-        
+
         return {
             ...this.currentRace,
             remainingTime: remainingTime,
             isActive: remainingTime > 0
         };
     }
-    
+
     /**
      * 获取比赛历史
      */
@@ -396,13 +396,13 @@ class RaceManager {
             return [];
         }
     }
-    
+
     /**
      * 获取比赛状态统计
      */
     getRaceStats() {
         const currentRace = this.getCurrentRace();
-        
+
         return {
             currentRace: currentRace,
             raceHistory: this.raceHistory.length,

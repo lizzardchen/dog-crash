@@ -74,8 +74,8 @@ raceParticipantSchema.statics.getUserRank = async function(raceId, userId) {
     return this.findOne({ raceId, userId }).lean();
 };
 
-// 静态方法 - 批量更新参与者数据
-raceParticipantSchema.statics.batchUpsert = async function(raceId, participants) {
+// 静态方法 - 批量更新参与者数据（带重试机制）
+raceParticipantSchema.statics.batchUpsert = async function(raceId, participants, retryCount = 0) {
     if (!participants || participants.length === 0) return;
     
     const operations = participants.map(participant => ({
@@ -96,7 +96,31 @@ raceParticipantSchema.statics.batchUpsert = async function(raceId, participants)
         }
     }));
     
-    return this.bulkWrite(operations, { ordered: false });
+    try {
+        return await this.bulkWrite(operations, { ordered: false });
+    } catch (error) {
+        const isConnectionError = (
+            error.message.includes('connection') && error.message.includes('closed')
+        ) || (
+            error.errorLabels && error.errorLabels.has('ResetPool')
+        ) || (
+            error.name === 'MongoNetworkError' || 
+            error.name === 'MongoServerSelectionError'
+        );
+        
+        if (isConnectionError && retryCount < 3) {
+            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+            console.log(`MongoDB connection error, retrying batch upsert in ${delay}ms (attempt ${retryCount + 1}/3) for race ${raceId}`);
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return this.batchUpsert(raceId, participants, retryCount + 1);
+        } else {
+            if (isConnectionError) {
+                console.error(`MongoDB bulk write failed after 3 retries for race ${raceId}:`, error.message);
+            }
+            throw error;
+        }
+    }
 };
 
 // 静态方法 - 清理比赛数据

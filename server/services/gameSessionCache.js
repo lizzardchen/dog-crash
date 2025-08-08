@@ -757,13 +757,31 @@ class GameSessionCache {
                 lastUpdateTime: new Date(participant.lastUpdateTime)
             }));
             
-            // 批量更新到数据库
+            // 批量更新到数据库（已包含重试机制）
             await RaceParticipant.batchUpsert(raceId, participantData);
             
-            console.log(`Batch synced ${participantData.length} race participants to database for race ${raceId}`);
+            console.log(`✅ Batch synced ${participantData.length} race participants to database for race ${raceId}`);
+            
+            // 重置失败计数器
+            if (!this.syncFailureCount) this.syncFailureCount = {};
+            this.syncFailureCount[raceId] = 0;
             
         } catch (error) {
-            console.error('Error batch syncing race participants:', error);
+            // 记录失败次数
+            if (!this.syncFailureCount) this.syncFailureCount = {};
+            this.syncFailureCount[this.currentRaceId] = (this.syncFailureCount[this.currentRaceId] || 0) + 1;
+            
+            const failureCount = this.syncFailureCount[this.currentRaceId];
+            
+            console.error(`❌ Error batch syncing race participants (failure #${failureCount}):`, error.message);
+            
+            // 连续失败告警
+            if (failureCount >= 3) {
+                console.error(`🚨 ALERT: Race participant sync has failed ${failureCount} times consecutively for race ${this.currentRaceId}`);
+            }
+            
+            // 降级处理：继续运行但跳过本次同步
+            console.log(`⚠️  Skipping this sync cycle, will retry in next interval`);
         }
     }
     
