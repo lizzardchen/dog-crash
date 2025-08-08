@@ -32,10 +32,13 @@
       },
       {
         "__id__": 282
+      },
+      {
+        "__id__": 288
       }
     ],
     "_prefab": {
-      "__id__": 288
+      "__id__": 290
     },
     "_lpos": {
       "__type__": "cc.Vec3",
@@ -668,7 +671,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "e6hB3wiU1HxIwm9SF+KERx"
+    "fileId": "65pN9MIClCH6ZgPDo45A6r"
   },
   {
     "__type__": "cc.Sprite",
@@ -716,7 +719,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "f9ydAs4pRGsYeZ04tqS8Jh"
+    "fileId": "c2Aba9JyxEha4bf90Tmsqy"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -726,7 +729,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "bceCghXa5ChqD6/pDWkyHa",
+    "fileId": "e1aCbysZ1NRZnw9bhUIaPt",
     "instance": null,
     "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
@@ -6850,6 +6853,9 @@
         "__id__": 287
       }
     ],
+    "coinFlyEffect": {
+      "__id__": 288
+    },
     "_id": ""
   },
   {
@@ -6915,6 +6921,31 @@
     },
     "backScrollSpeed": 30,
     "frontScrollSpeed": 80
+  },
+  {
+    "__type__": "d7f36Eb1o5N447hyYZeRRY+",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 1
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 289
+    },
+    "coinPrefab": {
+      "__uuid__": "a820a006-95cb-4e11-b2ee-59d6a625a315",
+      "__expectedType__": "cc.Prefab"
+    },
+    "flyDuration": 1,
+    "flyInterval": 0.1,
+    "randomOffset": 30,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "94SbgGfChICJvIV8fK0OcW"
   },
   {
     "__type__": "cc.PrefabInfo",

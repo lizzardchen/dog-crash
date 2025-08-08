@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, UITransform, Sprite, Color } from 'cc';
+import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, UITransform, Sprite, Color, view } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
@@ -25,6 +25,7 @@ import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets
 import { CrashGame } from '../entity/CrashGame';
 import { RaceResultUI } from './RaceResultUI';
 import { SDKMgr } from '../../ADSDK/SDKMgr';
+import { CoinFlyEffect } from '../effect/CoinFlyEffect';
 
 const { ccclass, property } = _decorator;
 
@@ -103,6 +104,9 @@ export class MainGameUI extends CCComp {
     // 可扩展的场景配置数组
     @property({ type: [SceneData], tooltip: "场景配置数组，根据rocket状态自动排序 (ground->sky->atmosphere->space)" })
     sceneConfigs: SceneData[] = [];
+
+    @property(CoinFlyEffect)
+    coinFlyEffect: CoinFlyEffect = null!;
 
     private isBetPanelVisible: boolean = false;
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
@@ -557,6 +561,12 @@ export class MainGameUI extends CCComp {
                 profit: profit
             },()=>{
                 console.log("GameResultUI closed, game won!!");
+                // 播放金币飞行动画
+                if (profit > 0) {
+                    this.playCoinFlyAnimation(profit, () => {
+                        console.log("Coin fly animation completed!");
+                    });
+                }
             });
         }, 0.2);
     }
@@ -642,6 +652,12 @@ export class MainGameUI extends CCComp {
                 profit: profit
             },()=>{
                 console.log("GameResultUI closed, game won!!");
+                // 播放金币飞行动画
+                if (profit > 0) {
+                    this.playCoinFlyAnimation(profit, () => {
+                        console.log("Coin fly animation completed!");
+                    });
+                }
             });
         }, 0.2);
     }
@@ -1731,6 +1747,69 @@ export class MainGameUI extends CCComp {
         return false;
     }
 
+
+    /**
+     * 播放金币飞行动画
+     * @param coinAmount 金币数量
+     * @param onComplete 完成回调
+     */
+    private playCoinFlyAnimation(coinAmount: number, onComplete?: () => void): void {
+        if (!this.coinFlyEffect) {
+            console.warn("CoinFlyEffect not configured");
+            onComplete?.();
+            return;
+        }
+
+        // 获取起始位置（GameResult弹窗的金币位置）
+        const startWorldPos = this.getGameResultCoinWorldPos();
+        // 获取目标位置（余额显示位置）
+        const endWorldPos = this.getBalanceLabelWorldPos();
+
+        console.log(`Playing coin fly animation: ${coinAmount} coins`);
+        console.log(`From:`, startWorldPos, `To:`, endWorldPos);
+
+        // 开始飞币动画
+        this.coinFlyEffect.startCoinFly(coinAmount, startWorldPos, endWorldPos, onComplete);
+    }
+
+    /**
+     * 获取GameResult弹窗中金币显示的世界坐标
+     */
+    private getGameResultCoinWorldPos(): Vec3 {
+        // 获取屏幕可见尺寸来计算真正的屏幕中心
+        const visibleSize = view.getVisibleSize();
+        
+        // 屏幕中心坐标 = 屏幕尺寸的一半
+        const screenCenter = new Vec3(
+            visibleSize.width / 2, 
+            visibleSize.height / 2, 
+            0
+        );
+        
+        console.log("Screen visible size:", visibleSize);
+        console.log("Screen center world pos:", screenCenter);
+        
+        return screenCenter;
+    }
+
+    /**
+     * 获取余额标签的世界坐标
+     */
+    private getBalanceLabelWorldPos(): Vec3 {
+        if (!this.balanceLabel) {
+            return new Vec3(0, 0, 0);
+        }
+
+        const uiTransform = this.balanceLabel.node.getComponent(UITransform);
+        if (!uiTransform) {
+            return new Vec3(0, 0, 0);
+        }
+
+        // 获取世界坐标
+        const worldPos = new Vec3();
+        uiTransform.convertToWorldSpaceAR(Vec3.ZERO, worldPos);
+        return worldPos;
+    }
 
     // CCComp要求实现的reset方法
     reset(): void {
