@@ -65,8 +65,8 @@ export class MainGameUI extends CCComp {
     @property(Button)
     historyButton: Button = null!;
 
-    // @property(Button)
-    // betButton: Button = null!;
+    @property(Button)
+    betButton: Button = null!;
 
     @property(Button)
     autoBetButton: Button = null!;
@@ -88,6 +88,9 @@ export class MainGameUI extends CCComp {
 
     @property(Node)
     betPanel: Node = null!;
+
+    @property(Button)
+    closeBetPanelButton: Button = null!;
 
     @property(ScrollView)
     betScrollView: ScrollView = null!;
@@ -114,7 +117,7 @@ export class MainGameUI extends CCComp {
     @property(CoinFlyEffect)
     coinFlyEffect: CoinFlyEffect = null!;
 
-    // private isBetPanelVisible: boolean = false;
+    private isBetPanelVisible: boolean = false;
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
@@ -305,20 +308,19 @@ export class MainGameUI extends CCComp {
             this.holdButton.node.on(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
         }
 
-        // 下注金额输入事件（只有在输入框存在时才绑定）
-        if (this.betAmountInput) {
-            this.betAmountInput.node.on(EditBox.EventType.TEXT_CHANGED, this.onBetAmountChanged, this);
-        }
-
         // 历史记录按钮事件
         if (this.historyButton) {
             this.historyButton.node.on(Button.EventType.CLICK, this.onHistoryButtonClick, this);
         }
 
-        // // 下注按钮事件
-        // if (this.betButton) {
-        //     this.betButton.node.on(Button.EventType.CLICK, this.onBetButtonClick, this);
-        // }
+        // 下注按钮事件
+        if (this.betButton) {
+            this.betButton.node.on(Button.EventType.CLICK, this.onBetButtonClick, this);
+        }
+
+        if(this.closeBetPanelButton){
+            this.closeBetPanelButton.node.on(Button.EventType.CLICK, this.onCloseBetPanelButtonClick, this);
+        }
 
         // 自动下注按钮事件
         if (this.autoBetButton) {
@@ -370,6 +372,7 @@ export class MainGameUI extends CCComp {
 
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
+        this.onCloseBetPanelButtonClick();
 
         this.hold_unpressed_node.active = false;
         this.hold_pressed_node.active = true;
@@ -756,13 +759,10 @@ export class MainGameUI extends CCComp {
         console.log(`MainGameUI: Game reset, ready for next round`);
     }
 
-    private onBetAmountChanged(): void {
-        this.updatePotentialWin();
-    }
-
     private onHistoryButtonClick(): void {
         CrashGameAudio.playButtonClick();
         console.log("History button clicked - opening history popup");
+        this.onCloseBetPanelButtonClick();
 
         // 触发打开历史记录弹窗的事件
         oops.message.dispatchEvent("OPEN_HISTORY_POPUP");
@@ -784,6 +784,7 @@ export class MainGameUI extends CCComp {
             console.log("Global touch detected, closing history popup");
             this.closeHistoryPopup();
         }
+        this.onCloseBetPanelButtonClick();
     }
 
     /**
@@ -796,38 +797,45 @@ export class MainGameUI extends CCComp {
         }
     }
 
-    // private onBetButtonClick(): void {
-    //     if (!smc.crashGame) return;
+    private onCloseBetPanelButtonClick(): void {
+        this.hideBetPanel();
+    }
 
-    //     const gameState = smc.crashGame.get(GameStateComp);
+    private onBetButtonClick(): void {
+        if (!smc.crashGame) return;
+        
+        this.closeHistoryPopup();
 
-    //     // 只有在等待状态下才能修改下注金额
-    //     if (gameState.state !== GameState.WAITING) {
-    //         console.log("Cannot change bet amount during game");
-    //         return;
-    //     }
+        const gameState = smc.crashGame.get(GameStateComp);
 
-    //     CrashGameAudio.playButtonClick();
-    //     console.log("Bet button clicked - showing bet panel");
+        // 只有在等待状态下才能修改下注金额
+        if (gameState.state !== GameState.WAITING) {
+            console.log("Cannot change bet amount during game");
+            return;
+        }
 
-    //     // 检查下注面板是否存在
-    //     if (!this.betPanel) {
-    //         console.warn("Bet panel not found - cannot show/hide");
-    //         return;
-    //     }
+        CrashGameAudio.playButtonClick();
+        console.log("Bet button clicked - showing bet panel");
 
-    //     // if (this.isBetPanelVisible) {
-    //     //     this.hideBetPanel();
-    //     // } else {
-    //     //     this.showBetPanel();
-    //     // }
-    // }
+        // 检查下注面板是否存在
+        if (!this.betPanel) {
+            console.warn("Bet panel not found - cannot show/hide");
+            return;
+        }
+
+        if (this.isBetPanelVisible) {
+            this.hideBetPanel();
+        } else {
+            this.showBetPanel();
+        }
+    }
 
     private onAutoBetButtonClick(): void {
         if (!smc.crashGame) return;
 
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
+        this.onCloseBetPanelButtonClick();
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
@@ -867,8 +875,8 @@ export class MainGameUI extends CCComp {
         }
 
         // 初始隐藏下注面板
-        this.betPanel.active = true;
-        // this.isBetPanelVisible = true;
+        this.betPanel.active = false;
+        this.isBetPanelVisible = false;
 
         // 初始化下注选项
         this.fillBetScrollView();
@@ -879,53 +887,54 @@ export class MainGameUI extends CCComp {
     /**
      * 显示下注面板 (从右向左滑入)
      */
-    // private showBetPanel(): void {
-    //     if (!this.betPanel) return;
+    private showBetPanel(): void {
+        if (!this.betPanel) return;
 
-    //     this.betPanel.active = true;
-    //     // this.isBetPanelVisible = true;
+        this.betPanel.active = true;
+        this.isBetPanelVisible = true;
 
-    //     // 在动画期间禁用所有按钮交互
-    //     this.setBetItemsInteractable(false);
+        // 在动画期间禁用所有按钮交互
+        this.setBetItemsInteractable(false);
 
-    //     // 设置初始位置 (屏幕右侧外)
-    //     const startPos = new Vec3(1000, 0, 0);
-    //     const endPos = new Vec3(0, 0, 0);
+        // 设置初始位置 (屏幕右侧外)
+        const startPos = new Vec3(0, -533, 0);
+        const endPos = new Vec3(0, 0, 0);
 
-    //     this.betPanel.setPosition(startPos);
+        this.betPanel.setPosition(startPos);
 
-    //     // 从右向左滑入动画
-    //     tween(this.betPanel)
-    //         .to(0.3, { position: endPos }, { easing: 'sineOut' })
-    //         .call(() => {
-    //             // 滑入完成后，启用按钮交互并滚动到当前选中的下注金额
-    //             this.setBetItemsInteractable(true);
-    //             this.scrollToCurrentBet();
-    //         })
-    //         .start();
+        // 从右向左滑入动画
+        tween(this.betPanel)
+            .to(0.2, { position: endPos }, { easing: 'sineOut' })
+            .call(() => {
+                // 滑入完成后，启用按钮交互并滚动到当前选中的下注金额
+                this.setBetItemsInteractable(true);
+                this.scrollToCurrentBet();
+            })
+            .start();
 
-    //     console.log("Bet panel shown");
-    // }
+        console.log("Bet panel shown");
+    }
 
-    // /**
-    //  * 隐藏下注面板 (从左向右滑出)
-    //  */
-    // private hideBetPanel(): void {
-    //     if (!this.betPanel) return;
+    /**
+     * 隐藏下注面板 (从左向右滑出)
+     */
+    private hideBetPanel(): void {
+        if (!this.betPanel) return;
+        if(this.betPanel.active === false) return;
 
-    //     const endPos = new Vec3(1000, 0, 0);
+        const endPos = new Vec3(0, -533, 0);
 
-    //     // 从左向右滑出动画
-    //     tween(this.betPanel)
-    //         .to(0.3, { position: endPos }, { easing: 'sineIn' })
-    //         .call(() => {
-    //             // this.betPanel.active = false;
-    //             // this.isBetPanelVisible = false;
-    //         })
-    //         .start();
+        // 从左向右滑出动画
+        tween(this.betPanel)
+            .to(0.2, { position: endPos }, { easing: 'sineIn' })
+            .call(() => {
+                this.betPanel.active = false;
+                this.isBetPanelVisible = false;
+            })
+            .start();
 
-    //     console.log("Bet panel hidden");
-    // }
+        console.log("Bet panel hidden");
+    }
 
     /**
      * 填充下注ScrollView
@@ -1488,9 +1497,13 @@ export class MainGameUI extends CCComp {
             this.historyButton.node.off(Button.EventType.CLICK, this.onHistoryButtonClick, this);
         }
 
-        // if (this.betButton) {
-        //     this.betButton.node.off(Button.EventType.CLICK, this.onBetButtonClick, this);
-        // }
+        if (this.betButton) {
+            this.betButton.node.off(Button.EventType.CLICK, this.onBetButtonClick, this);
+        }
+
+        if(this.closeBetPanelButton){
+            this.closeBetPanelButton.node.off(Button.EventType.CLICK, this.onCloseBetPanelButtonClick, this);
+        }
 
         if (this.autoBetButton) {
             this.autoBetButton.node.off(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
@@ -1616,12 +1629,12 @@ export class MainGameUI extends CCComp {
      * @param display 显示文本
      */
     private updateBetButtonDisplay(display: string): void {
-        // if (this.betButton) {
-        //     const buttonLabel = this.betButton.getComponentInChildren(Label);
-        //     if (buttonLabel) {
-        //         buttonLabel.string = display;
-        //     }
-        // }
+        if (this.betButton) {
+            const buttonLabel = this.betButton.node.getChildByName("Label")?.getComponent(Label);
+            if (buttonLabel) {
+                buttonLabel.string = display;
+            }
+        }
     }
 
     /**
@@ -1861,6 +1874,7 @@ export class MainGameUI extends CCComp {
 
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
+        this.onCloseBetPanelButtonClick();
 
         CrashGameAudio.playButtonClick();
 
@@ -1937,6 +1951,7 @@ export class MainGameUI extends CCComp {
     private onRaceButtonClick(): void {
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
+        this.onCloseBetPanelButtonClick();
         
         CrashGameAudio.playButtonClick();
         console.log("Race button clicked - opening race UI");
@@ -1950,6 +1965,7 @@ export class MainGameUI extends CCComp {
     private onSettingsButtonClick(): void {
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
+        this.onCloseBetPanelButtonClick();
         
         CrashGameAudio.playButtonClick();
         console.log("Settings button clicked - opening settings UI");
