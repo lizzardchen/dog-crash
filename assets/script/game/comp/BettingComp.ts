@@ -20,6 +20,8 @@ export class BettingComp extends ecs.Comp {
 
     // 下注金额数据
     readonly betAmountData: BetAmountItem[] = [
+        { display: "   ", value: 0, isFree: true }, // 空白项
+        { display: "   ", value: 0, isFree: true }, // 空白项
         { display: "free", value: 90, isFree: true },
         { display: "100", value: 100, isFree: false },
         { display: "200", value: 200, isFree: false },
@@ -33,11 +35,13 @@ export class BettingComp extends ecs.Comp {
         { display: "100K", value: 100000, isFree: false },
         { display: "200K", value: 200000, isFree: false },
         { display: "500K", value: 500000, isFree: false },
-        { display: "1M", value: 1000000, isFree: false }
+        { display: "1M", value: 1000000, isFree: false },
+        { display: "   ", value: 0, isFree: true },
+        { display: "   ", value: 0, isFree: true },
     ];
 
     // 当前选择的下注项
-    currentBetItem: BetAmountItem = this.betAmountData[0]; // 默认选择free
+    currentBetItem: BetAmountItem = this.betAmountData[2]; // 默认选择free
 
     // 自动提现设置
     autoCashOutEnabled: boolean = false;

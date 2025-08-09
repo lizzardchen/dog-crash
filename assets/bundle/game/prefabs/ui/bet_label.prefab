@@ -36,7 +36,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 0,
+      "y": -43,
       "z": 0
     },
     "_lrot": {
@@ -76,8 +76,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 190,
-      "height": 100
+      "width": 99.464,
+      "height": 66
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -112,14 +112,14 @@
       "b": 0,
       "a": 255
     },
-    "_string": "100",
+    "_string": "100K",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 60,
-    "_fontSize": 60,
-    "_fontFamily": "Arial",
-    "_lineHeight": 80,
-    "_overflow": 1,
+    "_actualFontSize": 49,
+    "_fontSize": 52,
+    "_fontFamily": "IMPACT",
+    "_lineHeight": 66,
+    "_overflow": 2,
     "_enableWrapText": true,
     "_font": null,
     "_isSystemFontUsed": true,
@@ -223,7 +223,6 @@
       "__id__": 0
     },
     "fileId": "a1fercy/ZE/qDaff/cPScz",
-    "instance": null,
     "targetOverrides": null
   }
 ]
