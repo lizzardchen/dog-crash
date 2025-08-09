@@ -56,6 +56,12 @@ export class MainGameUI extends CCComp {
     @property(Button)
     holdButton: Button = null!;
 
+    @property(Node)
+    hold_unpressed_node:Node = null!;
+
+    @property(Node)
+    hold_pressed_node:Node = null!;
+
     @property(Button)
     historyButton: Button = null!;
 
@@ -112,6 +118,7 @@ export class MainGameUI extends CCComp {
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
+    private isHistoryPopupOpen: boolean = false; // 记录history弹窗状态
 
     /**
      * 将数值转换为短文本格式
@@ -188,7 +195,7 @@ export class MainGameUI extends CCComp {
 
         // 初始化场景管理系统
         this.initSceneManager();
-        this.updateHoldButtonState();
+        this.initHoldButtonState();
     }
 
     /** 初始化场景管理系统 */
@@ -350,10 +357,19 @@ export class MainGameUI extends CCComp {
             this.betScrollView.node.on('scroll-ended', this.onBetScrollEnd, this);
             this.betScrollView.node.on('scrolling', this.onBetScrolling, this);
         }
+
+        // 监听history弹窗状态变化
+        oops.message.on("OPEN_HISTORY_POPUP", this.onHistoryPopupOpened, this);
+        
+        // 添加全局点击监听（用于关闭history弹窗）
+        this.node.on(Node.EventType.TOUCH_END, this.onGlobalTouch, this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
         if (!smc.crashGame) return;
+
+        this.hold_unpressed_node.active = false;
+        this.hold_pressed_node.active = true;
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
@@ -408,7 +424,8 @@ export class MainGameUI extends CCComp {
 
     private onHoldButtonTouchEnd(_event: EventTouch): void {
         if (!smc.crashGame) return;
-
+        this.hold_unpressed_node.active = true;
+        this.hold_pressed_node.active = false;
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
@@ -435,17 +452,21 @@ export class MainGameUI extends CCComp {
 
     private addButtonPressedEffect(): void {
         // 添加按钮按下时的视觉反馈
-        if (this.holdButton) {
-            this.holdButton.node.scale = new Vec3(1,1,1);
-            this.holdButton.node.scale = this.holdButton.node.scale.clone().multiplyScalar(0.95);
-        }
+        // if (this.holdButton) {
+        //     this.holdButton.node.scale = new Vec3(1,1,1);
+        //     this.holdButton.node.scale = this.holdButton.node.scale.clone().multiplyScalar(0.95);
+        // }
+        this.hold_unpressed_node.active = false;
+        this.hold_pressed_node.active = true;
     }
 
     private removeButtonPressedEffect(): void {
         // 移除按钮按下时的视觉反馈
-        if (this.holdButton) {
-            this.holdButton.node.scale = new Vec3(1,1,1);
-        }
+        // if (this.holdButton) {
+        //     this.holdButton.node.scale = new Vec3(1,1,1);
+        // }
+        this.hold_unpressed_node.active = true;
+        this.hold_pressed_node.active = false;
     }
 
     private validateBetAmount(amount: number, isFreeMode: boolean = false): boolean {
@@ -742,6 +763,25 @@ export class MainGameUI extends CCComp {
 
         // 触发打开历史记录弹窗的事件
         oops.message.dispatchEvent("OPEN_HISTORY_POPUP");
+    }
+
+    /**
+     * 监听history弹窗打开事件
+     */
+    private onHistoryPopupOpened(): void {
+        this.isHistoryPopupOpen = !this.isHistoryPopupOpen; // toggle状态
+        console.log(`History popup state: ${this.isHistoryPopupOpen ? 'opened' : 'closed'}`);
+    }
+
+    /**
+     * 全局点击处理 - 用于关闭history弹窗
+     */
+    private onGlobalTouch(): void {
+        if (this.isHistoryPopupOpen) {
+            console.log("Global touch detected, closing history popup");
+            this.isHistoryPopupOpen = false;
+            oops.message.dispatchEvent("CLOSE_HISTORY_POPUP");
+        }
     }
 
     // private onBetButtonClick(): void {
@@ -1318,6 +1358,11 @@ export class MainGameUI extends CCComp {
         }
     }
 
+    private initHoldButtonState(){
+        this.hold_unpressed_node.active = true;
+        this.hold_pressed_node.active = false;
+    }
+
     private updateHoldButtonState(): void {
         if (!smc.crashGame || !this.holdButton) return;
 
@@ -1451,6 +1496,10 @@ export class MainGameUI extends CCComp {
             this.betScrollView.node.off('scroll-ended', this.onBetScrollEnd, this);
             this.betScrollView.node.off('scrolling', this.onBetScrolling, this);
         }
+
+        // 清理history弹窗相关事件
+        oops.message.off("OPEN_HISTORY_POPUP", this.onHistoryPopupOpened, this);
+        this.node.off(Node.EventType.TOUCH_END, this.onGlobalTouch, this);
     }
 
     /** 重置到地面场景 */

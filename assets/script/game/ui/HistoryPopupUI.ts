@@ -35,6 +35,8 @@ export class HistoryPopupUI extends Component {
     private setupEvents(): void {
         // 监听打开历史记录弹窗的事件
         oops.message.on("OPEN_HISTORY_POPUP", this.toggleHistoryPopup, this);
+        // 监听关闭弹窗事件
+        oops.message.on("CLOSE_HISTORY_POPUP", this.hidePopup, this);
     }
     private toggleHistoryPopup(): void {
         CrashGameAudio.playButtonClick();
@@ -67,6 +69,7 @@ export class HistoryPopupUI extends Component {
             }
         }
     }
+
 
     private updateHistoryList(): void {
         if (!smc.crashGame || !this.content) return;
@@ -140,6 +143,7 @@ export class HistoryPopupUI extends Component {
     onDestroy() {
         // 清理事件监听
         oops.message.off("OPEN_HISTORY_POPUP", this.toggleHistoryPopup, this);
+        oops.message.off("CLOSE_HISTORY_POPUP", this.hidePopup, this);
     }
 
 }
