@@ -368,6 +368,9 @@ export class MainGameUI extends CCComp {
     private onHoldButtonTouchStart(_event: EventTouch): void {
         if (!smc.crashGame) return;
 
+        // 关闭history弹窗（如果打开的话）
+        this.closeHistoryPopup();
+
         this.hold_unpressed_node.active = false;
         this.hold_pressed_node.active = true;
 
@@ -779,6 +782,15 @@ export class MainGameUI extends CCComp {
     private onGlobalTouch(): void {
         if (this.isHistoryPopupOpen) {
             console.log("Global touch detected, closing history popup");
+            this.closeHistoryPopup();
+        }
+    }
+
+    /**
+     * 关闭history弹窗的通用方法
+     */
+    private closeHistoryPopup(): void {
+        if (this.isHistoryPopupOpen) {
             this.isHistoryPopupOpen = false;
             oops.message.dispatchEvent("CLOSE_HISTORY_POPUP");
         }
@@ -813,6 +825,9 @@ export class MainGameUI extends CCComp {
 
     private onAutoBetButtonClick(): void {
         if (!smc.crashGame) return;
+
+        // 关闭history弹窗（如果打开的话）
+        this.closeHistoryPopup();
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
@@ -1818,19 +1833,21 @@ export class MainGameUI extends CCComp {
             if (status.enabled) {
                 // 启用状态：显示"AUTO ON"和设置信息
                 buttonLabel.string = `AUTO\n${status.multiplier.toFixed(2)}x`;
-                // 设置按钮颜色为激活状态
-                const sprite = this.autoBetButton.node.getComponent(Sprite);
-                if (sprite) {
-                    sprite.color = new Color(0, 255, 0, 255); // 绿色
-                }
+                buttonLabel.color = new Color(2,253, 247, 255); // 亮色
+                // // 设置按钮颜色为激活状态
+                // const sprite = this.autoBetButton.node.getComponent(Sprite);
+                // if (sprite) {
+                //     sprite.color = new Color(2,253, 247, 255); // 亮色
+                // }
             } else {
                 // 禁用状态：显示"AUTO"
                 buttonLabel.string = "AUTO";
-                // 设置按钮颜色为默认状态
-                const sprite = this.autoBetButton.node.getComponent(Sprite);
-                if (sprite) {
-                    sprite.color = new Color(255, 255, 255, 255); // 白色
-                }
+                buttonLabel.color = new Color(2,68, 66, 255); // 默认颜色
+                // // 设置按钮颜色为默认状态
+                // const sprite = this.autoBetButton.node.getComponent(Sprite);
+                // if (sprite) {
+                //     sprite.color = new Color(2,68, 66, 255); // 白色
+                // }
             }
         }
         // console.log(`Updated auto bet button state: ${status.enabled ? 'ON' : 'OFF'}`);
@@ -1841,6 +1858,9 @@ export class MainGameUI extends CCComp {
      */
     private onEnergyButtonClick(): void {
         if (!smc.crashGame) return;
+
+        // 关闭history弹窗（如果打开的话）
+        this.closeHistoryPopup();
 
         CrashGameAudio.playButtonClick();
 
@@ -1915,6 +1935,9 @@ export class MainGameUI extends CCComp {
      * 比赛按钮点击事件
      */
     private onRaceButtonClick(): void {
+        // 关闭history弹窗（如果打开的话）
+        this.closeHistoryPopup();
+        
         CrashGameAudio.playButtonClick();
         console.log("Race button clicked - opening race UI");
         
@@ -1925,6 +1948,9 @@ export class MainGameUI extends CCComp {
      * 设置按钮点击事件
      */
     private onSettingsButtonClick(): void {
+        // 关闭history弹窗（如果打开的话）
+        this.closeHistoryPopup();
+        
         CrashGameAudio.playButtonClick();
         console.log("Settings button clicked - opening settings UI");
         

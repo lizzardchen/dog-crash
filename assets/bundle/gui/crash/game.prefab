@@ -7481,8 +7481,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 31.595,
-      "y": -828.709,
+      "x": 46,
+      "y": -96.46,
       "z": 0
     },
     "_lrot": {
@@ -7517,7 +7517,7 @@
       "__id__": 308
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 310
@@ -7531,8 +7531,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 0,
-      "y": 2.8729999999999993,
+      "x": 1.2104999999999997,
+      "y": 0.16049999999999898,
       "z": 0
     },
     "_lrot": {
@@ -7572,8 +7572,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 201.430609375,
-      "height": 45.12599999999999
+      "width": 168.353609375,
+      "height": 79.6
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -7603,17 +7603,17 @@
     "_dstBlendFactor": 4,
     "_color": {
       "__type__": "cc.Color",
-      "r": 241,
-      "g": 248,
-      "b": 202,
+      "r": 2,
+      "g": 68,
+      "b": 66,
       "a": 255
     },
-    "_string": "AutoBet",
+    "_string": "AUTO",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 37,
+    "_actualFontSize": 51,
     "_fontSize": 50,
-    "_fontFamily": "Arial",
+    "_fontFamily": "IMPACT",
     "_lineHeight": 60,
     "_overflow": 2,
     "_enableWrapText": true,
@@ -7681,8 +7681,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 218,
-      "height": 59
+      "width": 208,
+      "height": 98
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -7816,7 +7816,7 @@
     "_alignFlags": 32,
     "_target": null,
     "_left": 0,
-    "_right": 9.405000000000001,
+    "_right": 0,
     "_top": 0,
     "_bottom": 0,
     "_horizontalCenter": 0,
