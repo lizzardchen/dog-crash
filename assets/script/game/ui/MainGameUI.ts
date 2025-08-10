@@ -26,6 +26,7 @@ import { CrashGame } from '../entity/CrashGame';
 import { RaceResultUI } from './RaceResultUI';
 import { SDKMgr } from '../../ADSDK/SDKMgr';
 import { CoinFlyEffect } from '../effect/CoinFlyEffect';
+import { EnergyProgressBar } from './EnergyProgressBar';
 
 const { ccclass, property } = _decorator;
 
@@ -88,6 +89,9 @@ export class MainGameUI extends CCComp {
 
     @property(Label)
     energyLabel: Label = null!;
+
+    @property(EnergyProgressBar)
+    energyProgressBar: EnergyProgressBar = null!;
 
     @property(Button)
     raceButton: Button = null!;
@@ -2138,6 +2142,9 @@ export class MainGameUI extends CCComp {
         if (energy) {
             const status = energy.getEnergyStatus();
             this.energyLabel.string = `${status.current}/${status.max}`;
+            if(this.energyProgressBar){
+                this.energyProgressBar.setProgress(status.current/status.max);
+            }
 
             // 更新能源按钮的可用状态
             if (this.energyButton) {
