@@ -158,12 +158,23 @@ export class BettingComp extends ecs.Comp {
      * @param totalBets 总下注次数 (-1表示无限)
      */
     setAutoCashOut(enabled: boolean, multiplier: number = 2.0, totalBets: number = -1): void {
+        const wasEnabled = this.autoCashOutEnabled;
+        
         this.autoCashOutEnabled = enabled;
         this.autoCashOutMultiplier = multiplier;
         this.autoCashOutTotalBets = totalBets;
         this.autoCashOutCurrentBets = 0; // 重置计数
 
         console.log(`Auto cashout ${enabled ? 'enabled' : 'disabled'}: multiplier=${multiplier}, totalBets=${totalBets}`);
+        
+        // 如果从启用状态变为禁用状态，发送自动下注结束事件
+        if (wasEnabled && !enabled) {
+            oops.message.dispatchEvent("AUTO_CASHOUT_ENDED", {
+                reason: "user_disabled",
+                totalBets: this.autoCashOutTotalBets,
+                completedBets: this.autoCashOutCurrentBets
+            });
+        }
     }
 
     /**
@@ -189,6 +200,13 @@ export class BettingComp extends ecs.Comp {
             if (this.autoCashOutTotalBets > 0 && this.autoCashOutCurrentBets >= this.autoCashOutTotalBets) {
                 this.autoCashOutEnabled = false;
                 console.log(`BettingComp: Auto cashout disabled: reached total bets limit (${this.autoCashOutTotalBets})`);
+                
+                // 发送自动下注结束事件
+                oops.message.dispatchEvent("AUTO_CASHOUT_ENDED", {
+                    reason: "limit_reached",
+                    totalBets: this.autoCashOutTotalBets,
+                    completedBets: this.autoCashOutCurrentBets
+                });
             } else {
                 console.log(`BettingComp: Auto cashout still enabled, continuing...`);
             }

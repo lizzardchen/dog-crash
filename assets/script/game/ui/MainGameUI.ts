@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, Vec2, UITransform, Sprite, Color, view } from 'cc';
+import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, Vec2, UITransform, Sprite, Color, view, Widget } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
@@ -43,6 +43,18 @@ const { ccclass, property } = _decorator;
 export class MainGameUI extends CCComp {
     @property(Label)
     balanceLabel: Label = null!;
+
+    @property(Node)
+    topNode:Node = null!;
+
+    @property(Node)
+    leftNode: Node = null!;
+
+    @property(Node)
+    rightNode: Node = null!;
+
+    @property(Node)
+    multiplierNode : Node = null!;
 
     @property(Label)
     multiplierLabel: Label = null!;
@@ -122,6 +134,13 @@ export class MainGameUI extends CCComp {
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
     private isHistoryPopupOpen: boolean = false; // 记录history弹窗状态
+    
+    // 存储Widget组件的原始值
+    private originalWidgetValues: Map<Node, {top?: number, bottom?: number, left?: number, right?: number}> = new Map();
+    private isUIAnimating: boolean = false; // 防止动画重复执行
+    
+    // 保存balance标签的原始世界坐标（在UI初始化时保存，不会受到动画影响）
+    private originalBalanceLabelWorldPos: Vec3 = new Vec3();
 
     /**
      * 将数值转换为短文本格式
@@ -161,6 +180,17 @@ export class MainGameUI extends CCComp {
 
         // 初始化UI显示
         this.updateUI();
+        
+        // 保存Widget组件的原始值
+        this.saveOriginalWidgetValues();
+        
+        // 保存balance标签的原始世界坐标
+        this.saveOriginalBalanceLabelWorldPos();
+        
+        // 初始时隐藏multiplierNode
+        if (this.multiplierNode) {
+            this.multiplierNode.active = false;
+        }
         //初始化show raceResultUI
         this.scheduleOnce(async () => {
             const raceComp = smc.crashGame.get(RaceComp);
@@ -353,6 +383,8 @@ export class MainGameUI extends CCComp {
         oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
         // 监听显示比赛结果事件
         oops.message.on("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
+        // 监听自动下注结束事件
+        oops.message.on("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
 
         // 监听下注ScrollView滚动事件
         if (this.betScrollView) {
@@ -419,6 +451,9 @@ export class MainGameUI extends CCComp {
                     this.addButtonPressedEffect();
 
                     console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
+                    
+                    // 播放游戏开始UI动画
+                    this.playGameStartUIAnimation();
                     oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
                 }
 
@@ -596,11 +631,18 @@ export class MainGameUI extends CCComp {
                 profit: profit
             },()=>{
                 console.log("GameResultUI closed, game won!!");
-                // 播放金币飞行动画
+                // 先播放UI恢复动画，然后播放金币飞行动画
+                this.scheduleOnce(() => {
+                    this.playGameEndUIAnimation();
+                }, 0.1);
+                
+                // 并行播放金币飞行动画（目标位置已经保存，不会受UI动画影响）
                 if (profit > 0) {
-                    this.playCoinFlyAnimation(profit, () => {
-                        console.log("Coin fly animation completed!");
-                    });
+                    this.scheduleOnce(() => {
+                        this.playCoinFlyAnimation(profit, () => {
+                            console.log("Coin fly animation completed!");
+                        });
+                    }, 0.2); // 稍微延迟播放金币动画
                 }
             });
         }, 0.2);
@@ -644,6 +686,10 @@ export class MainGameUI extends CCComp {
                 profit: -loss
             },()=>{
                 console.log("GameResultUI closed, game failed!!");
+                // 游戏失败后也要播放UI恢复动画
+                this.scheduleOnce(() => {
+                    this.playGameEndUIAnimation();
+                }, 0.1);
             });
         }, 0.2);
     }
@@ -687,11 +733,18 @@ export class MainGameUI extends CCComp {
                 profit: profit
             },()=>{
                 console.log("GameResultUI closed, game won!!");
-                // 播放金币飞行动画
+                // 先播放UI恢复动画，然后播放金币飞行动画
+                this.scheduleOnce(() => {
+                    this.playGameEndUIAnimation();
+                }, 0.1);
+                
+                // 并行播放金币飞行动画（目标位置已经保存，不会受UI动画影响）
                 if (profit > 0) {
-                    this.playCoinFlyAnimation(profit, () => {
-                        console.log("Coin fly animation completed!");
-                    });
+                    this.scheduleOnce(() => {
+                        this.playCoinFlyAnimation(profit, () => {
+                            console.log("Coin fly animation completed!");
+                        });
+                    }, 0.2); // 稍微延迟播放金币动画
                 }
             });
         }, 0.2);
@@ -722,6 +775,36 @@ export class MainGameUI extends CCComp {
         const multiplier = data && data.multiplier ? data.multiplier : 1.0;
         console.log(`Scene changed from ${oldScene} to ${newScene} at ${multiplier.toFixed(2)}x`);
         // 场景切换由SceneBackgroundSystem自动处理，这里只需要记录日志
+    }
+
+    /**
+     * 自动下注结束事件处理
+     */
+    private onAutoCashOutEnded(data: any): void {
+        console.log("MainGameUI: Auto cashout ended event received", data);
+        
+        // 显示通知告知用户自动下注已结束
+        if (data && data.reason) {
+            let message = "Auto cashout ended";
+            if (data.reason === "limit_reached") {
+                message = `Auto cashout completed: ${data.totalBets} bets finished`;
+            }
+            oops.gui.toast(message);
+        }
+        
+        // 更新AutoBet按钮状态
+        this.updateAutoBetButtonState();
+        
+        // 播放UI恢复动画（如果游戏当前处于非游戏状态）
+        if (smc.crashGame) {
+            const gameState = smc.crashGame.get(GameStateComp);
+            if (gameState.state === GameState.WAITING) {
+                // 如果当前是等待状态，说明游戏已经结束，播放UI恢复动画
+                this.scheduleOnce(() => {
+                    this.playGameEndUIAnimation();
+                }, 0.1);
+            }
+        }
     }
 
     /**
@@ -1470,6 +1553,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("SCENE_CHANGED", this.onSceneChanged, this);
         oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
         oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
+        oops.message.off("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
 
         // 清理能源按钮事件
         if (this.energyButton) {
@@ -2119,22 +2203,233 @@ export class MainGameUI extends CCComp {
     }
 
     /**
-     * 获取余额标签的世界坐标
+     * 获取余额标签的世界坐标（返回保存的原始位置，不受UI动画影响）
      */
     private getBalanceLabelWorldPos(): Vec3 {
+        // 如果保存了原始坐标，就使用原始坐标
+        if (this.originalBalanceLabelWorldPos.x !== 0 || this.originalBalanceLabelWorldPos.y !== 0) {
+            console.log(`Using saved balance label world position:`, this.originalBalanceLabelWorldPos);
+            return this.originalBalanceLabelWorldPos.clone();
+        }
+
+        // 如果没有保存坐标，则实时计算（作为备用）
         if (!this.balanceLabel) {
+            console.warn("Balance label not found and no saved position available");
             return new Vec3(0, 0, 0);
         }
 
         const uiTransform = this.balanceLabel.node.getComponent(UITransform);
         if (!uiTransform) {
+            console.warn("Balance label UITransform not found");
             return new Vec3(0, 0, 0);
         }
 
-        // 获取世界坐标
+        // 获取实时世界坐标
         const worldPos = new Vec3();
         uiTransform.convertToWorldSpaceAR(Vec3.ZERO, worldPos);
+        console.log(`Using real-time balance label world position:`, worldPos);
         return worldPos;
+    }
+
+    /**
+     * 保存Widget组件的原始值
+     */
+    private saveOriginalWidgetValues(): void {
+        const nodes = [this.topNode, this.leftNode, this.rightNode];
+        
+        nodes.forEach(node => {
+            if (node) {
+                const widget = node.getComponent(Widget);
+                if (widget) {
+                    this.originalWidgetValues.set(node, {
+                        top: widget.top,
+                        bottom: widget.bottom,
+                        left: widget.left,
+                        right: widget.right
+                    });
+                    console.log(`Saved widget values for ${node.name}:`, this.originalWidgetValues.get(node));
+                }
+            }
+        });
+    }
+
+    /**
+     * 保存balance标签的原始世界坐标
+     */
+    private saveOriginalBalanceLabelWorldPos(): void {
+        if (!this.balanceLabel) {
+            console.warn("Balance label not found - cannot save original world position");
+            return;
+        }
+
+        const uiTransform = this.balanceLabel.node.getComponent(UITransform);
+        if (!uiTransform) {
+            console.warn("Balance label UITransform not found - cannot save original world position");
+            return;
+        }
+
+        // 获取并保存世界坐标
+        uiTransform.convertToWorldSpaceAR(Vec3.ZERO, this.originalBalanceLabelWorldPos);
+        console.log(`Saved original balance label world position:`, this.originalBalanceLabelWorldPos);
+    }
+
+    /**
+     * 开始游戏时的UI动画 - 滑出节点
+     */
+    private playGameStartUIAnimation(): void {
+        if (this.isUIAnimating) return;
+        this.isUIAnimating = true;
+        
+        console.log("Playing game start UI animation");
+        
+        // 获取屏幕尺寸用于计算滑出距离
+        const visibleSize = view.getVisibleSize();
+        const slideDistance = Math.max(visibleSize.width, visibleSize.height) + 200; // 增加额外距离确保完全滑出
+        
+        // 使用一个统一的tweener对象来驱动所有动画
+        const tweenTarget = { progress: 0 };
+        
+        // 保存初始状态
+        const initialStates = {
+            topWidget: this.topNode?.getComponent(Widget),
+            leftWidget: this.leftNode?.getComponent(Widget),
+            rightWidget: this.rightNode?.getComponent(Widget)
+        };
+        
+        const startValues = {
+            top: initialStates.topWidget?.top || 0,
+            left: initialStates.leftWidget?.left || 0,
+            right: initialStates.rightWidget?.right || 0
+        };
+        
+        const targetValues = {
+            top: -slideDistance,
+            left: -slideDistance,
+            right: -slideDistance
+        };
+        
+        console.log(`Animation start values:`, startValues);
+        console.log(`Animation target values:`, targetValues);
+        
+        tween(tweenTarget)
+            .to(0.5, { progress: 1 }, { 
+                easing: 'sineIn',
+                onUpdate: (target: any) => {
+                    const progress = target.progress;
+                    
+                    // 更新topNode
+                    if (initialStates.topWidget && initialStates.topWidget.isAlignTop) {
+                        const currentTop = startValues.top + (targetValues.top - startValues.top) * progress;
+                        initialStates.topWidget.top = currentTop;
+                        initialStates.topWidget.updateAlignment();
+                    }
+                    
+                    // 更新leftNode
+                    if (initialStates.leftWidget && initialStates.leftWidget.isAlignLeft) {
+                        const currentLeft = startValues.left + (targetValues.left - startValues.left) * progress;
+                        initialStates.leftWidget.left = currentLeft;
+                        initialStates.leftWidget.updateAlignment();
+                    }
+                    
+                    // 更新rightNode
+                    if (initialStates.rightWidget && initialStates.rightWidget.isAlignRight) {
+                        const currentRight = startValues.right + (targetValues.right - startValues.right) * progress;
+                        initialStates.rightWidget.right = currentRight;
+                        initialStates.rightWidget.updateAlignment();
+                    }
+                }
+            })
+            .start();
+        
+        // 显示multiplierNode
+        if (this.multiplierNode) {
+            this.multiplierNode.active = true;
+            // 添加fade in效果
+            this.multiplierNode.setScale(0, 0, 1);
+            tween(this.multiplierNode)
+                .delay(0.2) // 稍微延迟显示
+                .to(0.3, { scale: new Vec3(1, 1, 1) }, { easing: 'backOut' })
+                .start();
+        }
+    }
+
+    /**
+     * 游戏结束后的UI动画 - 滑回原位置
+     */
+    private playGameEndUIAnimation(): void {
+        if (!this.isUIAnimating) return;
+        
+        console.log("Playing game end UI animation");
+        
+        // 使用一个统一的tweener对象来驱动所有动画
+        const tweenTarget = { progress: 0 };
+        
+        // 获取当前状态
+        const currentStates = {
+            topWidget: this.topNode?.getComponent(Widget),
+            leftWidget: this.leftNode?.getComponent(Widget),
+            rightWidget: this.rightNode?.getComponent(Widget)
+        };
+        
+        const startValues = {
+            top: currentStates.topWidget?.top || 0,
+            left: currentStates.leftWidget?.left || 0,
+            right: currentStates.rightWidget?.right || 0
+        };
+        
+        // 获取原始值
+        const targetValues = {
+            top: this.originalWidgetValues.get(this.topNode)?.top || 0,
+            left: this.originalWidgetValues.get(this.leftNode)?.left || 0,
+            right: this.originalWidgetValues.get(this.rightNode)?.right || 0
+        };
+        
+        console.log(`Restore animation start values:`, startValues);
+        console.log(`Restore animation target values:`, targetValues);
+        
+        tween(tweenTarget)
+            .to(0.5, { progress: 1 }, { 
+                easing: 'sineOut',
+                onUpdate: (target: any) => {
+                    const progress = target.progress;
+                    
+                    // 更新topNode
+                    if (currentStates.topWidget && currentStates.topWidget.isAlignTop) {
+                        const currentTop = startValues.top + (targetValues.top - startValues.top) * progress;
+                        currentStates.topWidget.top = currentTop;
+                        currentStates.topWidget.updateAlignment();
+                    }
+                    
+                    // 更新leftNode
+                    if (currentStates.leftWidget && currentStates.leftWidget.isAlignLeft) {
+                        const currentLeft = startValues.left + (targetValues.left - startValues.left) * progress;
+                        currentStates.leftWidget.left = currentLeft;
+                        currentStates.leftWidget.updateAlignment();
+                    }
+                    
+                    // 更新rightNode
+                    if (currentStates.rightWidget && currentStates.rightWidget.isAlignRight) {
+                        const currentRight = startValues.right + (targetValues.right - startValues.right) * progress;
+                        currentStates.rightWidget.right = currentRight;
+                        currentStates.rightWidget.updateAlignment();
+                    }
+                },
+                onComplete: () => {
+                    this.isUIAnimating = false;
+                    console.log("Game end UI animation completed");
+                }
+            })
+            .start();
+        
+        // 隐藏multiplierNode
+        if (this.multiplierNode) {
+            tween(this.multiplierNode)
+                .to(0.3, { scale: new Vec3(0, 0, 1) }, { easing: 'backIn' })
+                .call(() => {
+                    this.multiplierNode.active = false;
+                })
+                .start();
+        }
     }
 
     // CCComp要求实现的reset方法
