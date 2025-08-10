@@ -90,19 +90,29 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             // 自动开始游戏
             const betAmount = betting.currentBetItem.value;
             const isFreeMode = betting.currentBetItem.isFree;
+            const localData = entity.get(LocalDataComp);
             
             console.log(`CrashGameSystem: Starting auto bet with amount: ${betAmount}, free: ${isFreeMode}`);
             
             // 验证下注金额和能源
             if (this.validateBetAmount(betAmount, isFreeMode, betting) && this.validateAndConsumeEnergy(entity)) {
-                betting.betAmount = betAmount;
-                betting.isHolding = true;
-                gameState.state = GameState.FLYING;
-                gameState.startTime = Date.now();
-                multiplier.startTime = Date.now();
-                
-                console.log(`CrashGameSystem: Auto bet started: ${betAmount} (free: ${isFreeMode})`);
-                oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
+                // 等待服务器生成崩盘倍率，然后开始游戏
+                localData.generateCrashMultiplierAsync().then((remote_multiplier: number) => {
+                    localData.currentCrashMultiplier = remote_multiplier;
+                    
+                    betting.betAmount = betAmount;
+                    betting.isHolding = true;
+                    gameState.state = GameState.FLYING;
+                    gameState.startTime = Date.now();
+                    multiplier.startTime = Date.now();
+                    
+                    console.log(`CrashGameSystem: Auto bet started: ${betAmount} (free: ${isFreeMode}), target crash: ${remote_multiplier.toFixed(2)}x`);
+                    oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
+                }).catch((error) => {
+                    console.error("CrashGameSystem: Failed to generate crash multiplier for auto bet:", error);
+                    // 如果服务器请求失败，禁用自动下注
+                    betting.setAutoCashOut(false);
+                });
             } else {
                 console.log(`CrashGameSystem: Auto bet validation failed (insufficient balance or energy)`);
                 // 如果验证失败，禁用自动下注
