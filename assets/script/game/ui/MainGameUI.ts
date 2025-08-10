@@ -765,6 +765,16 @@ export class MainGameUI extends CCComp {
             }
         }
 
+        // Check if this is auto-betting mode (not triggered by manual HOLD button)
+        if (smc.crashGame) {
+            const betting = smc.crashGame.get(BettingComp);
+            if (betting && betting.autoCashOutEnabled) {
+                // For auto-betting, play UI animation and update button state
+                this.playGameStartUIAnimation();
+                this.updateHoldButtonState();
+            }
+        }
+
         this.updateUI();
     }
 
@@ -794,6 +804,9 @@ export class MainGameUI extends CCComp {
         
         // 更新AutoBet按钮状态
         this.updateAutoBetButtonState();
+        
+        // 更新HOLD按钮状态（能量不足时自动下注结束，需要恢复按钮状态）
+        this.updateHoldButtonState();
         
         // 播放UI恢复动画（如果游戏当前处于非游戏状态）
         if (smc.crashGame) {
@@ -1480,22 +1493,23 @@ export class MainGameUI extends CCComp {
         switch (gameState.state) {
             case GameState.INIT:
             case GameState.WAITING:
-                if (buttonLabel) {
-                    buttonLabel.string = CrashGameLanguage.getText("hold_to_fly");
-                }
+                // if (buttonLabel) {
+                //     buttonLabel.string = CrashGameLanguage.getText("hold_to_fly");
+                // }
                 this.holdButton.interactable = true;
                 this.removeButtonPressedEffect();
                 break;
             case GameState.FLYING:
                 if (betting.isHolding) {
-                    if (buttonLabel) {
-                        buttonLabel.string = CrashGameLanguage.getText("release_to_cash_out");
-                    }
+                    // if (buttonLabel) {
+                    //     buttonLabel.string = CrashGameLanguage.getText("release_to_cash_out");
+                    // }
                     this.holdButton.interactable = true;
+                    this.addButtonPressedEffect();
                 } else {
-                    if (buttonLabel) {
-                        buttonLabel.string = CrashGameLanguage.getText("cashed_out");
-                    }
+                    // if (buttonLabel) {
+                    //     buttonLabel.string = CrashGameLanguage.getText("cashed_out");
+                    // }
                     this.holdButton.interactable = false;
                     this.removeButtonPressedEffect();
                 }
@@ -2277,7 +2291,7 @@ export class MainGameUI extends CCComp {
      * 开始游戏时的UI动画 - 滑出节点
      */
     private playGameStartUIAnimation(): void {
-        if (this.isUIAnimating) return;
+        // 强制重置动画状态，确保新游戏可以正常播放动画
         this.isUIAnimating = true;
         
         console.log("Playing game start UI animation");
