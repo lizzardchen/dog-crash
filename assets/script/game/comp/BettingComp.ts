@@ -16,6 +16,7 @@ export class BettingComp extends ecs.Comp {
 
     betAmount: number = 0;
     balance: number = 1000;
+    money: number = 1000;
     isHolding: boolean = false;
 
     // 下注金额数据

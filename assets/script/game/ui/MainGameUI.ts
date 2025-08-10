@@ -27,6 +27,9 @@ import { RaceResultUI } from './RaceResultUI';
 import { SDKMgr } from '../../ADSDK/SDKMgr';
 import { CoinFlyEffect } from '../effect/CoinFlyEffect';
 import { EnergyProgressBar } from './EnergyProgressBar';
+import { SimpleTutorial } from '../system/SimpleTutorial';
+import { GoldPopupUI } from './GoldPopupUI';
+import { MoneyPopupUI } from './MoneyPopupUI';
 
 const { ccclass, property } = _decorator;
 
@@ -44,6 +47,9 @@ const { ccclass, property } = _decorator;
 export class MainGameUI extends CCComp {
     @property(Label)
     balanceLabel: Label = null!;
+
+    @property(Label)
+    moneyLabel: Label = null!;
 
     @property(Node)
     topNode:Node = null!;
@@ -195,13 +201,11 @@ export class MainGameUI extends CCComp {
         if (this.multiplierNode) {
             this.multiplierNode.active = false;
         }
-        //初始化show raceResultUI
-        this.scheduleOnce(async () => {
-            const raceComp = smc.crashGame.get(RaceComp);
-            if (raceComp) {
-                await raceComp.showRaceResult(raceComp.currentRace?.raceId || "");
-            }
-        },0);
+        //初始化show raceResultUI - 如果有新手教程则延后显示
+        this.showRaceResultAfterTutorial();
+        
+        // 检查是否需要显示新手引导
+        this.checkAndShowTutorial();
     }
 
     private initGameData(): void {
@@ -342,6 +346,17 @@ export class MainGameUI extends CCComp {
             this.holdButton.node.on(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
         }
 
+        // 余额标签点击事件
+        if (this.balanceLabel) {
+            const balanceButton = this.balanceLabel.node.parent?.getComponent(Button);
+            balanceButton?.node.on(Node.EventType.TOUCH_START, this.onBalanceClick, this);
+        }
+
+        if(this.moneyLabel){
+            const moneyButton = this.moneyLabel.node.parent?.getComponent(Button);
+            moneyButton?.node.on(Node.EventType.TOUCH_START, this.onMoneyClick, this);
+        }
+
         // 历史记录按钮事件
         if (this.historyButton) {
             this.historyButton.node.on(Button.EventType.CLICK, this.onHistoryButtonClick, this);
@@ -412,6 +427,9 @@ export class MainGameUI extends CCComp {
 
         this.hold_unpressed_node.active = false;
         this.hold_pressed_node.active = true;
+        
+        // 完成新手引导（如果正在引导中）
+        this.onTutorialHoldButtonClicked();
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
@@ -1423,6 +1441,9 @@ export class MainGameUI extends CCComp {
         if (this.balanceLabel) {
             this.balanceLabel.string = `${betting.balance.toFixed(0)}`;
         }
+        if(this.moneyLabel){
+            this.moneyLabel.string = `${betting.money.toFixed(0)}`;
+        }
 
         // 安全更新倍数显示
         if (this.multiplierLabel) {
@@ -1588,6 +1609,17 @@ export class MainGameUI extends CCComp {
         oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
         oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
         oops.message.off("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
+
+        // 清理余额标签点击事件
+        if (this.balanceLabel) {
+            const balanceButton = this.balanceLabel.node.parent?.getComponent(Button);
+            balanceButton?.node.off(Node.EventType.TOUCH_START, this.onBalanceClick, this);
+        }
+
+        if(this.moneyLabel){
+            const moneyButton = this.moneyLabel.node.parent?.getComponent(Button);
+            moneyButton?.node.off(Node.EventType.TOUCH_START, this.onMoneyClick, this);
+        }
 
         // 清理能源按钮事件
         if (this.energyButton) {
@@ -2467,6 +2499,103 @@ export class MainGameUI extends CCComp {
                 })
                 .start();
         }
+    }
+
+    /**
+     * 显示race结果
+     */
+    private async showRaceResult(): Promise<void> {
+        const raceComp = smc.crashGame.get(RaceComp);
+        if (raceComp) {
+            await raceComp.showRaceResult(raceComp.currentRace?.raceId || "");
+        }
+    }
+
+    /**
+     * 显示race结果 - 根据是否有新手教程来决定时机
+     */
+    private showRaceResultAfterTutorial(): void {
+        const tutorial = SimpleTutorial.getInstance();
+        
+        if (tutorial.shouldShowTutorial()) {
+            // 如果需要显示新手教程，则等教程完成后再显示race结果
+            // 不需要延迟，直接传入回调函数
+        } else {
+            // 没有新手教程，直接显示
+            this.scheduleOnce(() => {
+                this.showRaceResult();
+            }, 0);
+        }
+    }
+
+    /**
+     * 检查并显示新手引导
+     */
+    private checkAndShowTutorial(): void {
+        const tutorial = SimpleTutorial.getInstance();
+        if (tutorial.shouldShowTutorial()) {
+            // 延迟一下显示，确保UI完全加载
+            this.scheduleOnce(() => {
+                tutorial.showTutorial(this.holdButton.node, () => {
+                    // // 教程完成后的回调 - 显示race结果
+                    // this.showRaceResult();
+                });
+            }, 0.3);
+        }
+    }
+
+    /**
+     * 当用户点击HOLD按钮时调用（完成引导）
+     */
+    private onTutorialHoldButtonClicked(): void {
+        const tutorial = SimpleTutorial.getInstance();
+        tutorial.completeTutorial();
+    }
+
+    /**
+     * 余额标签点击事件
+     */
+    private onBalanceClick(): void {
+        CrashGameAudio.playButtonClick();
+        
+        // 获取当前余额
+        const betting = smc.crashGame.get(BettingComp);
+        const currentBalance = betting ? betting.balance : 0;
+
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node, params: any) => {
+                const goldpopupUI = node.getComponent(GoldPopupUI);
+                if (goldpopupUI) {
+                    goldpopupUI.onOpen(params);
+                }
+            }
+        };
+        
+        // 打开金币弹窗
+        oops.gui.open(UIID.GoldPopup, { balance: currentBalance }, callbacks);
+    }
+
+    /**
+     * 余额标签点击事件
+     */
+    private onMoneyClick(): void {
+        CrashGameAudio.playButtonClick();
+        
+        // 获取当前余额
+        const betting = smc.crashGame.get(BettingComp);
+        const currentMoney = betting ? betting.money : 0;
+        
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node, params: any) => {
+                const moneypopupUI = node.getComponent(MoneyPopupUI);
+                if (moneypopupUI) {
+                    moneypopupUI.onOpen(params);
+                }
+            }
+        };
+        
+        // 打开金币弹窗
+        oops.gui.open(UIID.MoneyPopup, { balance: currentMoney },callbacks);
     }
 
     // CCComp要求实现的reset方法

@@ -44,7 +44,13 @@ export enum UIID {
     /** 联系我们界面 */
     ContactUs,
     /** 条款说明界面 */
-    TermsConditions
+    TermsConditions,
+    /** 新手引导弹窗 */
+    TutorialPopup,
+    /** 金币弹窗 */
+    GoldPopup,
+    /** money弹窗 */
+    MoneyPopup
 }
 
 /** 打开界面方式的配置数据 */
@@ -65,5 +71,8 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.UserProfile]: { layer: LayerType.Dialog, prefab: "gui/crash/user_profile" },
     [UIID.GameRules]: { layer: LayerType.Dialog, prefab: "gui/crash/game_rules" },
     [UIID.ContactUs]: { layer: LayerType.Dialog, prefab: "gui/crash/contact_us" },
-    [UIID.TermsConditions]: { layer: LayerType.Dialog, prefab: "gui/crash/terms_conditions" }
+    [UIID.TermsConditions]: { layer: LayerType.Dialog, prefab: "gui/crash/terms_conditions" },
+    [UIID.TutorialPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/tutorial_popup" },
+    [UIID.GoldPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/gold_popup" },
+    [UIID.MoneyPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/money_popup" },
 }
