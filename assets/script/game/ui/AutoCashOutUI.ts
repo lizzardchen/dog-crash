@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, UIOpacity, EditBox } from 'cc';
+import { _decorator, Node, Label, Button, UIOpacity, EditBox, Color } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
@@ -62,6 +62,9 @@ export class AutoCashOutUI extends CCComp {
 
     private _close_callback: Function | null = null;
     private _start_callback: Function | null = null;
+    
+    // 当前选中的总下注按钮
+    private selectedTotalBetsButton: Button | null = null;
 
     reset(): void {
         this.node.destroy();
@@ -97,6 +100,9 @@ export class AutoCashOutUI extends CCComp {
         if (this.title_label) {
             this.title_label.string = "AUTO CASHOUT";
         }
+        
+        // 根据默认总下注数高亮对应按钮
+        this.highlightDefaultTotalBetsButton(params.totalBets);
     }
 
     /**
@@ -129,19 +135,19 @@ export class AutoCashOutUI extends CCComp {
 
         // 预设总下注按钮
         if (this.total_25_button) {
-            this.total_25_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(25), this);
+            this.total_25_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(25, this.total_25_button), this);
         }
         if (this.total_50_button) {
-            this.total_50_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(50), this);
+            this.total_50_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(50, this.total_50_button), this);
         }
         if (this.total_100_button) {
-            this.total_100_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(100), this);
+            this.total_100_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(100, this.total_100_button), this);
         }
         if (this.total_200_button) {
-            this.total_200_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(200), this);
+            this.total_200_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(200, this.total_200_button), this);
         }
         if (this.total_infinity_button) {
-            this.total_infinity_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(-1), this);
+            this.total_infinity_button.node.on(Button.EventType.CLICK, () => this.setTotalBets(-1, this.total_infinity_button), this);
         }
     }
 
@@ -174,12 +180,15 @@ export class AutoCashOutUI extends CCComp {
     /**
      * 设置总下注次数
      */
-    private setTotalBets(totalBets: number): void {
+    private setTotalBets(totalBets: number, selectedButton: Button): void {
         CrashGameAudio.playButtonClick();
 
         if (this.total_bets_input) {
             this.total_bets_input.string = totalBets === -1 ? "∞" : totalBets.toString();
         }
+
+        // 更新按钮高亮状态
+        this.updateTotalBetsButtonHighlight(selectedButton);
 
         console.log(`Set total bets to: ${totalBets === -1 ? "infinity" : totalBets}`);
     }
@@ -256,6 +265,62 @@ export class AutoCashOutUI extends CCComp {
                 button.node.off(Button.EventType.CLICK);
             }
         });
+    }
+    
+    /**
+     * 根据默认总下注数高亮对应按钮
+     */
+    private highlightDefaultTotalBetsButton(totalBets: number): void {
+        let defaultButton: Button | null = null;
+        
+        switch (totalBets) {
+            case 25:
+                defaultButton = this.total_25_button;
+                break;
+            case 50:
+                defaultButton = this.total_50_button;
+                break;
+            case 100:
+                defaultButton = this.total_100_button;
+                break;
+            case 200:
+                defaultButton = this.total_200_button;
+                break;
+            case -1:
+                defaultButton = this.total_infinity_button;
+                break;
+        }
+        
+        if (defaultButton) {
+            this.updateTotalBetsButtonHighlight(defaultButton);
+        }
+    }
+    
+    /**
+     * 更新总下注按钮高亮状态
+     */
+    private updateTotalBetsButtonHighlight(selectedButton: Button): void {
+        // 清除之前选中按钮的高亮
+        if (this.selectedTotalBetsButton) {
+            this.setButtonHighlight(this.selectedTotalBetsButton, false);
+        }
+        
+        // 设置新选中按钮的高亮
+        this.setButtonHighlight(selectedButton, true);
+        this.selectedTotalBetsButton = selectedButton;
+    }
+    
+    /**
+     * 设置按钮高亮状态
+     */
+    private setButtonHighlight(button: Button, highlighted: boolean): void {
+        if (!button || !button.node) return;
+        
+        const label = button.node.getComponentInChildren(Label);
+        if (label) {
+            // 高亮时使用黄色，普通状态使用白色
+            label.color = highlighted ? new Color(214, 19, 22, 255) : new Color(250, 250, 157, 255);
+        }
     }
 }
 

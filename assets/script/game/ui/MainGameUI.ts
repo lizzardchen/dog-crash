@@ -1493,17 +1493,33 @@ export class MainGameUI extends CCComp {
         switch (gameState.state) {
             case GameState.INIT:
             case GameState.WAITING:
-                // if (buttonLabel) {
-                //     buttonLabel.string = CrashGameLanguage.getText("hold_to_fly");
-                // }
+                if (buttonLabel) {
+                    if (betting.autoCashOutEnabled) {
+                        // 自动下注模式：显示剩余下注数量
+                        const remaining = betting.autoCashOutTotalBets === -1 ? "∞" : 
+                            Math.max(0, betting.autoCashOutTotalBets - betting.autoCashOutCurrentBets).toString();
+                        buttonLabel.string = `AUTO (${remaining})`;
+                    } else {
+                        // 手动模式：不显示文本
+                        buttonLabel.string = "";
+                    }
+                }
                 this.holdButton.interactable = true;
                 this.removeButtonPressedEffect();
                 break;
             case GameState.FLYING:
                 if (betting.isHolding) {
-                    // if (buttonLabel) {
-                    //     buttonLabel.string = CrashGameLanguage.getText("release_to_cash_out");
-                    // }
+                    if (buttonLabel) {
+                        if (betting.autoCashOutEnabled) {
+                            // 自动下注模式：显示剩余下注数量
+                            const remaining = betting.autoCashOutTotalBets === -1 ? "∞" : 
+                                Math.max(0, betting.autoCashOutTotalBets - betting.autoCashOutCurrentBets).toString();
+                            buttonLabel.string = `AUTO (${remaining})`;
+                        } else {
+                            // 手动模式：不显示文本
+                            buttonLabel.string = "";
+                        }
+                    }
                     this.holdButton.interactable = true;
                     this.addButtonPressedEffect();
                 } else {
