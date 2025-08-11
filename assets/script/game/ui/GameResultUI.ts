@@ -33,6 +33,9 @@ export class GameResultUI extends CCComp {
     @property(Sprite)
     lose_icon: Sprite = null!;
 
+    @property(Node)
+    monkeys_node: Node = null!;
+
     @property(Label)
     countdown_label: Label = null!;
 
@@ -92,8 +95,14 @@ export class GameResultUI extends CCComp {
         // 播放相应音效
         if (params.isWin) {
             CrashGameAudio.playCashOutSuccess();
+            if(this.monkeys_node){
+                this.monkeys_node.active = true; // 显示猴子动画
+            }
         } else {
             CrashGameAudio.playCrashExplosion();
+            if(this.monkeys_node){
+                this.monkeys_node.active = false; // 显示猴子动画
+            }
         }
 
         // 绑定关闭按钮事件

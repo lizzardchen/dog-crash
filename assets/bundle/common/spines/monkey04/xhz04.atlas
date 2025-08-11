@@ -1,0 +1,83 @@
+
+xhz04.png
+size: 710,183
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+xhz01
+  rotate: false
+  xy: 500, 106
+  size: 208, 75
+  orig: 214, 79
+  offset: 3, 2
+  index: -1
+xhz02
+  rotate: true
+  xy: 581, 24
+  size: 80, 29
+  orig: 82, 32
+  offset: 1, 2
+  index: -1
+xhz03
+  rotate: false
+  xy: 416, 2
+  size: 70, 67
+  orig: 72, 68
+  offset: 1, 1
+  index: -1
+xhz04
+  rotate: true
+  xy: 336, 62
+  size: 119, 74
+  orig: 121, 76
+  offset: 1, 1
+  index: -1
+xhz05
+  rotate: true
+  xy: 198, 20
+  size: 161, 136
+  orig: 163, 139
+  offset: 1, 2
+  index: -1
+xhz06
+  rotate: false
+  xy: 500, 73
+  size: 79, 31
+  orig: 81, 32
+  offset: 1, 1
+  index: -1
+xhz07
+  rotate: true
+  xy: 612, 31
+  size: 73, 79
+  orig: 74, 81
+  offset: 0, 1
+  index: -1
+xhz08
+  rotate: false
+  xy: 412, 71
+  size: 86, 110
+  orig: 88, 112
+  offset: 1, 1
+  index: -1
+xhz09
+  rotate: false
+  xy: 336, 3
+  size: 78, 57
+  orig: 80, 60
+  offset: 1, 2
+  index: -1
+xhz10
+  rotate: false
+  xy: 488, 3
+  size: 65, 66
+  orig: 68, 68
+  offset: 1, 1
+  index: -1
+xhz_t_01
+  rotate: true
+  xy: 2, 3
+  size: 178, 194
+  orig: 179, 195
+  offset: 0, 0
+  index: -1

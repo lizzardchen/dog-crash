@@ -1,0 +1,83 @@
+
+xhz03.png
+size: 514,278
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+xhz01
+  rotate: false
+  xy: 2, 12
+  size: 208, 75
+  orig: 214, 79
+  offset: 3, 2
+  index: -1
+xhz02
+  rotate: false
+  xy: 351, 12
+  size: 80, 30
+  orig: 82, 32
+  offset: 1, 1
+  index: -1
+xhz03
+  rotate: false
+  xy: 441, 130
+  size: 70, 66
+  orig: 72, 68
+  offset: 1, 1
+  index: -1
+xhz05
+  rotate: true
+  xy: 181, 115
+  size: 161, 137
+  orig: 163, 139
+  offset: 1, 1
+  index: -1
+xhz06
+  rotate: false
+  xy: 433, 17
+  size: 79, 30
+  orig: 81, 32
+  offset: 1, 1
+  index: -1
+xhz07
+  rotate: false
+  xy: 424, 49
+  size: 72, 79
+  orig: 74, 81
+  offset: 1, 1
+  index: -1
+xhz12
+  rotate: false
+  xy: 320, 130
+  size: 119, 146
+  orig: 121, 148
+  offset: 1, 1
+  index: -1
+xhz13
+  rotate: true
+  xy: 441, 198
+  size: 78, 60
+  orig: 80, 62
+  offset: 1, 1
+  index: -1
+xhz15
+  rotate: true
+  xy: 212, 2
+  size: 111, 137
+  orig: 113, 139
+  offset: 1, 1
+  index: -1
+xhz16
+  rotate: true
+  xy: 351, 44
+  size: 84, 71
+  orig: 86, 73
+  offset: 1, 1
+  index: -1
+xhz_t_02
+  rotate: false
+  xy: 2, 89
+  size: 177, 187
+  orig: 179, 189
+  offset: 1, 1
+  index: -1

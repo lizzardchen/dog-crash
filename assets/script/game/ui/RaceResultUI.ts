@@ -50,16 +50,6 @@ export class RaceResultUI extends CCComp {
     @property(Label) 
     third_prize_label: Label = null!;
     
-    // 前三名头像
-    @property(Sprite) 
-    first_avatar_sprite: Sprite = null!;
-    
-    @property(Sprite) 
-    second_avatar_sprite: Sprite = null!;
-    
-    @property(Sprite) 
-    third_avatar_sprite: Sprite = null!;
-    
     // 底部消息区域
     @property(Node) 
     bottom_message_node: Node = null!;
