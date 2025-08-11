@@ -18,13 +18,13 @@ module.exports = {
     time: true,
 
     // 内存和重启配置
-    max_memory_restart: '500M',
+    max_memory_restart: '1024M',
     restart_delay: 5000,
     max_restarts: 10,
     min_uptime: '10s',
 
     // Node.js 参数
-    node_args: '--max-old-space-size=400',
+    node_args: '--max-old-space-size=800',
 
     // 监控配置
     watch: false,
@@ -35,18 +35,5 @@ module.exports = {
 
     // 合并日志
     merge_logs: true
-  }],
-
-  deploy: {
-    production: {
-      user: 'root',
-      host: ['127.0.0.1'],
-      ref: 'origin/main',
-      repo: 'https://github.com/lizzardchen/dog-crash.git',
-      path: '/www/wwwroot/dog-crash-server',
-      'pre-deploy-local': '',
-      'post-deploy': 'npm install --production && pm2 reload ecosystem.config.js --env production',
-      'pre-setup': ''
-    }
-  }
+  }]
 };

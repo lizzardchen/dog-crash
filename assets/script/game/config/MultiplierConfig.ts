@@ -114,7 +114,7 @@ export class MultiplierConfig {
     static async initialize(): Promise<void> {
         try {
             // 从服务器获取配置
-            const serverConfig = null;//await this.fetchConfigFromServer();
+            const serverConfig = await this.fetchConfigFromServer();
             
             if (serverConfig) {
                 // 从服务器配置更新
