@@ -114,7 +114,7 @@ export class GameResultUI extends CCComp {
                 // 0.1秒后播放daiji动画并循环
                 this.scheduleOnce(() => {
                     if (this.win_spine) {
-                        this.win_spine.setAnimation(0, "daiji", true);
+                        this.win_spine.setAnimation(0, "xuanzhuan", true);
                     }
                 }, 0.1);
             }
