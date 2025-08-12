@@ -8,8 +8,8 @@ export class CrashGameLanguage {
         oops.language.languages = ["zh", "en"];
 
         // 根据系统语言自动选择，如果没有则使用中文
-        const systemLang = oops.language.current || "zh";
-        const supportedLang = oops.language.isExist(systemLang) ? systemLang : "zh";
+        const systemLang = oops.language.current || "en";
+        const supportedLang = oops.language.isExist(systemLang) ? systemLang : "en";
 
         // 使用oops框架的标准语言设置方法
         oops.language.setLanguage(supportedLang, (success: boolean) => {

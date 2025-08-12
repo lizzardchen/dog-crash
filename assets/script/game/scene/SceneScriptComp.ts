@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite, view, Vec3 } from 'cc';
+import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite, view, Vec3, Widget } from 'cc';
 import { SceneBackgroundComp, SceneLayer } from '../comp/SceneBackgroundComp';
 import { smc } from '../common/SingletonModuleComp';
 import { ScenePhysicalResult } from '../config/MultiplierConfig';
@@ -14,7 +14,8 @@ export enum NodeMotionType {
     FLOAT = "float",            // 浮动运动
     ROTATE = "rotate",          // 旋转运动
     SCALE_PULSE = "scale_pulse", // 缩放脉冲
-    CUSTOM_PATH = "custom_path"  // 自定义路径
+    CUSTOM_PATH = "custom_path",  // 自定义路径
+    STATIC = "static"              // 静止不动
 }
 
 /** 子节点配置 */
@@ -148,7 +149,7 @@ export class SceneScriptComp extends Component {
     private initSpineNode(config: SceneNodeConfig): void {
         const skeleton = config.targetNode.getComponent(sp.Skeleton);
         if (skeleton) {
-            skeleton.setAnimation(0, "idle", true);
+            skeleton.setAnimation(0, "animation", true);
             console.log(`Initialized spine node: ${config.targetNode.name}`);
         }
     }
@@ -210,6 +211,23 @@ export class SceneScriptComp extends Component {
         // 计算位置缩放比例：y2/(newHeight/2) = y1/(oldHeight/2) => y2 = y1 * newHeight / oldHeight
         const scaleRatio = newHeight / oldHeight;
 
+        console.log(`Scene ${physicInfo.sceneName} physics info reset: ${oldHeight.toFixed(2)}px -> ${newHeight.toFixed(2)}px (ratio: ${scaleRatio.toFixed(3)})`);
+
+        // 立即生效：强制刷新UI布局
+        uitransform.node.updateWorldTransform();
+
+        // 如果有滚动内容，也需要立即刷新
+        if (this.scrollContent) {
+            this.scrollContent.updateWorldTransform();
+            const widget = this.scrollContent.getComponent(Widget);
+            if(widget){
+                widget.updateAlignment();
+            }
+        }
+         if( this.bgStretch ){
+            this.bgStretch.updateLayout();
+        }
+
         // 调整所有非背景节点的位置
         this.nodeConfigs.forEach(config => {
             if (!config.isBackground && config.targetNode) {
@@ -221,19 +239,6 @@ export class SceneScriptComp extends Component {
                 console.log(`Node ${config.targetNode.name} position adjusted: Y ${currentPos.y.toFixed(2)} -> ${newY.toFixed(2)}`);
             }
         });
-
-        console.log(`Scene ${physicInfo.sceneName} physics info reset: ${oldHeight.toFixed(2)}px -> ${newHeight.toFixed(2)}px (ratio: ${scaleRatio.toFixed(3)})`);
-
-        // 立即生效：强制刷新UI布局
-        uitransform.node.updateWorldTransform();
-
-        // 如果有滚动内容，也需要立即刷新
-        if (this.scrollContent) {
-            this.scrollContent.updateWorldTransform();
-        }
-         if( this.bgStretch ){
-            this.bgStretch.updateLayout();
-        }
     }
     /**
      * 启动场景效果
@@ -285,14 +290,6 @@ export class SceneScriptComp extends Component {
         }
     }
 
-
-    /** 更新所有子节点的运动 */
-    private updateAllNodeMotions(): void {
-        this.nodeConfigs.forEach(config => {
-            this.updateNodeMotion(config);
-        });
-    }
-
     /** 启动单个节点的运动 */
     private startNodeMotion(config: SceneNodeConfig): void {
         if (!config.targetNode || config.isBackground) return;
@@ -317,23 +314,15 @@ export class SceneScriptComp extends Component {
             case NodeMotionType.CUSTOM_PATH:
                 this.startCustomPathMotion(config, finalSpeed);
                 break;
+            case NodeMotionType.STATIC:
+                this.startStaticMotion(config, finalSpeed);
+                break;
+            default:
+                break; // 静止不动，不需要任何运动
         }
 
         // 根据节点类型更新特定属性
         this.updateNodeByType(config, finalSpeed);
-    }
-
-    /** 更新单个节点的运动 */
-    private updateNodeMotion(config: SceneNodeConfig): void {
-        // 停止当前运动
-        const existingTween = this.nodeTweens.get(config.targetNode);
-        if (existingTween) {
-            existingTween.stop();
-            this.nodeTweens.delete(config.targetNode);
-        }
-
-        // 重新启动运动
-        this.startNodeMotion(config);
     }
 
     /** 滚动运动 */
@@ -433,6 +422,16 @@ export class SceneScriptComp extends Component {
         console.log(`Custom path motion for ${config.targetNode.name} with speed ${speed}`);
     }
 
+    private startStaticMotion(config: SceneNodeConfig, speed: number): void {
+        if(config.targetNode){
+            config.targetNode.updateWorldTransform();
+            const widget = config.targetNode.getComponent(Widget);
+            if(widget){
+                widget.updateAlignment();
+            }
+        }
+    }
+
     /** 根据节点类型更新特定属性 */
     private updateNodeByType(config: SceneNodeConfig, speed: number): void {
         switch (config.nodeType) {
@@ -460,18 +459,18 @@ export class SceneScriptComp extends Component {
 
     /** 更新Spine节点 */
     private updateSpineNode(config: SceneNodeConfig, speed: number): void {
-        const skeleton = config.targetNode.getComponent(sp.Skeleton);
-        if (skeleton) {
-            skeleton.timeScale = speed;
+        // const skeleton = config.targetNode.getComponent(sp.Skeleton);
+        // if (skeleton) {
+        //     skeleton.timeScale = speed;
 
-            if (speed > 2.0) {
-                skeleton.setAnimation(0, "fast", true);
-            } else if (speed > 1.0) {
-                skeleton.setAnimation(0, "normal", true);
-            } else {
-                skeleton.setAnimation(0, "slow", true);
-            }
-        }
+        //     if (speed > 2.0) {
+        //         skeleton.setAnimation(0, "fast", true);
+        //     } else if (speed > 1.0) {
+        //         skeleton.setAnimation(0, "normal", true);
+        //     } else {
+        //         skeleton.setAnimation(0, "slow", true);
+        //     }
+        // }
     }
 
     /** 更新粒子节点 */

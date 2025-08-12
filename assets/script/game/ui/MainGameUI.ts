@@ -419,6 +419,8 @@ export class MainGameUI extends CCComp {
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
+        CrashGameAudio.playButtonClick();
+
         if (!smc.crashGame) return;
 
         // 关闭history弹窗（如果打开的话）
@@ -430,6 +432,9 @@ export class MainGameUI extends CCComp {
         
         // 完成新手引导（如果正在引导中）
         this.onTutorialHoldButtonClicked();
+
+        // 播放游戏开始UI动画
+        this.playGameStartUIAnimation();
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
@@ -459,8 +464,7 @@ export class MainGameUI extends CCComp {
                 localData.currentCrashMultiplier = remote_mulitplier;
                 if (this.validateBetAmount(betAmount, isFreeMode)) {
 
-
-                    CrashGameAudio.playButtonClick();
+                    
 
                     betting.betAmount = betAmount;
                     betting.isHolding = true;
@@ -474,13 +478,14 @@ export class MainGameUI extends CCComp {
 
                     console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
                     
-                    // 播放游戏开始UI动画
-                    this.playGameStartUIAnimation();
+                    
                     oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
                 }
 
             }).catch((error) => {
                 console.error("Failed to generate crash multiplier", error);
+                // 播放游戏开始UI动画
+                this.playGameEndUIAnimation();
             });
         }
     }
@@ -2593,7 +2598,7 @@ export class MainGameUI extends CCComp {
                 }
             }
         };
-        
+
         // 打开金币弹窗
         oops.gui.open(UIID.MoneyPopup, { balance: currentMoney },callbacks);
     }

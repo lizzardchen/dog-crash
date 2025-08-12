@@ -1,4 +1,4 @@
-import { _decorator, Node, Button, UIOpacity, Vec3, UITransform, tween } from 'cc';
+import { _decorator, Node, Button, UIOpacity, Vec3, UITransform, tween, Sprite, view, Size, Mask } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { CrashGameAudio } from "../config/CrashGameAudio";
@@ -20,6 +20,12 @@ export class TutorialPopupUI extends CCComp {
 
     @property(Button)
     skip_button: Button = null!; // 跳过按钮
+
+    @property(UITransform)
+    mask_bg_transform: UITransform = null!; // 半透明遮罩背景
+
+    @property(Mask)
+    mask:Mask = null!; // 遮罩组件
 
     private _skip_callback: Function | null = null;
     private holdButtonNode: any = null; // 保存holdButton节点引用
@@ -44,6 +50,19 @@ export class TutorialPopupUI extends CCComp {
         if (params && params.holdButtonNode) {
             this.holdButtonNode = params.holdButtonNode;
         }
+
+        if(this.holdButtonNode){
+            if( this.mask ){
+                this.mask.node.setWorldPosition(this.holdButtonNode.worldPosition);
+            }
+
+            if(this.mask_bg_transform){
+                this.mask_bg_transform.node.setWorldPosition(this.node.worldPosition);
+                this.mask_bg_transform.contentSize = new Size(view.getVisibleSize().width, view.getVisibleSize().height);
+            }
+        }
+        
+        
 
         console.log("TutorialPopupUI opened");
         this.positionFingerToHoldButton();

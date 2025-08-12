@@ -1,0 +1,26 @@
+
+shengli.png
+size: 1360,1298
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+sl_02
+  rotate: false
+  xy: 2, 2
+  size: 1356, 1294
+  orig: 1371, 1328
+  offset: 14, 5
+  index: -1
+
+shengli2.png
+size: 1912,1913
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+sl_01
+  rotate: false
+  xy: 2, 2
+  size: 1908, 1909
+  orig: 2256, 2139
+  offset: 173, 55
+  index: -1

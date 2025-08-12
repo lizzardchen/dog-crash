@@ -1,0 +1,26 @@
+
+shibai.png
+size: 1195,1139
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+sb_02
+  rotate: false
+  xy: 2, 2
+  size: 1191, 1135
+  orig: 1204, 1165
+  offset: 12, 5
+  index: -1
+
+shibai2.png
+size: 1705,1936
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+sb_01
+  rotate: false
+  xy: 2, 2
+  size: 1701, 1932
+  orig: 1703, 2270
+  offset: 1, 160
+  index: -1

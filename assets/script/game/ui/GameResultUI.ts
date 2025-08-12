@@ -1,8 +1,9 @@
-import { _decorator, Node, Label, Button, Sprite, UIOpacity } from 'cc';
+import { _decorator, Node, Label, Button, Sprite, UIOpacity, sp } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { CrashGameAudio } from "../config/CrashGameAudio";
+
 
 const { ccclass, property } = _decorator;
 
@@ -27,17 +28,20 @@ export class GameResultUI extends CCComp {
     @property(Button)
     close_button: Button = null!;
 
-    @property(Sprite)
-    win_icon: Sprite = null!;
-
-    @property(Sprite)
-    lose_icon: Sprite = null!;
+    @property(Node)
+    monkeys_win_node: Node = null!;
 
     @property(Node)
-    monkeys_node: Node = null!;
+    monkeys_lose_node: Node = null!;
 
     @property(Label)
     countdown_label: Label = null!;
+
+    @property(sp.Skeleton)
+    win_spine: sp.Skeleton = null!;
+
+    @property(sp.Skeleton)
+    lose_spine: sp.Skeleton = null!;
 
     private _close_callback: Function | null = null;
     private _can_close: boolean = false;
@@ -95,13 +99,44 @@ export class GameResultUI extends CCComp {
         // 播放相应音效
         if (params.isWin) {
             CrashGameAudio.playCashOutSuccess();
-            if(this.monkeys_node){
-                this.monkeys_node.active = true; // 显示猴子动画
+            if(this.monkeys_win_node){
+                this.monkeys_win_node.active = true; // 显示猴子动画
+            }
+            if(this.monkeys_lose_node){
+                this.monkeys_lose_node.active = false; // 显示猴子动画
+            }
+            
+            // 播放win_spine动画
+            if (this.win_spine) {
+                // 先播放chuxian动画
+                this.win_spine.setAnimation(0, "chuxian", false);
+                
+                // 0.1秒后播放daiji动画并循环
+                this.scheduleOnce(() => {
+                    if (this.win_spine) {
+                        this.win_spine.setAnimation(0, "daiji", true);
+                    }
+                }, 0.1);
             }
         } else {
             CrashGameAudio.playCrashExplosion();
-            if(this.monkeys_node){
-                this.monkeys_node.active = false; // 显示猴子动画
+            if(this.monkeys_win_node){
+                this.monkeys_win_node.active = false; // 显示猴子动画
+            }
+            if(this.monkeys_lose_node){
+                this.monkeys_lose_node.active = true; // 显示猴子动画
+            }
+            // 播放lose_spine动画
+            if (this.lose_spine) {
+                // 先播放chuxian动画
+                this.lose_spine.setAnimation(0, "chuxian", false);
+                
+                // 0.1秒后播放daiji动画并循环
+                this.scheduleOnce(() => {
+                    if (this.lose_spine) {
+                        this.lose_spine.setAnimation(0, "daiji", true);
+                    }
+                }, 0.1);
             }
         }
 
@@ -124,20 +159,14 @@ export class GameResultUI extends CCComp {
             this.result_title_label.string = CrashGameLanguage.getText(titleKey);
         }
 
-        // 设置结果图标
-        if (this.win_icon && this.lose_icon) {
-            this.win_icon.node.active = params.isWin;
-            this.lose_icon.node.active = !params.isWin;
-        }
-
         // 设置关闭按钮文本
-        if (this.close_button) {
-            const buttonLabel = this.close_button.node.getComponentInChildren(Label);
-            if (buttonLabel) {
-                const buttonTextKey = params.isWin ? "continue" : "try_again";
-                buttonLabel.string = CrashGameLanguage.getText(buttonTextKey);
-            }
-        }
+        // if (this.close_button) {
+        //     const buttonLabel = this.close_button.node.getComponentInChildren(Label);
+        //     // if (buttonLabel) {
+        //     //     const buttonTextKey = params.isWin ? "continue" : "try_again";
+        //     //     buttonLabel.string = CrashGameLanguage.getText(buttonTextKey);
+        //     // }
+        // }
 
         // 计算coin和dollar奖励数量
         const rewardAmount = Math.abs(params.profit); // 取绝对值作为奖励数量

@@ -9,6 +9,7 @@ import { AsyncQueue, NextFunction } from "../../../../../extensions/oops-plugin-
 import { ecs } from "../../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { ModuleUtil } from "../../../../../extensions/oops-plugin-framework/assets/module/common/ModuleUtil";
 import { UIID } from "../../common/config/GameUIConfig";
+import { CrashGameLanguage } from "../../config/CrashGameLanguage";
 import { Initialize } from "../Initialize";
 import { LoadingViewComp } from "../view/LoadingViewComp";
 
@@ -53,13 +54,13 @@ export class InitResSystem extends ecs.ComblockSystem implements ecs.IEntityEnte
         queue.push((next: NextFunction, params: any, args: any) => {
             // 设置默认语言
             let lan = oops.storage.get("language");
-            if (lan == null || lan == "") {
-                lan = "zh";
-                oops.storage.set("language", lan);
-            }
-
+            // if (lan == null || lan == "") {
+            lan = "en";
+            oops.storage.set("language", lan);
+            // }
             // 加载语言包资源
             oops.language.setLanguage(lan, next);
+            CrashGameLanguage.init();
         });
     }
 

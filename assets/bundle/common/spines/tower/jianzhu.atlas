@@ -1,0 +1,20 @@
+
+jianzhu.png
+size: 794,629
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+jz_01
+  rotate: false
+  xy: 2, 2
+  size: 691, 625
+  orig: 693, 627
+  offset: 1, 1
+  index: -1
+jz_02
+  rotate: true
+  xy: 695, 481
+  size: 146, 97
+  orig: 148, 99
+  offset: 1, 1
+  index: -1
