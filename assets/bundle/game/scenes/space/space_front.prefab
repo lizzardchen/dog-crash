@@ -628,6 +628,7 @@
       "__id__": 2
     },
     "bgStretch": null,
+    "front_or_back": "front",
     "_id": ""
   },
   {

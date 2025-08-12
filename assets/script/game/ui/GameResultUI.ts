@@ -45,7 +45,7 @@ export class GameResultUI extends CCComp {
 
     private _close_callback: Function | null = null;
     private _can_close: boolean = false;
-    private _countdown_timer: number = 3; // 3秒倒计时
+    private _countdown_timer: number = 30; // 3秒倒计时
 
     reset(): void {
         this.node.destroy();

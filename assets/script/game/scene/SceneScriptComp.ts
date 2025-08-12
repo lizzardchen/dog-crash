@@ -38,6 +38,15 @@ export class SceneNodeConfig {
 
     @property({ type: CCBoolean, tooltip: "是否是背景节点（用于滚动循环）" })
     isBackground: boolean = false;
+
+    private _originalY: number = 0; // 用于记录初始Y位置
+
+    backNodeY() {
+        this._originalY = this.targetNode.y;
+    }
+    restoreNodeY(){
+        this.targetNode.y = this._originalY;
+    }
 }
 
 /**
@@ -57,6 +66,9 @@ export class SceneScriptComp extends Component {
 
     @property({type:ThreeSliceStretch})
     bgStretch: ThreeSliceStretch = null!;
+
+    @property({ type: String, tooltip: "全局速度倍率" })
+    front_or_back:String = "back";
 
     // 运行时数据 - 这些信息由外部系统设置
     private sceneInfo: { type: string, layer: string } = { type: "unknown", layer: "unknown" };
@@ -197,7 +209,9 @@ export class SceneScriptComp extends Component {
         if (physicInfo.rocketState == RocketSceneState.GROUND && this.node.parent) {
             const parent_uitransform = this.node.parent.getComponent(UITransform);
             newHeight = (parent_uitransform?.contentSize.height || 0) + (newHeight < 0 ? 0 : newHeight);
-            physicInfo.sceneHeight = newHeight;
+            if(this.front_or_back == "back"){
+                physicInfo.sceneHeight = newHeight;
+            }
         }
 
         // 如果高度没有变化，直接返回
@@ -235,6 +249,8 @@ export class SceneScriptComp extends Component {
                 // 按比例调整Y位置（相对于场景中心）
                 const newY = currentPos.y * scaleRatio;
                 config.targetNode.setPosition(currentPos.x, newY, currentPos.z);
+
+                config.backNodeY(); // backNodeY方法记录初始Y位置
 
                 console.log(`Node ${config.targetNode.name} position adjusted: Y ${currentPos.y.toFixed(2)} -> ${newY.toFixed(2)}`);
             }
@@ -279,6 +295,9 @@ export class SceneScriptComp extends Component {
 
     /** 停止所有子节点的运动 */
     private stopAllNodeMotions(): void {
+        this.nodeConfigs.forEach(config => {
+            this.StopNodeMotion(config);
+        });
         this.nodeTweens.forEach(tween => {
             tween.stop();
         });
@@ -287,6 +306,22 @@ export class SceneScriptComp extends Component {
         if (this.scrollTween) {
             this.scrollTween.stop();
             this.scrollTween = null;
+        }
+    }
+
+    /** 停止单个节点的运动 */
+    private StopNodeMotion(config: SceneNodeConfig): void {
+        if (!config.targetNode || config.isBackground) return;
+
+        config.restoreNodeY(); // 恢复初始Y位置
+
+        switch(config.nodeType){
+            case "spine":{
+                if( config.motionType == "static" ){
+                    config.targetNode.active = false;
+                }
+                break;
+            }
         }
     }
 
@@ -420,10 +455,19 @@ export class SceneScriptComp extends Component {
     /** 自定义路径运动 */
     private startCustomPathMotion(config: SceneNodeConfig, speed: number): void {
         console.log(`Custom path motion for ${config.targetNode.name} with speed ${speed}`);
+        if(config.targetNode){
+            config.targetNode.active = true; // 确保节点可见
+            config.targetNode.updateWorldTransform();
+            const widget = config.targetNode.getComponent(Widget);
+            if(widget){
+                widget.updateAlignment();
+            }
+        }
     }
 
     private startStaticMotion(config: SceneNodeConfig, speed: number): void {
         if(config.targetNode){
+            config.targetNode.active = true; // 确保节点可见
             config.targetNode.updateWorldTransform();
             const widget = config.targetNode.getComponent(Widget);
             if(widget){

@@ -365,14 +365,12 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         if (sceneInstance.backNode) {
             sceneInstance.backNode.setPosition(0, yPosition);
         }
-
-        // 更新前景层位置（可以有不同的滚动速度）
+        // 更新前景层位置（可以有不同的滚动速度)
         if (sceneInstance.frontNode) {
             // 前景层可以有稍微不同的滚动速度来产生视差效果
-            const frontOffset = yPosition * 1.1; // 前景层滚动稍快一点
-            sceneInstance.frontNode.setPosition(0, frontOffset);
+            // const frontOffset = yPosition * 1.1; // 前景层滚动稍快一点
+            sceneInstance.frontNode.setPosition(0, yPosition);
         }
-        console.log("scene instance back node posY: " + sceneInstance.backNode?.position.y);
     }
 
     /** 更新场景可见性 */

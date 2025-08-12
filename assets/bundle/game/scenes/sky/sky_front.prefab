@@ -950,6 +950,8 @@
       "__id__": 0
     },
     "fileId": "7cXTyOAtZPRJVB7FUNBsVB",
+    "instance": null,
+    "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
   },
   {
@@ -1336,6 +1338,7 @@
       "__id__": 2
     },
     "bgStretch": null,
+    "front_or_back": "front",
     "_id": ""
   },
   {
