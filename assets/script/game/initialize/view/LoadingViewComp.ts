@@ -82,7 +82,7 @@ export class LoadingViewComp extends CCVMParentComp {
 
         this.progress = 0
         this.data.progress = (this.progress * 100).toFixed(2)
-        this.data.prompt = 'Load GUI'
+        this.data.prompt = 'Loading GUI'
         oops.res.loadDir(
             'gui/crash',
             this.onProgressCallback.bind(this),

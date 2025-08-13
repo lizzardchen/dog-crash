@@ -7,6 +7,7 @@ export class UserDataComp extends ecs.Comp {
     username: string = "";
     joinDate: Date = new Date();
     balance: number = 1000;
+    money:number = 100;
     totalFlights: number = 0;
     flightsWon: number = 0;
     highestMultiplier: number = 1.0;
@@ -30,6 +31,7 @@ export class UserDataComp extends ecs.Comp {
         this.userId = "";
         this.username = "";
         this.balance = 1000;
+        this.money = 100;
         this.totalFlights = 0;
         this.flightsWon = 0;
         this.highestMultiplier = 1.0;

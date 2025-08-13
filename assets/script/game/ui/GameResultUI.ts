@@ -178,7 +178,7 @@ export class GameResultUI extends CCComp {
 
         // 设置dollar数量 - 可以是相同值或者按比例换算
         if (this.dollar_amount_label) {
-            this.dollar_amount_label.string = rewardAmount.toFixed(0);
+            this.dollar_amount_label.string = (rewardAmount/10).toFixed(0);
         }
     }
 

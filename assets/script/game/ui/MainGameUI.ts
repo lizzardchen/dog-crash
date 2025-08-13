@@ -139,6 +139,9 @@ export class MainGameUI extends CCComp {
     @property(CoinFlyEffect)
     coinFlyEffect: CoinFlyEffect = null!;
 
+    @property(CoinFlyEffect)
+    moneyFlyEffect: CoinFlyEffect = null!;
+
     private isBetPanelVisible: boolean = false;
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
@@ -151,6 +154,7 @@ export class MainGameUI extends CCComp {
     
     // 保存balance标签的原始世界坐标（在UI初始化时保存，不会受到动画影响）
     private originalBalanceLabelWorldPos: Vec3 = new Vec3();
+    private originalMoneyLabelWordlPos:Vec3 = new Vec3();
 
     /**
      * 将数值转换为短文本格式
@@ -193,10 +197,7 @@ export class MainGameUI extends CCComp {
         
         // 保存Widget组件的原始值
         this.saveOriginalWidgetValues();
-        
-        // 保存balance标签的原始世界坐标
-        this.saveOriginalBalanceLabelWorldPos();
-        
+         
         // 初始时隐藏multiplierNode
         if (this.multiplierNode) {
             this.multiplierNode.active = false;
@@ -206,6 +207,15 @@ export class MainGameUI extends CCComp {
         
         // 检查是否需要显示新手引导
         this.checkAndShowTutorial();
+    }
+
+
+    protected start(): void {
+        this.scheduleOnce(() => {
+            // 保存balance标签的原始世界坐标
+            this.saveOriginalBalanceLabelWorldPos();
+            this.saveOriginalMoneyLabelWorldPos();
+        }, 0.1);
     }
 
     private initGameData(): void {
@@ -334,8 +344,6 @@ export class MainGameUI extends CCComp {
             console.error("No scene instances found during initialization!");
         }
     }
-
-
 
     private setupUIEvents(): void {
         // HOLD按钮事件（只有在按钮存在时才绑定）
@@ -636,6 +644,7 @@ export class MainGameUI extends CCComp {
 
         let profit: number = winAmount - betting.betAmount;
         betting.balance += profit; // 正常模式加净收益
+        betting.money += profit/10; // 正常模式加money
 
         // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
         if (gameHistory && localData) {
@@ -668,6 +677,9 @@ export class MainGameUI extends CCComp {
                     this.scheduleOnce(() => {
                         this.playCoinFlyAnimation(profit, () => {
                             console.log("Coin fly animation completed!");
+                        });
+                        this.playMoneyFlyAnimation(profit/10, () => {
+                            console.log("money fly animation completed!");
                         });
                     }, 0.2); // 稍微延迟播放金币动画
                 }
@@ -738,6 +750,7 @@ export class MainGameUI extends CCComp {
         const winAmount = betting.betAmount * cashOutMultiplier;
         let profit: number = winAmount - betting.betAmount;
         betting.balance += profit; // 正常模式加净收益
+        betting.money += profit/10;
 
         // 游戏成功：退还消耗的能源
         if (this.refundEnergy(1)) {
@@ -770,6 +783,9 @@ export class MainGameUI extends CCComp {
                     this.scheduleOnce(() => {
                         this.playCoinFlyAnimation(profit, () => {
                             console.log("Coin fly animation completed!");
+                        });
+                        this.playMoneyFlyAnimation(profit/10, () => {
+                            console.log("money fly animation completed!");
                         });
                     }, 0.2); // 稍微延迟播放金币动画
                 }
@@ -2256,6 +2272,25 @@ export class MainGameUI extends CCComp {
         this.coinFlyEffect.startCoinFly(coinAmount, startWorldPos, endWorldPos, onComplete);
     }
 
+    private playMoneyFlyAnimation(moneyAmount: number, onComplete?: () => void): void {
+        if (!this.moneyFlyEffect) {
+            console.warn("MoneyFlyEffect not configured");
+            onComplete?.();
+            return;
+        }
+
+        // 获取起始位置（GameResult弹窗的金币位置）
+        const startWorldPos = this.getGameResultCoinWorldPos();
+        // 获取目标位置（余额显示位置）
+        const endWorldPos = this.getMoneyWorldPos();
+
+        console.log(`Playing money fly animation: ${moneyAmount} money`);
+        console.log(`From:`, startWorldPos, `To:`, endWorldPos);
+
+        // 开始飞币动画
+        this.moneyFlyEffect.startCoinFly(moneyAmount, startWorldPos, endWorldPos, onComplete);
+    }
+
     /**
      * 获取GameResult弹窗中金币显示的世界坐标
      */
@@ -2274,6 +2309,31 @@ export class MainGameUI extends CCComp {
         console.log("Screen center world pos:", screenCenter);
         
         return screenCenter;
+    }
+
+    private getMoneyWorldPos():Vec3{
+        
+        // 如果保存了原始坐标，就使用原始坐标
+        if (this.originalMoneyLabelWordlPos.x !== 0 || this.originalMoneyLabelWordlPos.y !== 0) {
+            return this.originalMoneyLabelWordlPos.clone();
+        }
+
+        // 如果没有保存坐标，则实时计算（作为备用）
+        if (!this.moneyLabel) {
+            console.warn("money label not found and no saved position available");
+            return new Vec3(0, 0, 0);
+        }
+
+        const uiTransform = this.moneyLabel.node.getComponent(UITransform);
+        if (!uiTransform) {
+            console.warn("money label UITransform not found");
+            return new Vec3(0, 0, 0);
+        }
+
+        // 获取实时世界坐标
+        const worldPos = new Vec3();
+        uiTransform.convertToWorldSpaceAR(Vec3.ZERO, worldPos);
+        return worldPos;
     }
 
     /**
@@ -2327,6 +2387,22 @@ export class MainGameUI extends CCComp {
         });
     }
 
+
+    private saveOriginalMoneyLabelWorldPos(): void {
+        if (!this.moneyLabel) {
+            console.warn("money label not found - cannot save original world position");
+            return;
+        }
+
+        const uiTransform = this.moneyLabel.node.getComponent(UITransform);
+        if (!uiTransform) {
+            console.warn("money label UITransform not found - cannot save original world position");
+            return;
+        }
+
+        // 获取并保存世界坐标
+        uiTransform.convertToWorldSpaceAR(Vec3.ZERO, this.originalMoneyLabelWordlPos);
+    }
     /**
      * 保存balance标签的原始世界坐标
      */

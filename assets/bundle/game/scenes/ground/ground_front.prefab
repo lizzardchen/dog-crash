@@ -1258,8 +1258,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -478.618,
-      "y": -1824.3100004196167,
+      "x": -324.014,
+      "y": -2081.4100004196166,
       "z": 0
     },
     "_lrot": {
@@ -1375,7 +1375,7 @@
     "_left": 0,
     "_right": 0,
     "_top": 0,
-    "_bottom": 200,
+    "_bottom": -57.1,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,
@@ -1709,7 +1709,6 @@
       "__id__": 0
     },
     "fileId": "81HJ/MWFxOpLLCbTNPramS",
-    "instance": null,
     "targetOverrides": null
   }
 ]

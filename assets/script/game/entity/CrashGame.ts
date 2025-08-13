@@ -23,7 +23,7 @@ export class CrashGame extends ecs.Entity {
         this.add(UserDataComp);
         this.add(LocalDataComp);
         this.add(GameHistoryComp);
-        this.add(RocketViewComp);
+        // this.add(RocketViewComp);
         this.add(SceneBackgroundComp);
         this.add(EnergyComp);
         this.add(RaceComp);

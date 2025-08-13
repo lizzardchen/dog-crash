@@ -1,4 +1,5 @@
 import { _decorator, Component, Node, Prefab, instantiate, Vec3, tween, UITransform } from 'cc';
+import { CrashGameAudio } from '../config/CrashGameAudio';
 
 const { ccclass, property } = _decorator;
 
@@ -47,6 +48,7 @@ export class CoinFlyEffect extends Component {
                         onAllComplete();
                     }
                 });
+                CrashGameAudio.playCoinCollect();
             }, i * this.flyInterval);
         }
     }

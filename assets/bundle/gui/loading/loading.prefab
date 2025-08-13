@@ -128,7 +128,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "freegas",
+    "_name": "logo",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -150,7 +150,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 533.863,
+      "y": 627.6669999999998,
       "z": 0
     },
     "_lrot": {
@@ -190,8 +190,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 679,
-      "height": 627
+      "width": 758,
+      "height": 788
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -202,7 +202,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "51ZWXARpFO5rBlHEC4xSym"
+    "fileId": "0dYdMeKXtNqJwYdvCKbH+j"
   },
   {
     "__type__": "cc.Sprite",
@@ -227,7 +227,7 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "fdcf79c6-f35b-41b9-b128-958b1a0469f3@f9941",
+      "__uuid__": "93b10fa8-6e17-460b-bc57-8f7bd917cf29@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,
@@ -247,7 +247,7 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "85rmK6z+lI15c9ViBMyy/Y"
+    "fileId": "30ILSbcKJNxogy0u/Fb7Qk"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -257,7 +257,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "60n+AV9EJBoa7O6nZKPfsH",
+    "fileId": "6291rG8FBA17TZORIrULiO",
     "instance": null,
     "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
@@ -523,7 +523,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 264,
+      "width": 323.34375,
       "height": 96.2
     },
     "_anchorPoint": {
@@ -559,7 +559,7 @@
       "b": 255,
       "a": 255
     },
-    "_string": "状态提示",
+    "_string": "Loading Res",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 64,
@@ -825,7 +825,7 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 152.217,
+      "x": 79.68,
       "y": 85,
       "z": 0
     },
@@ -871,7 +871,7 @@
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
-      "x": 0.5,
+      "x": 0,
       "y": 0.5
     },
     "_id": ""
@@ -903,7 +903,7 @@
       "a": 255
     },
     "_string": "{{0}}%",
-    "_horizontalAlign": 1,
+    "_horizontalAlign": 0,
     "_verticalAlign": 1,
     "_actualFontSize": 64,
     "_fontSize": 64,

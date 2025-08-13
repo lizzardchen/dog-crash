@@ -5,7 +5,8 @@
       "fitHeight": false,
       "height": 1920,
       "width": 1080
-    }
+    },
+    "downloadMaxConcurrency": 30
   },
   "__version__": "1.0.6",
   "fbx": {
