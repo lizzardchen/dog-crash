@@ -192,7 +192,7 @@ export class RaceResultUI extends CCComp {
     private displayNoReward(): void {
         this.no_reward_node.active = true;
         this.reward_node.active = false;
-        this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM';
+        this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLOSE';
     }
 
     /**
@@ -203,6 +203,7 @@ export class RaceResultUI extends CCComp {
         
         if (!this._current_user_prize) {
             console.error('No prize to claim');
+            this.closePopup();
             return;
         }
         
@@ -221,7 +222,7 @@ export class RaceResultUI extends CCComp {
             
             if (success) {
                 this.claim_prize_button.node.active = false;
-                this.bottom_message_label.string = `REWARD CLAIMED!\nCOINS ADDED TO YOUR BALANCE!`;
+                // this.bottom_message_label.string = `REWARD CLAIMED!\nCOINS ADDED TO YOUR BALANCE!`;
                 CrashGameAudio.playCashOutSuccess(); // 播放成功音效
                 this._current_user_prize = null;
             } else {
@@ -231,9 +232,10 @@ export class RaceResultUI extends CCComp {
         } catch (error) {
             console.error('Error claiming prize:', error);
             this.claim_prize_button.interactable = true;
-            this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM REWARD';
+            this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLOSE';
             oops.gui.toast("Failed to claim reward");
         }
+        this.closePopup();
     }
 
 
@@ -298,8 +300,6 @@ export class RaceResultUI extends CCComp {
      */
     reset(): void {
         this.node.active = false;
-        this.bottom_message_node.active = false;
-        this.user_prize_node.active = false;
         this.claim_prize_button.node.active = false;
         this._close_callback = null;
         this._current_race_id = "";

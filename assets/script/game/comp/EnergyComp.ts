@@ -157,6 +157,7 @@ export class EnergyComp extends ecs.Comp {
     private saveEnergyData(): void {
         const localdata:LocalDataComp = smc.crashGame.get(LocalDataComp);
         if (localdata) {
+            this.lastUpdateTime = Date.now();
             const energyData = {
                 currentEnergy: this.currentEnergy,
                 lastUpdateTime: this.lastUpdateTime
@@ -173,8 +174,9 @@ export class EnergyComp extends ecs.Comp {
         if (localdata) {
             const energyData = localdata.loadEnergyData();
             if (energyData) {
-                this.currentEnergy = Math.min(energyData.currentEnergy || this.initialEnergy, this.maxEnergy);
-                this.lastUpdateTime = Date.now();
+                this.currentEnergy = energyData.currentEnergy;//Math.min(energyData.currentEnergy || this.initialEnergy, this.maxEnergy);
+                this.lastUpdateTime = energyData.lastUpdateTime;
+
             } else {
                 // 首次运行，设置初始值
                 this.currentEnergy = this.initialEnergy;

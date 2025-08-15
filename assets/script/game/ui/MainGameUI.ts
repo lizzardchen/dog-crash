@@ -30,6 +30,7 @@ import { EnergyProgressBar } from './EnergyProgressBar';
 import { SimpleTutorial } from '../system/SimpleTutorial';
 import { GoldPopupUI } from './GoldPopupUI';
 import { MoneyPopupUI } from './MoneyPopupUI';
+import { EnergyBuyUI } from './EnergyBuyUI';
 
 const { ccclass, property } = _decorator;
 
@@ -221,15 +222,14 @@ export class MainGameUI extends CCComp {
         if (this.multiplierNode) {
             this.multiplierNode.active = false;
         }
-        //初始化show raceResultUI - 如果有新手教程则延后显示
-        this.showRaceResultAfterTutorial();
-        
-        // 检查是否需要显示新手引导
-        this.checkAndShowTutorial();
     }
 
 
     protected start(): void {
+        //初始化show raceResultUI - 如果有新手教程则延后显示
+        this.showRaceResultAfterTutorial();
+        // 检查是否需要显示新手引导
+        this.checkAndShowTutorial();
         this.scheduleOnce(() => {
             // 保存balance标签的原始世界坐标
             this.saveOriginalBalanceLabelWorldPos();
@@ -2602,6 +2602,36 @@ export class MainGameUI extends CCComp {
     }
 
     /**
+     * 显示energy free
+     */
+    private showEnergyFree(callback: ()=>void): void {
+        const energyComp = smc.crashGame.get(EnergyComp);
+        if (energyComp) {
+            const mid_time = (Date.now() - energyComp.lastUpdateTime)/60000;
+            if( mid_time >= 100 ){//大于100分钟
+                const callbacks: UICallbacks = {
+                    onAdded: (node: Node, params: any) => {
+                        const energybuyUI = node.getComponent(EnergyBuyUI);
+                        if (energybuyUI) {
+                            energybuyUI.onOpen(params);
+                        }
+                    },
+                    onRemoved: (node: Node | null, params: any) => {
+                        console.log("EnergyBuyUI closed");
+                        callback?.();
+                    }
+                };
+                // 打开energy free window
+                oops.gui.open(UIID.EnergyFree,{ currentEnergy: 10 },callbacks);
+            }else{
+                callback?.();
+            }
+        }else{
+            callback?.();
+        }
+    }
+
+    /**
      * 显示race结果
      */
     private async showRaceResult(): Promise<void> {
@@ -2617,13 +2647,14 @@ export class MainGameUI extends CCComp {
     private showRaceResultAfterTutorial(): void {
         const tutorial = SimpleTutorial.getInstance();
         
-        if (tutorial.shouldShowTutorial()) {
+        if (!tutorial.shouldShowTutorial()) {
             // 如果需要显示新手教程，则等教程完成后再显示race结果
             // 不需要延迟，直接传入回调函数
-        } else {
             // 没有新手教程，直接显示
             this.scheduleOnce(() => {
-                this.showRaceResult();
+                this.showEnergyFree(()=>{
+                    this.showRaceResult();
+                });
             }, 0);
         }
     }
@@ -2710,7 +2741,7 @@ export class MainGameUI extends CCComp {
      */
     private startCountdown(callback:Function): void {
         this.isCountdownActive = true;
-        
+        CrashGameAudio.playCountDown();
         // 显示倒计时节点
         if (this.countdownNode) {
             this.countdownNode.active = true;
@@ -2756,6 +2787,17 @@ export class MainGameUI extends CCComp {
         
         if (spriteFrame) {
             this.countdownSprite.spriteFrame = spriteFrame;
+            
+            // 添加放大再恢复正常的动画效果
+            const node = this.countdownSprite.node;
+            // 先重置缩放
+            node.setScale(new Vec3(1, 1, 1));
+            
+            // 创建放大再恢复的动画
+            tween(node)
+                .to(0.1, { scale: new Vec3(1.3, 1.3, 1) }) // 0.1秒内放大到1.2倍
+                .to(0.2, { scale: new Vec3(1, 1, 1) })     // 0.2秒内恢复到正常大小
+                .start();
         }
     }
     /**

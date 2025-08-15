@@ -50,7 +50,9 @@ export enum UIID {
     /** 金币弹窗 */
     GoldPopup,
     /** money弹窗 */
-    MoneyPopup
+    MoneyPopup,
+    /**energy free*/
+    EnergyFree
 }
 
 /** 打开界面方式的配置数据 */
@@ -75,4 +77,5 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.TutorialPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/tutorial_popup" },
     [UIID.GoldPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/gold_popup" },
     [UIID.MoneyPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/money_popup" },
+    [UIID.EnergyFree]: { layer: LayerType.Dialog, prefab: "gui/crash/energy_buy" }
 }

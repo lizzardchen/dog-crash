@@ -14,6 +14,12 @@ export class CrashGameAudio {
         oops.audio.playMusicLoop("game/sound/background_music");
     }
 
+    /**countdown */
+    static playCountDown():void{
+        console.log("count down!");
+        oops.audio.playEffect("game/sound/countdown");
+    }
+
     /** 播放小狗火箭起飞音效 */
     static playDogRocketLaunch(): void {
         console.log("Playing dog rocket launch sound");
@@ -55,7 +61,7 @@ export class CrashGameAudio {
     static playCrashExplosion(): void {
         console.log("Playing crash explosion sound");
         // TODO: 添加实际的音频资源后启用
-        oops.audio.playEffect("game/audio/failure explosion");
+        oops.audio.playEffect("game/sound/failure explosion");
     }
 
     /** 播放小狗叫声 */
