@@ -1,4 +1,4 @@
-import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, Vec2, UITransform, Sprite, Color, view, Widget } from 'cc';
+import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Component, ScrollView, Prefab, tween, Vec3, Vec2, UITransform, Sprite, Color, view, Widget, SpriteFrame } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { GameStateComp, GameState } from "../comp/GameStateComp";
@@ -142,7 +142,30 @@ export class MainGameUI extends CCComp {
     @property(CoinFlyEffect)
     moneyFlyEffect: CoinFlyEffect = null!;
 
+    // 倒计时相关属性
+    @property(Node)
+    countdownNode: Node = null!;
+
+    @property(Sprite)
+    countdownSprite: Sprite = null!;
+
+    // 倒计时图片资源
+    @property(SpriteFrame)
+    countdown3SpriteFrame: SpriteFrame = null!;
+
+    @property(SpriteFrame)
+    countdown2SpriteFrame: SpriteFrame = null!;
+
+    @property(SpriteFrame)
+    countdown1SpriteFrame: SpriteFrame = null!;
+
+    @property(SpriteFrame)
+    countdownGoSpriteFrame: SpriteFrame = null!;
+
     private isBetPanelVisible: boolean = false;
+    private isCountdownActive: boolean = false; // 倒计时是否激活
+    private countdownTimer: number = 0; // 倒计时计时器
+    private currentCountdownStep: number = 3; // 当前倒计时步骤 (3, 2, 1, 0=GO)
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
@@ -215,6 +238,7 @@ export class MainGameUI extends CCComp {
             // 保存balance标签的原始世界坐标
             this.saveOriginalBalanceLabelWorldPos();
             this.saveOriginalMoneyLabelWorldPos();
+            this.resetGame();
         }, 0.1);
     }
 
@@ -428,12 +452,13 @@ export class MainGameUI extends CCComp {
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
         CrashGameAudio.playButtonClick();
-
+        
         if (!smc.crashGame) return;
-
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
         this.onCloseBetPanelButtonClick();
+
+        
 
         this.hold_unpressed_node.active = false;
         this.hold_pressed_node.active = true;
@@ -441,8 +466,8 @@ export class MainGameUI extends CCComp {
         // 完成新手引导（如果正在引导中）
         this.onTutorialHoldButtonClicked();
 
-        // 播放游戏开始UI动画
-        this.playGameStartUIAnimation();
+        // 开始3秒倒计时
+        this.startCountdown();
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
@@ -480,7 +505,6 @@ export class MainGameUI extends CCComp {
                     gameState.startTime = Date.now();
                     multiplier.startTime = Date.now();
 
-                    CrashGameAudio.playDogRocketLaunch();
                     this.updateHoldButtonState();
                     this.addButtonPressedEffect();
 
@@ -1606,6 +1630,15 @@ export class MainGameUI extends CCComp {
             }
         }
                 
+        // 游戏开始倒计时更新
+        if (this.isCountdownActive) {
+            this.countdownTimer += _deltaTime;
+            if (this.countdownTimer >= 1.0) { // 每秒更新一次
+                this.countdownTimer = 0;
+                this.updateCountdown();
+            }
+        }
+
         // 本地倒计时更新（每秒更新）
         this.raceCountdownTimer += _deltaTime * 1000;
         if (this.raceCountdownTimer >= 1000) { // 每秒更新一次
@@ -2682,5 +2715,108 @@ export class MainGameUI extends CCComp {
     // CCComp要求实现的reset方法
     reset(): void {
         console.log("MainGameUI reset");
+        // 重置倒计时状态
+        this.isCountdownActive = false;
+        this.countdownTimer = 0;
+        this.currentCountdownStep = 3;
+    }
+
+    /**
+     * 开始3秒倒计时
+     */
+    private startCountdown(): void {
+        this.isCountdownActive = true;
+        this.countdownTimer = 0;
+        this.currentCountdownStep = 3;
+        
+        // 显示倒计时节点
+        if (this.countdownNode) {
+            this.countdownNode.active = true;
+        }
+        
+        // 显示第一个数字 "3"
+        this.showCountdownNumber(3);
+    }
+
+    /**
+     * 更新倒计时
+     */
+    private updateCountdown(): void {
+        if (!this.isCountdownActive) return;
+        
+        this.countdownTimer += 1; // 每秒增加1
+        
+        if (this.countdownTimer >= 1) {
+            this.countdownTimer = 0;
+            this.currentCountdownStep--;
+            
+            if (this.currentCountdownStep > 0) {
+                // 显示数字 3, 2, 1
+                this.showCountdownNumber(this.currentCountdownStep);
+            } else if (this.currentCountdownStep === 0) {
+                // 显示 "GO"
+                this.showCountdownGO();
+            } else {
+                // 倒计时结束
+                this.onCountdownComplete();
+            }
+        }
+    }
+
+    /**
+     * 显示倒计时数字
+     */
+    private showCountdownNumber(number: number): void {
+        if (!this.countdownSprite) return;
+        
+        let spriteFrame: SpriteFrame | null = null;
+        
+        switch (number) {
+            case 3:
+                spriteFrame = this.countdown3SpriteFrame;
+                break;
+            case 2:
+                spriteFrame = this.countdown2SpriteFrame;
+                break;
+            case 1:
+                spriteFrame = this.countdown1SpriteFrame;
+                break;
+        }
+        
+        if (spriteFrame) {
+            this.countdownSprite.spriteFrame = spriteFrame;
+        }
+    }
+
+    /**
+     * 显示GO
+     */
+    private showCountdownGO(): void {
+        if (!this.countdownSprite || !this.countdownGoSpriteFrame) return;
+        
+        this.countdownSprite.spriteFrame = this.countdownGoSpriteFrame;
+    }
+
+    /**
+     * 倒计时完成回调
+     */
+    private onCountdownComplete(): void {
+        this.isCountdownActive = false;
+        
+        // 隐藏倒计时节点
+        if (this.countdownNode) {
+            this.countdownNode.active = false;
+        }
+        
+        // 继续执行游戏开始动画
+        this.continueGameStartAnimation();
+    }
+
+    /**
+     * 继续游戏开始动画（倒计时完成后）
+     */
+    private continueGameStartAnimation(): void {
+        // 调用原来的游戏开始UI动画
+        this.playGameStartUIAnimation();
     }
 }

@@ -16,6 +16,12 @@ import { SDKMgr } from "../common/SDKMgr";
 
 @ecs.register('CrashGame')
 export class CrashGame extends ecs.Entity {
+    private _isprepared:boolean = false;
+
+    public isPrepared(): boolean {
+        return this._isprepared;
+    }
+
     init() {
         this.add(GameStateComp);
         this.add(BettingComp);
@@ -41,8 +47,8 @@ export class CrashGame extends ecs.Entity {
     }
     // 服务器配置
     public static serverConfig = {
-        baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
-        //baseURL: "http://localhost:3000/api/",
+        // baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
+        baseURL: "http://localhost:3000/api/",
         timeout: 10000,
         retryAttempts: 3
     };
@@ -58,19 +64,19 @@ export class CrashGame extends ecs.Entity {
         
         // 添加Content-Type头
         oops.http.addHeader("Content-Type", "application/json");
-        
-        // 从服务器初始化倍率配置系统
-        await MultiplierConfig.initialize();
-        
+                
         // 初始化用户数据和服务器连接
         await this.initializeUserData();
+
+        // 从服务器初始化倍率配置系统
+        await MultiplierConfig.initialize();
         
         // 初始化RaceComp
         const raceComp = this.get(RaceComp);
         if (raceComp) {
             raceComp.initialize();
         }
-        
+        this._isprepared = true;
         console.log("CrashGame: Server initialization completed................");
     }
 

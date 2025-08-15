@@ -2,6 +2,7 @@ import { _decorator, Node, Label, Button, EditBox, EventTouch, instantiate, Comp
 import { CCComp } from "db://oops-framework/module/common/CCComp";
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { smc } from '../common/SingletonModuleComp';
+import { CrashGameAudio } from '../config/CrashGameAudio';
 const { ccclass, property } = _decorator;
 
 export enum RocketAnimation {
@@ -53,12 +54,26 @@ export class RocketViewComp extends CCComp {
 
     private _backSceneState: RocketSceneState = RocketSceneState.GROUND;
 
+    private MAX_START_SOUND_TIME: number = 4; // 最大起飞声音时间
+
+    private _rocket_start_sound_date: number = 0; // 火箭起飞时间
+
+    private MAX_FLY_SOUND_TIME: number = 9; // 最大飞行声音时间
+
+    private _rocket_fly_sound_date: number = 0; // 火箭开始飞行时间
+
+    private _is_fly_sound_playing: boolean = false; // 是否已经播放飞行声效
+
     reset() {
         this.rocketState = RocketState.IDLE;
         this.sceneState = RocketSceneState.GROUND;
         this._backSceneState = RocketSceneState.GROUND;
         this.currentHeight = 0;
         this.isAnimationPlaying = false;
+        this._is_fly_sound_playing = false; // 重置飞行声效播放标志
+        this._rocket_start_sound_date = 0; // 重置起飞时间
+        this._rocket_fly_sound_date = 0; // 重置飞行声效时间
+
         if(this.rocketSkeleton){
             const uiopacity = this.rocketSkeleton.node.getComponent(UIOpacity);
             if (uiopacity) {
@@ -86,12 +101,31 @@ export class RocketViewComp extends CCComp {
         if(this.rocketSkeleton) {
             this.rocketSkeleton.setAnimation(0, RocketAnimation.FLY1, true);
         }
+        CrashGameAudio.playDogRocketLaunch();
+        this._rocket_start_sound_date = Date.now() / 1000; // 记录起飞时间
     }
 
     /** 更新飞行高度 */
     updateFlying(multiplier: number): void {
     
-        if (this.rocketState !== RocketState.FLYING) return;
+        if (this.rocketState !== RocketState.FLYING){
+            return;
+        } 
+
+        // 检测起飞声音是否播放完成，如果完成则播放飞行声效
+        const currentTime = Date.now() / 1000;
+        if (!this._is_fly_sound_playing && 
+            currentTime - this._rocket_start_sound_date >= this.MAX_START_SOUND_TIME) {
+            CrashGameAudio.playDogRocketFlyLoop();
+            this._rocket_fly_sound_date = currentTime;
+            this._is_fly_sound_playing = true;
+        }
+        if(this._is_fly_sound_playing &&
+            currentTime - this._rocket_fly_sound_date >= this.MAX_FLY_SOUND_TIME){
+            CrashGameAudio.playDogRocketFlyLoop();
+            this._rocket_fly_sound_date = currentTime;
+            this._is_fly_sound_playing = true;
+        }
 
         // 根据倍数计算高度（倍数越高，飞得越高）
         this.currentHeight = (multiplier - 1.0) * this.flySpeed;
@@ -106,14 +140,26 @@ export class RocketViewComp extends CCComp {
         }
     }
 
+    stopFly():void{
+        CrashGameAudio.stopDogRocketLaunch();
+        CrashGameAudio.stopPlayDogRocketFlyLoop();
+        this._is_fly_sound_playing = false;
+        this._is_fly_sound_playing = false; // 重置飞行声效播放标志
+        this._rocket_start_sound_date = 0; // 重置起飞时间
+        this._rocket_fly_sound_date = 0; // 重置飞行声效时间
+
+    }
+
     /** 设置为崩盘状态 */
     setCrashState(): void {
+        this.stopFly();
         this.rocketState = RocketState.CRASHED;
         this.isAnimationPlaying = true;
         if(this.rocketSkeleton){
             if(this.endBomb){
                 this.endBomb.node.active = true;
                 this.endBomb.setAnimation(0, this.defalut_anim, false);
+                CrashGameAudio.playCrashExplosion();
             }
             const uiopacity = this.rocketSkeleton.node.getComponent(UIOpacity);
             if(uiopacity){
@@ -130,6 +176,7 @@ export class RocketViewComp extends CCComp {
 
     /** 设置为着陆状态 */
     setLandingState(): void {
+        this.stopFly();
         this.rocketState = RocketState.LANDED;
         this.isAnimationPlaying = true;
         if(this.rocketSkeleton){

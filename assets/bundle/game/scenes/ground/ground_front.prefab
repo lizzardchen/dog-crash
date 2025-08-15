@@ -1258,8 +1258,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -324.014,
-      "y": -2081.4100004196166,
+      "x": -331.229,
+      "y": -1993.629000377655,
       "z": 0
     },
     "_lrot": {
@@ -1271,8 +1271,8 @@
     },
     "_lscale": {
       "__type__": "cc.Vec3",
-      "x": 1,
-      "y": 1,
+      "x": 0.9,
+      "y": 0.9,
       "z": 1
     },
     "_mobility": 0,
@@ -1375,7 +1375,7 @@
     "_left": 0,
     "_right": 0,
     "_top": 0,
-    "_bottom": -57.1,
+    "_bottom": 32,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,
@@ -1709,6 +1709,7 @@
       "__id__": 0
     },
     "fileId": "81HJ/MWFxOpLLCbTNPramS",
+    "instance": null,
     "targetOverrides": null
   }
 ]

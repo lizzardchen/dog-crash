@@ -171,7 +171,7 @@ export class RaceUI extends CCComp {
             this.timeLabel.string = "No active race";
         }
         if (this.prizePoolLabel) {
-            this.prizePoolLabel.string = "PRIZE POOL: 🪙 0 MSAT";
+            this.prizePoolLabel.string = "0";
         }
         
         // 清空前三名显示
@@ -194,7 +194,7 @@ export class RaceUI extends CCComp {
             this.timeLabel.string = "Loading...";
         }
         if (this.prizePoolLabel) {
-            this.prizePoolLabel.string = "PRIZE POOL: 🪙 Loading...";
+            this.prizePoolLabel.string = "0";
         }
         
         this.clearPodiumDisplay();
@@ -215,13 +215,13 @@ export class RaceUI extends CCComp {
         // 更新剩余时间
         if (this.timeLabel && this.raceComp) {
             const remainingText = this.raceComp.formatRemainingTime(raceInfo.remainingTime);
-            this.timeLabel.string = `RACE ENDS IN: ${remainingText}`;
+            this.timeLabel.string = `${remainingText}`;
         }
 
         // 更新奖池
         if (this.prizePoolLabel && this.raceComp) {
             const prizeText = this.raceComp.formatPrizePool(raceInfo.prizePool.totalPool);
-            this.prizePoolLabel.string = `PRIZE POOL: 🪙 ${prizeText} MSAT`;
+            this.prizePoolLabel.string = `${prizeText}`;
         }
 
         // 更新前三名奖牌显示
@@ -384,7 +384,7 @@ export class RaceUI extends CCComp {
         if (this.raceComp && this.raceComp.currentRace && this.timeLabel) {
             if (this.raceComp.currentRace.remainingTime > 0) {
                 const remainingText = this.raceComp.formatRemainingTime(this.raceComp.currentRace.remainingTime);
-                this.timeLabel.string = `RACE ENDS IN: ${remainingText}`;
+                this.timeLabel.string = `${remainingText}`;
             } else {
                 this.timeLabel.string = "Race Ended";
             }

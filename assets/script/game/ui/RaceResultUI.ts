@@ -52,17 +52,20 @@ export class RaceResultUI extends CCComp {
     
     // 底部消息区域
     @property(Node) 
-    bottom_message_node: Node = null!;
+    no_reward_node: Node = null!;
     
-    @property(Label) 
-    bottom_message_label: Label = null!;
+    @property(Node) 
+    reward_node: Node = null!;
     
     // 用户奖励显示区域
-    @property(Node) 
-    user_prize_node: Node = null!;
+    @property(Label)
+    user_rank_label: Label = null!;
     
     @property(Label) 
     user_prize_amount_label: Label = null!;
+
+     @property(Label) 
+    user_score_label: Label = null!;
     
     @property(Button) 
     claim_prize_button: Button = null!;
@@ -172,43 +175,24 @@ export class RaceResultUI extends CCComp {
             this.displayNoReward();
             return;
         }
-        // 检查用户是否在前三名
-        const isInTopThree = topThree.some(entry => entry.rank === userPrize.rank);
+        // 用户不在前三名但有奖励，显示恭喜消息和领取按钮
+        const raceComp = smc.crashGame?.get(RaceComp);
+        const prizeText = raceComp ? raceComp.formatPrizeNumber(userPrize.prizeAmount) : userPrize.prizeAmount.toString();
+        this.user_rank_label.string = `${userPrize.rank}`;
+        this.user_prize_amount_label.string = prizeText;
+        this.user_score_label.string = `${userPrize.score}`;
         
-        if (isInTopThree) {
-            // 用户在前三名，隐藏底部消息
-            this.bottom_message_node.active = false;
-            this.user_prize_node.active = false;
-        } else {
-            // 用户不在前三名但有奖励，显示恭喜消息和领取按钮
-            this.bottom_message_node.active = true;
-            this.user_prize_node.active = true;
-            
-            const raceComp = smc.crashGame?.get(RaceComp);
-            const prizeText = raceComp ? raceComp.formatPrizeNumber(userPrize.prizeAmount) : userPrize.prizeAmount.toString();
-            
-            this.bottom_message_label.string = `CONGRATULATIONS!\nYOU WON ${prizeText} COINS!`;
-            this.user_prize_amount_label.string = prizeText;
-            
-            // 根据奖励状态设置按钮
-            if (userPrize.status === 'pending') {
-                this.claim_prize_button.node.active = true;
-                this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM REWARD';
-            } else {
-                this.claim_prize_button.node.active = false;
-            }
-        }
+        // 根据奖励状态设置按钮
+        this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM';
     }
 
     /**
      * 显示无奖励信息
      */
     private displayNoReward(): void {
-        this.bottom_message_node.active = true;
-        this.user_prize_node.active = false;
-        this.claim_prize_button.node.active = false; // 隐藏Claim按钮
-        
-        this.bottom_message_label.string = `YOU DIDN'T GET IN THE MONEY\nBETTER LUCK NEXT TIME!`;
+        this.no_reward_node.active = true;
+        this.reward_node.active = false;
+        this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM';
     }
 
     /**

@@ -52,6 +52,7 @@ export interface UserPrizeInfo {
     raceId: string;
     rank: number;
     prizeAmount: number;
+    score:number;
     status: 'pending' | 'claimed';
     createdAt: string;
 }
@@ -113,11 +114,11 @@ export class RaceComp extends ecs.Comp {
     /**
      * 初始化比赛组件
      */
-    public initialize(): void {
+    public async initialize(): Promise<void> {
         console.log("RaceComp initialized, using oops.http for API calls");
         
         // 立即获取一次数据
-        this.fetchRaceData();
+        await this.fetchRaceData();
     }
 
     /**
@@ -279,7 +280,7 @@ export class RaceComp extends ecs.Comp {
             this.lastCheckedRaceId = latestPrize.raceId;
             
             // 直接触发显示比赛结果
-            this.showRaceResult(latestPrize.raceId);
+            this.showRaceResult(latestPrize.raceId,false);
         }
     }
     
@@ -295,13 +296,14 @@ export class RaceComp extends ecs.Comp {
     /**
      * 显示比赛结果弹窗
      */
-    public async showRaceResult(raceId: string): Promise<void> {
+    public async showRaceResult(raceId: string,refetch:boolean = true): Promise<void> {
         try {
             console.log(`Showing race result for: ${raceId}`);
             
-            // 确保有最新的数据
-            await this.fetchRaceData();
-            
+            if( refetch ){
+                // 确保有最新的数据
+                await this.fetchRaceData();
+            }
             // 发送显示比赛结果事件
             oops.message.dispatchEvent("SHOW_RACE_RESULT", {
                 raceId: raceId,

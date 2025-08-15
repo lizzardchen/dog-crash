@@ -5,7 +5,7 @@ import { MultiplierConfig, AccelerationStageConfig, ScenePhysicalResult } from "
  * 基于加速度公式和配置的时间点，计算每个场景的物理高度和运动参数
  */
 export class PhysicalSceneCalculator {
-    private readonly initialVelocity = 200;        // 初始速度（像素/秒）
+    private readonly initialVelocity = 2000;        // 初始速度（像素/秒）
 
     /**
      * 计算所有场景的物理参数和高度

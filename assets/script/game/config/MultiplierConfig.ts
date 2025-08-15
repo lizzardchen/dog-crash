@@ -63,11 +63,11 @@ export class MultiplierConfig {
         timePoints: [
             { time: 0, multiplier: 1.0, rocketState: RocketSceneState.GROUND },
             { time: 1, multiplier: 1.16, rocketState: RocketSceneState.GROUND },
-            { time: 2, multiplier: 1.35, rocketState: RocketSceneState.GROUND },
-            { time: 3, multiplier: 1.56, rocketState: RocketSceneState.GROUND },
-            { time: 4, multiplier: 1.81, rocketState: RocketSceneState.GROUND },
-            { time: 5, multiplier: 2.10, rocketState: RocketSceneState.GROUND },
-            { time: 6, multiplier: 2.43, rocketState: RocketSceneState.GROUND },
+            { time: 2, multiplier: 1.35, rocketState: RocketSceneState.SKY },
+            { time: 3, multiplier: 1.56, rocketState: RocketSceneState.SKY },
+            { time: 4, multiplier: 1.81, rocketState: RocketSceneState.SKY },
+            { time: 5, multiplier: 2.10, rocketState: RocketSceneState.SKY },
+            { time: 6, multiplier: 2.43, rocketState: RocketSceneState.SKY },
             { time: 7, multiplier: 2.81, rocketState: RocketSceneState.SKY },
             { time: 8, multiplier: 3.25, rocketState: RocketSceneState.SKY },
             { time: 9, multiplier: 3.75, rocketState: RocketSceneState.SKY },
@@ -80,8 +80,8 @@ export class MultiplierConfig {
             { time: 16, multiplier: 9.80, rocketState: RocketSceneState.SKY },
             { time: 17, multiplier: 11.33, rocketState: RocketSceneState.SKY },
             { time: 18, multiplier: 13.11, rocketState: RocketSceneState.SKY },
-            { time: 19, multiplier: 15.16, rocketState: RocketSceneState.SKY },
-            { time: 20, multiplier: 16.63, rocketState: RocketSceneState.SKY },
+            { time: 19, multiplier: 15.16, rocketState: RocketSceneState.ATMOSPHERE },
+            { time: 20, multiplier: 16.63, rocketState: RocketSceneState.ATMOSPHERE },
             { time: 22, multiplier: 22.20, rocketState: RocketSceneState.ATMOSPHERE },
             { time: 25, multiplier: 33.12, rocketState: RocketSceneState.ATMOSPHERE },
             { time: 28, multiplier: 49.40, rocketState: RocketSceneState.ATMOSPHERE },
@@ -356,19 +356,19 @@ export class MultiplierConfig {
         switch (state) {
             case RocketSceneState.GROUND:
                 // Ground: 5 → 10，逐渐增加，克服重力+阻力
-                return (t: number) => 50 + 140 * t / duration;
+                return (t: number) => 5 + 5 * t / duration;
 
             case RocketSceneState.SKY:
                 // Sky: 10 → 12，快速增加，空气阻力急剧减少
-                return (t: number) => 190 - 240 * t / duration;
+                return (t: number) => 10 -  5* t / duration;
 
             case RocketSceneState.ATMOSPHERE:
                 // Atmosphere: 12 → 6，缓慢下降但保持较高值
-                return (t: number) => -100 + 98 * t / duration;
+                return (t: number) => 5 - 2 * t / duration;
 
             case RocketSceneState.SPACE:
                 // Space: 6 → 1，趋向稳定但保持正值，避免减速
-                return (t: number) => -2 + 3 * t / duration;
+                return (t: number) => 3 - 2 * t / duration;
 
             default:
                 return (t: number) => 1;

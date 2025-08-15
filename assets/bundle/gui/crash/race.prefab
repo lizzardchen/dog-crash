@@ -1144,7 +1144,7 @@
       "__id__": 42
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 44
@@ -1158,8 +1158,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 180.03200000000004,
-      "y": 5.16800000000012,
+      "x": 44.901,
+      "y": 0.619,
       "z": 0
     },
     "_lrot": {
@@ -1199,12 +1199,12 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 84.0859375,
-      "height": 60.7
+      "width": 128.4111328125,
+      "height": 79.6
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
-      "x": 0.5,
+      "x": 0,
       "y": 0.5
     },
     "_id": ""
@@ -1231,17 +1231,17 @@
     "_color": {
       "__type__": "cc.Color",
       "r": 255,
-      "g": 211,
-      "b": 70,
+      "g": 226,
+      "b": 31,
       "a": 255
     },
     "_string": "5000",
-    "_horizontalAlign": 1,
+    "_horizontalAlign": 0,
     "_verticalAlign": 1,
-    "_actualFontSize": 36,
-    "_fontSize": 36,
-    "_fontFamily": "Arial",
-    "_lineHeight": 45,
+    "_actualFontSize": 58,
+    "_fontSize": 58,
+    "_fontFamily": "IMPACT",
+    "_lineHeight": 60,
     "_overflow": 0,
     "_enableWrapText": true,
     "_font": null,
@@ -1350,7 +1350,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,

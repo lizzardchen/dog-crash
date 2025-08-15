@@ -1,6 +1,8 @@
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 
 export class CrashGameAudio {
+    private static _rocket_fly_sound_id: number = 0;
+    private static _rocket_start_sound_id: number = 0;
     /** 初始化音频系统 */
     static init(): void {
         // 设置默认音量
@@ -16,12 +18,30 @@ export class CrashGameAudio {
     static playDogRocketLaunch(): void {
         console.log("Playing dog rocket launch sound");
         // TODO: 添加实际的音频资源后启用
-        oops.audio.playEffect("game/sound/rocket flight");
+        oops.audio.playEffect("game/sound/Rocket starts").then((id: number) => {
+            this._rocket_start_sound_id = id;
+        });
     }
+
+    static stopDogRocketLaunch(): void {
+        if (this._rocket_start_sound_id!=0) {
+            oops.audio.putEffect(this._rocket_start_sound_id,"game/sound/Rocket starts");
+            this._rocket_start_sound_id = 0;
+        }
+    }
+
 
     static playDogRocketFlyLoop(): void {
         console.log("Playing dog rocket fly loop sound");
-        oops.audio.playEffect("game/sound/rocket flight");
+        oops.audio.playEffect("game/sound/rocket flight").then((id:number)=>{
+            this._rocket_fly_sound_id = id;
+        });
+    }
+    static stopPlayDogRocketFlyLoop():void{
+        if (this._rocket_fly_sound_id!=0) {
+            oops.audio.putEffect(this._rocket_fly_sound_id,"game/sound/rocket flight");
+            this._rocket_fly_sound_id = 0;
+        }
     }
 
     /** 播放倍数变化音效 */
@@ -35,7 +55,7 @@ export class CrashGameAudio {
     static playCrashExplosion(): void {
         console.log("Playing crash explosion sound");
         // TODO: 添加实际的音频资源后启用
-        // oops.audio.playEffect("game/audio/crash_explosion");
+        oops.audio.playEffect("game/audio/failure explosion");
     }
 
     /** 播放小狗叫声 */
@@ -56,7 +76,7 @@ export class CrashGameAudio {
     static playButtonClick(): void {
         console.log("Playing button click sound");
         // TODO: 添加实际的音频资源后启用
-        // oops.audio.playEffect("game/audio/button_click");
+        oops.audio.playEffect("game/sound/button-pressed");
     }
 
     static playCoinCollect(): void {

@@ -159,7 +159,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 220.5,
+      "y": 119,
       "z": 0
     },
     "_lrot": {
@@ -200,7 +200,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1080,
-      "height": 1607
+      "height": 1934
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -334,7 +334,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -752.5,
+      "y": -905.5,
       "z": 0
     },
     "_lrot": {
@@ -375,7 +375,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1080,
-      "height": 339
+      "height": 115
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -449,8 +449,8 @@
     "_target": null,
     "_left": 0,
     "_right": 0,
-    "_top": 1607,
-    "_bottom": 102,
+    "_top": 1934,
+    "_bottom": 123,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,
@@ -509,7 +509,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -973,
+      "y": -1024.5,
       "z": 0
     },
     "_lrot": {
@@ -550,7 +550,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1080,
-      "height": 102
+      "height": 123
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -672,7 +672,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1080,
-      "height": 2048
+      "height": 2172
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -742,8 +742,9 @@
     "down": {
       "__id__": 19
     },
-    "topDesignHeight": 1607,
-    "downDesignHeight": 102,
+    "front": null,
+    "topDesignHeight": 1934,
+    "downDesignHeight": 123,
     "_id": ""
   },
   {
@@ -846,8 +847,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 191.50300000000004,
-      "y": -669.7239999999999,
+      "x": 191.503,
+      "y": -659.704,
       "z": 0
     },
     "_lrot": {
@@ -1423,7 +1424,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1080,
-      "height": 2048
+      "height": 2172
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1469,6 +1470,7 @@
     "bgStretch": {
       "__id__": 31
     },
+    "front_or_back": "back",
     "_id": ""
   },
   {

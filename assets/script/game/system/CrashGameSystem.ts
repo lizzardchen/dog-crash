@@ -21,6 +21,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
     }
 
     update(entity: CrashGame): void {
+        if( !entity.isPrepared() ) return;
         const gameState = entity.get(GameStateComp);
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
