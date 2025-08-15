@@ -164,8 +164,6 @@ export class MainGameUI extends CCComp {
 
     private isBetPanelVisible: boolean = false;
     private isCountdownActive: boolean = false; // 倒计时是否激活
-    private countdownTimer: number = 0; // 倒计时计时器
-    private currentCountdownStep: number = 3; // 当前倒计时步骤 (3, 2, 1, 0=GO)
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
@@ -200,8 +198,6 @@ export class MainGameUI extends CCComp {
             return parseFloat(value);
         }
     }
-
-
 
     onLoad() {
         console.log("MainGameUI loaded");
@@ -458,8 +454,6 @@ export class MainGameUI extends CCComp {
         this.closeHistoryPopup();
         this.onCloseBetPanelButtonClick();
 
-        
-
         this.hold_unpressed_node.active = false;
         this.hold_pressed_node.active = true;
         
@@ -467,59 +461,60 @@ export class MainGameUI extends CCComp {
         this.onTutorialHoldButtonClicked();
 
         // 开始3秒倒计时
-        this.startCountdown();
+        this.startCountdown(()=>{
+            this.playGameStartUIAnimation();
+            const gameState = smc.crashGame.get(GameStateComp);
+            const betting = smc.crashGame.get(BettingComp);
+            const multiplier = smc.crashGame.get(MultiplierComp);
 
-        const gameState = smc.crashGame.get(GameStateComp);
-        const betting = smc.crashGame.get(BettingComp);
-        const multiplier = smc.crashGame.get(MultiplierComp);
-
-        if (gameState.state === GameState.WAITING) {
-            // 用户手动按下HOLD按钮 - 禁用自动下注，切换到手动模式
-            if (betting.autoCashOutEnabled) {
-                console.log("MainGameUI: User pressed HOLD, disabling auto betting");
-                betting.setAutoCashOut(false);
-                this.updateAutoBetButtonState();
-            }
-            // 检查并消耗能源（每局游戏都消耗1个能源）
-            if (!this.consumeEnergy(1)) {
-                console.warn("Not enough energy to start game");
-                // TODO: 显示能源不足提示
-                oops.gui.toast("Energy not enough!");
-                return;
-            }
-
-            // 开始游戏 - 按下按钮时开始
-            const betAmount = betting.currentBetItem.value;
-            const isFreeMode = betting.currentBetItem.isFree;
-
-            const localData = smc.crashGame.get(LocalDataComp);
-            localData.generateCrashMultiplierAsync().then((remote_mulitplier: number) => {
-                localData.currentCrashMultiplier = remote_mulitplier;
-                if (this.validateBetAmount(betAmount, isFreeMode)) {
-
-                    
-
-                    betting.betAmount = betAmount;
-                    betting.isHolding = true;
-                    gameState.state = GameState.FLYING;
-                    gameState.startTime = Date.now();
-                    multiplier.startTime = Date.now();
-
-                    this.updateHoldButtonState();
-                    this.addButtonPressedEffect();
-
-                    console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
-                    
-                    
-                    oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
+            if (gameState.state === GameState.WAITING) {
+                // 用户手动按下HOLD按钮 - 禁用自动下注，切换到手动模式
+                if (betting.autoCashOutEnabled) {
+                    console.log("MainGameUI: User pressed HOLD, disabling auto betting");
+                    betting.setAutoCashOut(false);
+                    this.updateAutoBetButtonState();
+                }
+                // 检查并消耗能源（每局游戏都消耗1个能源）
+                if (!this.consumeEnergy(1)) {
+                    console.warn("Not enough energy to start game");
+                    // TODO: 显示能源不足提示
+                    oops.gui.toast("Energy not enough!");
+                    return;
                 }
 
-            }).catch((error) => {
-                console.error("Failed to generate crash multiplier", error);
-                // 播放游戏开始UI动画
-                this.playGameEndUIAnimation();
-            });
-        }
+                // 开始游戏 - 按下按钮时开始
+                const betAmount = betting.currentBetItem.value;
+                const isFreeMode = betting.currentBetItem.isFree;
+
+                const localData = smc.crashGame.get(LocalDataComp);
+                localData.generateCrashMultiplierAsync().then((remote_mulitplier: number) => {
+                    localData.currentCrashMultiplier = remote_mulitplier;
+                    if (this.validateBetAmount(betAmount, isFreeMode)) {
+
+                        
+
+                        betting.betAmount = betAmount;
+                        betting.isHolding = true;
+                        gameState.state = GameState.FLYING;
+                        gameState.startTime = Date.now();
+                        multiplier.startTime = Date.now();
+
+                        this.updateHoldButtonState();
+                        this.addButtonPressedEffect();
+
+                        console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
+                        
+                        
+                        oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
+                    }
+
+                }).catch((error) => {
+                    console.error("Failed to generate crash multiplier", error);
+                    // 播放游戏开始UI动画
+                    this.playGameEndUIAnimation();
+                });
+            }
+        });
     }
 
     private onHoldButtonTouchEnd(_event: EventTouch): void {
@@ -1630,15 +1625,6 @@ export class MainGameUI extends CCComp {
             }
         }
                 
-        // 游戏开始倒计时更新
-        if (this.isCountdownActive) {
-            this.countdownTimer += _deltaTime;
-            if (this.countdownTimer >= 1.0) { // 每秒更新一次
-                this.countdownTimer = 0;
-                this.updateCountdown();
-            }
-        }
-
         // 本地倒计时更新（每秒更新）
         this.raceCountdownTimer += _deltaTime * 1000;
         if (this.raceCountdownTimer >= 1000) { // 每秒更新一次
@@ -2717,17 +2703,13 @@ export class MainGameUI extends CCComp {
         console.log("MainGameUI reset");
         // 重置倒计时状态
         this.isCountdownActive = false;
-        this.countdownTimer = 0;
-        this.currentCountdownStep = 3;
     }
 
     /**
      * 开始3秒倒计时
      */
-    private startCountdown(): void {
+    private startCountdown(callback:Function): void {
         this.isCountdownActive = true;
-        this.countdownTimer = 0;
-        this.currentCountdownStep = 3;
         
         // 显示倒计时节点
         if (this.countdownNode) {
@@ -2736,31 +2718,20 @@ export class MainGameUI extends CCComp {
         
         // 显示第一个数字 "3"
         this.showCountdownNumber(3);
-    }
-
-    /**
-     * 更新倒计时
-     */
-    private updateCountdown(): void {
-        if (!this.isCountdownActive) return;
+        this.scheduleOnce(()=>{
+            this.showCountdownNumber(2);
+            this.scheduleOnce(()=>{
+                this.showCountdownNumber(1);
+                this.scheduleOnce(()=>{
+                    this.showCountdownGO();
+                    this.scheduleOnce(()=>{
+                        // 倒计时结束
+                        this.onCountdownComplete(callback);
+                    },0.1);
+                },1.0);
+            },1.0);
+        },1.0);
         
-        this.countdownTimer += 1; // 每秒增加1
-        
-        if (this.countdownTimer >= 1) {
-            this.countdownTimer = 0;
-            this.currentCountdownStep--;
-            
-            if (this.currentCountdownStep > 0) {
-                // 显示数字 3, 2, 1
-                this.showCountdownNumber(this.currentCountdownStep);
-            } else if (this.currentCountdownStep === 0) {
-                // 显示 "GO"
-                this.showCountdownGO();
-            } else {
-                // 倒计时结束
-                this.onCountdownComplete();
-            }
-        }
     }
 
     /**
@@ -2787,7 +2758,6 @@ export class MainGameUI extends CCComp {
             this.countdownSprite.spriteFrame = spriteFrame;
         }
     }
-
     /**
      * 显示GO
      */
@@ -2800,23 +2770,13 @@ export class MainGameUI extends CCComp {
     /**
      * 倒计时完成回调
      */
-    private onCountdownComplete(): void {
+    private onCountdownComplete(callback:Function): void {
         this.isCountdownActive = false;
         
         // 隐藏倒计时节点
         if (this.countdownNode) {
             this.countdownNode.active = false;
         }
-        
-        // 继续执行游戏开始动画
-        this.continueGameStartAnimation();
-    }
-
-    /**
-     * 继续游戏开始动画（倒计时完成后）
-     */
-    private continueGameStartAnimation(): void {
-        // 调用原来的游戏开始UI动画
-        this.playGameStartUIAnimation();
+        callback?.();
     }
 }
