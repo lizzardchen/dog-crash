@@ -454,6 +454,11 @@ export class MainGameUI extends CCComp {
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
+        const energycomp = smc.crashGame.get(EnergyComp);
+        if(energycomp && energycomp.currentEnergy <= 0) {
+            oops.gui.toast("Energy not enough!");
+            return;
+        }
         const betting = smc.crashGame.get(BettingComp);
         if( betting.isHolding ) return;
 
@@ -539,6 +544,10 @@ export class MainGameUI extends CCComp {
     }
 
     private onHoldButtonTouchEnd(_event: EventTouch | null): void {
+        const energycomp = smc.crashGame.get(EnergyComp);
+        if(energycomp && energycomp.currentEnergy <= 0) {
+            return;
+        }
         if (!smc.crashGame) return;
         const betting = smc.crashGame.get(BettingComp);
         if(this.isButtonHolding) {
@@ -1646,8 +1655,7 @@ export class MainGameUI extends CCComp {
             const gameState = smc.crashGame.get(GameStateComp);
 
             if (gameState.state === GameState.FLYING && multiplier) {
-                const speedMultiplier = Math.min(1 + (multiplier.currentMultiplier - 1) * 0.3, 5);
-                this.updateSceneScrollSpeed(speedMultiplier);
+                this.updateSceneScrollSpeed(multiplier.currentMultiplier);
             }
         }
                 

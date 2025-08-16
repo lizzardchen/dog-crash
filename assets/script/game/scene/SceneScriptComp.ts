@@ -41,6 +41,8 @@ export class SceneNodeConfig {
 
     private _originalY: number = 0; // 用于记录初始Y位置
 
+    private _originalH:number = 1000;
+
     backNodeY() {
         this._originalY = this.targetNode.y;
     }
@@ -48,8 +50,16 @@ export class SceneNodeConfig {
         this.targetNode.y = this._originalY;
     }
 
+    backParentH() {
+        this._originalH = this.targetNode.parent?.h||1000;
+    }
+
     originalY():number{
         return this._originalY;
+    }
+
+    originalH():number{
+        return this._originalH;
     }
 }
 
@@ -86,8 +96,8 @@ export class SceneScriptComp extends Component {
 
     start() {
         // 初始化场景状态 - 默认不激活
-        this.setActive(false);
-        console.log(`SceneScriptComp started: ${this.node.name}, nodes: ${this.nodeConfigs.length}`);
+        // this.setActive(false);
+        // console.log(`SceneScriptComp started: ${this.node.name}, nodes: ${this.nodeConfigs.length}`);
     }
 
     protected update(dt: number): void {
@@ -117,7 +127,6 @@ export class SceneScriptComp extends Component {
             this.stopSceneEffects();
         } else if (newState === GameState.FLYING) {
             // 启动场景效果（包括非背景节点动画）
-            this.stopSceneEffects();
             this.startSceneEffects();
             this.isNeedStartMotion = false;
         }
@@ -139,6 +148,7 @@ export class SceneScriptComp extends Component {
             if (!config.targetNode) return;
 
             config.backNodeY();
+            config.backParentH();
             // 根据节点类型进行初始化
             switch (config.nodeType) {
                 case "spine":
@@ -271,11 +281,10 @@ export class SceneScriptComp extends Component {
         if (this.sceneAnimation) {
             this.sceneAnimation.play(`${this.sceneInfo.type}_enter`);
         }
-
         // 启动所有子节点的运动
         this.startAllNodeMotions();
 
-        console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} activated`);
+        console.log(`11111111111 ${this.node.name} Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} activated. 1111111111111111`);
     }
 
     /**
@@ -289,8 +298,6 @@ export class SceneScriptComp extends Component {
         if (this.sceneAnimation) {
             this.sceneAnimation.play(`${this.sceneInfo.type}_exit`);
         }
-
-        console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} deactivated`);
     }
 
     /** 启动所有子节点的运动 */
@@ -335,6 +342,18 @@ export class SceneScriptComp extends Component {
     /** 启动单个节点的运动 */
     private startNodeMotion(config: SceneNodeConfig): void {
         if (!config.targetNode || config.isBackground) return;
+
+        if(this.scrollContent) {
+            this.scrollContent.updateWorldTransform();
+            const widget = this.scrollContent.getComponent(Widget);
+            if(widget){
+                widget.updateAlignment();
+            }
+            const newH = this.scrollContent.h;
+            const scaleRatio = newH / config.originalH();
+            const newY = config.originalY() * scaleRatio;
+            config.targetNode.y = newY;
+        }
 
         const finalSpeed = config.affectedByGlobalSpeed ?
             config.speedMultiplier * this.currentGlobalSpeed :

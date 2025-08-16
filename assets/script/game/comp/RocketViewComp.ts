@@ -39,19 +39,19 @@ export class RocketViewComp extends CCComp {
     endBomb: sp.Skeleton = null!; // 崩盘结束动画
 
     /** 火箭状态 */
-    rocketState: RocketState = RocketState.IDLE;
+    private rocketState: RocketState = RocketState.IDLE;
 
     /** 火箭场景状态 */
-    sceneState: RocketSceneState = RocketSceneState.GROUND;
+    private sceneState: RocketSceneState = RocketSceneState.GROUND;
 
     /** 当前高度 */
-    currentHeight: number = 0;
+    private currentHeight: number = 0;
 
     /** 飞行速度 */
-    flySpeed: number = 100; // 像素/秒
+    private flySpeed: number = 100; // 像素/秒
 
     /** 动画播放状态 */
-    isAnimationPlaying: boolean = false;
+    private isAnimationPlaying: boolean = false;
 
     private defalut_anim:string = "animation";
 
@@ -97,6 +97,21 @@ export class RocketViewComp extends CCComp {
 
     protected start(): void {
         
+    }
+
+    getRocketState(): RocketState {
+        return this.rocketState;
+    }
+    setRocketState(state: RocketState): void {
+        this.rocketState = state;
+    }
+
+    getSceneState(): RocketSceneState {
+        return this.sceneState;
+    }
+
+    setSceneState(state: RocketSceneState): void {
+        this.sceneState = state;
     }
 
     /** 设置为起飞状态 */

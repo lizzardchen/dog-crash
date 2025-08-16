@@ -22,12 +22,6 @@ export class SceneBackgroundComp extends ecs.Comp {
     /** 当前激活的场景索引 */
     currentSceneIndex: number = 0;
 
-    /** 基础背景层滚动速度 */
-    baseBackScrollSpeed: number = 30; // 像素/秒
-
-    /** 基础前景层滚动速度 */
-    baseFrontScrollSpeed: number = 80; // 像素/秒
-
     /** 场景配置数组 */
     sceneConfigs: SceneData[] = [];
 
@@ -38,17 +32,11 @@ export class SceneBackgroundComp extends ecs.Comp {
     backScene: Node | null = null;   // 背景场景容器节点
     frontScene: Node | null = null;  // 前景场景容器节点
 
-    /** 各层滚动偏移 */
-    backScrollOffset: number = 0;
-    frontScrollOffset: number = 0;
-
     /** 当前速度倍数（基于游戏倍率动态调整） */
     currentSpeedMultiplier: number = 1.0;
 
     reset() {
         this.currentSceneIndex = 0;
-        this.backScrollOffset = 0;
-        this.frontScrollOffset = 0;
         this.currentSpeedMultiplier = 1.0;
     }
 
@@ -90,15 +78,5 @@ export class SceneBackgroundComp extends ecs.Comp {
             default:
                 return null;
         }
-    }
-
-    /** 获取当前滚动速度 */
-    getCurrentScrollSpeed(layer: SceneLayer): number {
-        const currentScene = this.getCurrentSceneInstance();
-        if (!currentScene) {
-            return layer === SceneLayer.BACK ? this.baseBackScrollSpeed : this.baseFrontScrollSpeed;
-        }
-
-        return layer === SceneLayer.BACK ? currentScene.backScrollSpeed : currentScene.frontScrollSpeed;
     }
 }

@@ -28,17 +28,17 @@
     "_active": true,
     "_components": [
       {
-        "__id__": 106
-      },
-      {
         "__id__": 108
       },
       {
-        "__id__": 120
+        "__id__": 110
+      },
+      {
+        "__id__": 122
       }
     ],
     "_prefab": {
-      "__id__": 122
+      "__id__": 124
     },
     "_lpos": {
       "__type__": "cc.Vec3",
@@ -988,10 +988,13 @@
     "_components": [
       {
         "__id__": 103
+      },
+      {
+        "__id__": 105
       }
     ],
     "_prefab": {
-      "__id__": 105
+      "__id__": 107
     },
     "_lpos": {
       "__type__": "cc.Vec3",
@@ -2397,7 +2400,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 1080,
-      "height": 2048
+      "height": 1920
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -2409,6 +2412,42 @@
   {
     "__type__": "cc.CompPrefabInfo",
     "fileId": "34shTKCF5Bg62Ses8MqxNq"
+  },
+  {
+    "__type__": "cc.Widget",
+    "_name": "",
+    "_objFlags": 0,
+    "__editorExtras__": {},
+    "node": {
+      "__id__": 42
+    },
+    "_enabled": true,
+    "__prefab": {
+      "__id__": 106
+    },
+    "_alignFlags": 45,
+    "_target": null,
+    "_left": 0,
+    "_right": 0,
+    "_top": 0,
+    "_bottom": 0,
+    "_horizontalCenter": 0,
+    "_verticalCenter": 0,
+    "_isAbsLeft": true,
+    "_isAbsRight": true,
+    "_isAbsTop": true,
+    "_isAbsBottom": true,
+    "_isAbsHorizontalCenter": true,
+    "_isAbsVerticalCenter": true,
+    "_originalWidth": 1080,
+    "_originalHeight": 2048,
+    "_alignMode": 2,
+    "_lockFlags": 45,
+    "_id": ""
+  },
+  {
+    "__type__": "cc.CompPrefabInfo",
+    "fileId": "20G0mydy1EP46B0ZESLwtI"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -2433,7 +2472,7 @@
     },
     "_enabled": true,
     "__prefab": {
-      "__id__": 107
+      "__id__": 109
     },
     "_contentSize": {
       "__type__": "cc.Size",
@@ -2461,15 +2500,9 @@
     },
     "_enabled": true,
     "__prefab": {
-      "__id__": 109
+      "__id__": 111
     },
     "nodeConfigs": [
-      {
-        "__id__": 110
-      },
-      {
-        "__id__": 111
-      },
       {
         "__id__": 112
       },
@@ -2493,6 +2526,12 @@
       },
       {
         "__id__": 119
+      },
+      {
+        "__id__": 120
+      },
+      {
+        "__id__": 121
       }
     ],
     "sceneAnimation": null,
@@ -2629,7 +2668,7 @@
     },
     "_enabled": true,
     "__prefab": {
-      "__id__": 121
+      "__id__": 123
     },
     "_alignFlags": 40,
     "_target": null,

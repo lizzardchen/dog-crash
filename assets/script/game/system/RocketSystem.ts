@@ -35,27 +35,27 @@ export class RocketSystem extends ecs.ComblockSystem implements ecs.ISystemUpdat
 
     private handleWaitingState(rocketView: RocketViewComp): void {
         // 等待状态下，确保火箭处于待机状态
-        if (rocketView.rocketState !== RocketState.IDLE) {
+        if (rocketView.getRocketState() !== RocketState.IDLE) {
             rocketView.reset();
         }
     }
 
     private handleFlyingState(rocketView: RocketViewComp, multiplier: MultiplierComp): void {
         // 如果还没开始飞行动画，启动它
-        if (rocketView.rocketState === RocketState.IDLE) {
+        if (rocketView.getRocketState() === RocketState.IDLE) {
             rocketView.setTakeoffState();
             console.log("Rocket takeoff started");
         }
 
         // 更新飞行高度
-        if (rocketView.rocketState === RocketState.FLYING) {
+        if (rocketView.getRocketState() === RocketState.FLYING) {
             rocketView.updateFlying(multiplier.currentMultiplier);
         }
     }
 
     private handleCrashedState(rocketView: RocketViewComp): void {
         // 播放崩盘动画（只播放一次）
-        if (rocketView.rocketState === RocketState.FLYING|| rocketView.rocketState === RocketState.IDLE) {
+        if (rocketView.getRocketState() === RocketState.FLYING || rocketView.getRocketState() === RocketState.IDLE) {
             rocketView.setCrashState();
             console.log("Rocket crashed!");
         }
@@ -63,7 +63,7 @@ export class RocketSystem extends ecs.ComblockSystem implements ecs.ISystemUpdat
 
     private handleCashedOutState(rocketView: RocketViewComp): void {
         // 播放成功着陆动画（只播放一次）
-        if (rocketView.rocketState === RocketState.FLYING || rocketView.rocketState === RocketState.IDLE) {
+        if (rocketView.getRocketState() === RocketState.FLYING || rocketView.getRocketState() === RocketState.IDLE) {
             rocketView.setLandingState();
             console.log("Rocket landed successfully!");
         }

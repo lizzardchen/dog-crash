@@ -27,10 +27,9 @@ export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemU
             // 检查 Rocket 状态变化（基于倍率表格）
             const previousTime = (currentTime - 100) / 1000; // 上一帧的时间
             const rocketStateChange = MultiplierConfig.checkRocketStateChange(previousTime, timeInSeconds);
-
             if (rocketStateChange.changed) {
                 // 更新 Rocket 的场景状态
-                rocketComp.sceneState = rocketStateChange.newState;
+                rocketComp.setSceneState(rocketStateChange.newState);
                 console.log(`Rocket state changed from ${rocketStateChange.oldState} to ${rocketStateChange.newState} at ${timeInSeconds.toFixed(1)}s (${newMultiplier.toFixed(2)}x)`);
 
                 // 发送 Rocket 场景状态变化事件
@@ -42,17 +41,17 @@ export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemU
                 });
             }
 
-            // 添加调试日志
-            if (Math.floor(timeInSeconds * 10) % 10 === 0) { // 每0.1秒输出一次
-                console.log(`Time: ${timeInSeconds.toFixed(1)}s, Current: ${newMultiplier.toFixed(2)}x, Scene: ${rocketComp.sceneState}, Target: ${localDataComp.currentCrashMultiplier.toFixed(2)}x`);
-            }
+            // // 添加调试日志
+            // if (Math.floor(timeInSeconds * 10) % 10 === 0) { // 每0.1秒输出一次
+            //     console.log(`Time: ${timeInSeconds.toFixed(1)}s, Current: ${newMultiplier.toFixed(2)}x, Scene: ${rocketComp.sceneState}, Target: ${localDataComp.currentCrashMultiplier.toFixed(2)}x`);
+            // }
 
-            // 倍数变化时播放音效
-            if (newMultiplier > multiplierComp.currentMultiplier) {
-                // console.log("Multiplier tick");
-                // TODO: 添加实际的音频资源后启用
-                // oops.audio.playEffect("game/audio/multiplier_tick");
-            }
+            // // 倍数变化时播放音效
+            // if (newMultiplier > multiplierComp.currentMultiplier) {
+            //     // console.log("Multiplier tick");
+            //     // TODO: 添加实际的音频资源后启用
+            //     // oops.audio.playEffect("game/audio/multiplier_tick");
+            // }
 
             multiplierComp.currentMultiplier = newMultiplier;
 

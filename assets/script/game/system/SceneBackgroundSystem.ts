@@ -42,7 +42,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     entityEnter(entity: CrashGame): void {
         // 开始监听 Rocket 场景状态变化事件
         if (!this.isListeningToRocketEvents) {
-            oops.message.on("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
+            // oops.message.on("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
             oops.message.on("GAME_INITIALIZED", this.onGameInitialized, this);
             this.isListeningToRocketEvents = true;
         }
@@ -51,7 +51,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     entityRemove(_entity: CrashGame): void {
         // 停止监听事件
         if (this.isListeningToRocketEvents) {
-            oops.message.off("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
+            // oops.message.off("ROCKET_SCENE_CHANGED", this.onRocketSceneChanged, this);
             oops.message.off("GAME_INITIALIZED", this.onGameInitialized, this);
             this.isListeningToRocketEvents = false;
         }
@@ -286,7 +286,6 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
 
         // 计算全局滚动偏移：基于游戏开始时间和统一的移动速度
         const globalScrollSpeed = this.calculateGlobalScrollSpeed(currentTime);
-        // const globalScrollOffset = currentTime * globalScrollSpeed * sceneComp.currentSpeedMultiplier;
         let past_time = currentTime - this.last_scene_time;
         let globalScrollOffset = this.past_scene_offset + globalScrollSpeed * past_time;
         this.past_scene_offset = globalScrollOffset;
@@ -346,15 +345,15 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         // 全局移动速度 = 移动距离 / 移动时间
         const globalSpeed = switchTime > 0 ? requiredDistance / switchTime : 2;
 
-        console.log(`🚀 Dynamic Global scroll speed: ${globalSpeed.toFixed(1)}px/s`);
-        console.log(`   - First scene height: ${firstSceneHeight}px`);
-        console.log(`   - Screen height: ${this.screenHeight}px`);
-        console.log(`   - Required distance: ${requiredDistance}px`);
-        console.log(`   - Switch time from config: ${switchTime}s`);
-        console.log(`   - Switch time: ${switchTime}s`);
-        console.log(`   - Switch time: ${switchTime}s`);
-        console.log(`   - First scene initial Y: ${this.scenePositions[0].initialY}px`);
-        console.log(`   - First scene final Y: ${this.scenePositions[0].initialY - requiredDistance}px`);
+        // console.log(`🚀 Dynamic Global scroll speed: ${globalSpeed.toFixed(1)}px/s`);
+        // console.log(`   - First scene height: ${firstSceneHeight}px`);
+        // console.log(`   - Screen height: ${this.screenHeight}px`);
+        // console.log(`   - Required distance: ${requiredDistance}px`);
+        // console.log(`   - Switch time from config: ${switchTime}s`);
+        // console.log(`   - Switch time: ${switchTime}s`);
+        // console.log(`   - Switch time: ${switchTime}s`);
+        // console.log(`   - First scene initial Y: ${this.scenePositions[0].initialY}px`);
+        // console.log(`   - First scene final Y: ${this.scenePositions[0].initialY - requiredDistance}px`);
 
         return globalSpeed;
     }
@@ -459,6 +458,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
 
     /** 停用场景脚本 */
     private deactivateSceneScript(node: any): void {
+        console.log(`Deactivating scene script for ${node.name}`);
         const script = node.getComponent(SceneScriptComp);
         if (script) {
             script.setActive(false);
@@ -480,11 +480,11 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         this.InitScenes(smc.crashGame);
     }
 
-    /** 处理 Rocket 场景状态变化事件 */
-    private onRocketSceneChanged(eventData: any): void {
-        const { oldScene, newScene, multiplier } = eventData;
-        const multiplierText = multiplier ? multiplier.toFixed(2) : '0.00';
-        console.log(`🚀 Scene state changed: ${oldScene} -> ${newScene} at ${multiplierText}x (handled by continuous scroll)`);
-        // 在新的连续滚动系统中，场景切换是自动的，不需要手动处理
-    }
+    // /** 处理 Rocket 场景状态变化事件 */
+    // private onRocketSceneChanged(eventData: any): void {
+    //     const { oldScene, newScene, multiplier } = eventData;
+    //     const multiplierText = multiplier ? multiplier.toFixed(2) : '0.00';
+    //     console.log(`🚀 Scene state changed: ${oldScene} -> ${newScene} at ${multiplierText}x (handled by continuous scroll)`);
+    //     // 在新的连续滚动系统中，场景切换是自动的，不需要手动处理
+    // }
 }

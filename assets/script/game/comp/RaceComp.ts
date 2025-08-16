@@ -89,7 +89,7 @@ export class RaceComp extends ecs.Comp {
     
     // 更新时间控制
     public lastUpdateTime: number = 0;
-    public updateInterval: number = 60000; // 1分钟更新一次
+    public updateInterval: number = 150000; // 2.5分钟更新一次
     public lastPastTime:number = 0;
     
     // race/current接口独立时间控制
