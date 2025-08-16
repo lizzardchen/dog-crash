@@ -1042,8 +1042,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -168.497,
-      "y": 1336.179,
+      "x": -256.0735,
+      "y": 1437.7215,
       "z": 0
     },
     "_lrot": {
@@ -1083,8 +1083,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 444,
-      "height": 448
+      "width": 268.847,
+      "height": 244.915
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1125,7 +1125,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -1178,8 +1178,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": -363.648,
-      "y": 532.913,
+      "x": -360.53700000000003,
+      "y": 1073.0230000000001,
       "z": 0
     },
     "_lrot": {
@@ -1219,8 +1219,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 556,
-      "height": 281
+      "width": 330.145,
+      "height": 140.501
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1261,7 +1261,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -1314,8 +1314,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 424.405,
-      "y": 851.023,
+      "x": 352.96099999999996,
+      "y": 931.6855,
       "z": 0
     },
     "_lrot": {
@@ -1355,8 +1355,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 444,
-      "height": 444
+      "width": 301.11199999999997,
+      "height": 282.675
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1397,7 +1397,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -1450,8 +1450,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 278,
-      "y": 1455.764,
+      "x": 340.749,
+      "y": 1352.0549999999998,
       "z": 0
     },
     "_lrot": {
@@ -1491,8 +1491,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 556,
-      "height": 281
+      "width": 325.536,
+      "height": 147.331
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1533,7 +1533,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,

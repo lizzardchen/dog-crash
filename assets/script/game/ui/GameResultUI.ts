@@ -169,7 +169,7 @@ export class GameResultUI extends CCComp {
         // }
 
         // 计算coin和dollar奖励数量
-        const rewardAmount = Math.abs(params.profit); // 取绝对值作为奖励数量
+        const rewardAmount = params.profit; // 取绝对值作为奖励数量
 
         // 设置coin数量 - 显示实际的奖励数值
         if (this.coin_amount_label) {

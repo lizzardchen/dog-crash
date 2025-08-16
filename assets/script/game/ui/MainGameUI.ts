@@ -732,15 +732,15 @@ export class MainGameUI extends CCComp {
         }, 0.2);
     }
 
-    private onGameCrashed(_data: any): void {
+    private onGameCrashed(event:string,_data: any): void {
         console.log("MainGameUI: onGameCrashed event received", _data);
         if (!smc.crashGame) return;
 
         const betting = smc.crashGame.get(BettingComp);
         const gameHistory = smc.crashGame.get(GameHistoryComp);
         const localData = smc.crashGame.get(LocalDataComp);
-         const multiplier = smc.crashGame.get(MultiplierComp);
-        const winAmount = betting.betAmount * multiplier.cashOutMultiplier;
+         const multiplier = _data.crashMultiplier;//smc.crashGame.get(MultiplierComp);
+        const winAmount = betting.betAmount * multiplier;
 
         let loss: number = winAmount; // 默认损失为当前可能的奖励金额
 

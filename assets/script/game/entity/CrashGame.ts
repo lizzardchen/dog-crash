@@ -47,8 +47,8 @@ export class CrashGame extends ecs.Entity {
     }
     // 服务器配置
     public static serverConfig = {
-        // baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
-        baseURL: "http://localhost:3000/api/",
+        baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
+        // baseURL: "http://localhost:3000/api/",
         timeout: 10000,
         retryAttempts: 3
     };

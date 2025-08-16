@@ -144,7 +144,7 @@ export class RocketViewComp extends CCComp {
             }
             if( this.sceneState === RocketSceneState.ATMOSPHERE ) {
                 if(this.rocket_view_parent){
-                    tween(this.rocket_view_parent).to(2.0, { scale: new Vec3(0.7,0.7,1) }, { easing: 'quadOut' }).start();
+                    tween(this.rocket_view_parent).to(3.0, { scale: new Vec3(0.65,0.65,1) }, { easing: 'quadOut' }).start();
                 }
                 if(this.rocketSkeleton) {
                     this.rocketSkeleton.setAnimation(0, RocketAnimation.FLY2, true);
@@ -152,7 +152,7 @@ export class RocketViewComp extends CCComp {
             }
             if( this.sceneState === RocketSceneState.SPACE ) {
                 if(this.rocket_view_parent){
-                    tween(this.rocket_view_parent).to(2.0, { scale: new Vec3(0.6,0.6,1) }, { easing: 'quadOut' }).start();
+                    tween(this.rocket_view_parent).to(3.0, { scale: new Vec3(0.58,0.58,1) }, { easing: 'quadOut' }).start();
                 }
             }
             this._backSceneState = this.sceneState;
