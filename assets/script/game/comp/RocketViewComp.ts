@@ -29,6 +29,9 @@ export enum RocketSceneState {
 @ecs.register('RocketView',false)
 export class RocketViewComp extends CCComp {
 
+    @property(Node)
+    rocket_view_parent :Node = null!; // 火箭父节点
+
     @property(sp.Skeleton)
     rocketSkeleton: sp.Skeleton = null!; // 火箭骨骼动画组件
 
@@ -82,6 +85,9 @@ export class RocketViewComp extends CCComp {
             this.rocketSkeleton.node.active = true;
             this.rocketSkeleton.setAnimation(0, RocketAnimation.IDLE, true);
         }
+        if(this.rocket_view_parent){
+            this.rocket_view_parent.setScale(1,1,1);
+        }
     }
 
     protected onLoad(): void {
@@ -131,9 +137,22 @@ export class RocketViewComp extends CCComp {
         this.currentHeight = (multiplier - 1.0) * this.flySpeed;
 
          if( this.sceneState !== this._backSceneState ) {
+            if( this.sceneState === RocketSceneState.SKY ) {
+                if(this.rocket_view_parent){
+                    tween(this.rocket_view_parent).to(2.0, { scale: new Vec3(0.8,0.8,1) }, { easing: 'quadOut' }).start();
+                }
+            }
             if( this.sceneState === RocketSceneState.ATMOSPHERE ) {
+                if(this.rocket_view_parent){
+                    tween(this.rocket_view_parent).to(2.0, { scale: new Vec3(0.7,0.7,1) }, { easing: 'quadOut' }).start();
+                }
                 if(this.rocketSkeleton) {
                     this.rocketSkeleton.setAnimation(0, RocketAnimation.FLY2, true);
+                }
+            }
+            if( this.sceneState === RocketSceneState.SPACE ) {
+                if(this.rocket_view_parent){
+                    tween(this.rocket_view_parent).to(2.0, { scale: new Vec3(0.6,0.6,1) }, { easing: 'quadOut' }).start();
                 }
             }
             this._backSceneState = this.sceneState;
@@ -147,7 +166,9 @@ export class RocketViewComp extends CCComp {
         this._is_fly_sound_playing = false; // 重置飞行声效播放标志
         this._rocket_start_sound_date = 0; // 重置起飞时间
         this._rocket_fly_sound_date = 0; // 重置飞行声效时间
-
+        if(this.rocket_view_parent){
+            tween(this.rocket_view_parent).to(1.0, { scale: new Vec3(1,1,1) }, { easing: 'quadOut' }).start();
+        }
     }
 
     /** 设置为崩盘状态 */

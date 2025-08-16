@@ -169,7 +169,10 @@ export class MainGameUI extends CCComp {
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
     private isHistoryPopupOpen: boolean = false; // 记录history弹窗状态
-    
+
+    private isButtonHolding:boolean = false;
+    private needHoldUp:boolean = false;
+
     // 存储Widget组件的原始值
     private originalWidgetValues: Map<Node, {top?: number, bottom?: number, left?: number, right?: number}> = new Map();
     private isUIAnimating: boolean = false; // 防止动画重复执行
@@ -320,6 +323,10 @@ export class MainGameUI extends CCComp {
                 frontNode.active = false; // 初始隐藏
                 this.frontScene.addChild(frontNode);
                 sceneInstance.frontNode = frontNode;
+                const scenscriptcomp = frontNode.getComponent(SceneScriptComp);
+                if( scenscriptcomp ){
+                    scenscriptcomp.initializeNodes();
+                } 
             }
 
             sceneComp.sceneInstances.push(sceneInstance);
@@ -447,9 +454,14 @@ export class MainGameUI extends CCComp {
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
+        const betting = smc.crashGame.get(BettingComp);
+        if( betting.isHolding ) return;
+
         CrashGameAudio.playButtonClick();
-        
         if (!smc.crashGame) return;
+
+        this.isButtonHolding = true;
+
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
         this.onCloseBetPanelButtonClick();
@@ -464,8 +476,15 @@ export class MainGameUI extends CCComp {
         this.startCountdown(()=>{
             this.playGameStartUIAnimation();
             const gameState = smc.crashGame.get(GameStateComp);
-            const betting = smc.crashGame.get(BettingComp);
+            
             const multiplier = smc.crashGame.get(MultiplierComp);
+
+            this.isButtonHolding = false;
+            if(this.needHoldUp){
+                this.onHoldButtonTouchEnd(null);
+                this.needHoldUp = false; // 重置需要松开状态
+                return;
+            }
 
             if (gameState.state === GameState.WAITING) {
                 // 用户手动按下HOLD按钮 - 禁用自动下注，切换到手动模式
@@ -479,6 +498,11 @@ export class MainGameUI extends CCComp {
                     console.warn("Not enough energy to start game");
                     // TODO: 显示能源不足提示
                     oops.gui.toast("Energy not enough!");
+                    this.isButtonHolding = false;
+                    if(this.needHoldUp){
+                        this.onHoldButtonTouchEnd(null);
+                        this.needHoldUp = false; // 重置需要松开状态
+                    }
                     return;
                 }
 
@@ -490,9 +514,6 @@ export class MainGameUI extends CCComp {
                 localData.generateCrashMultiplierAsync().then((remote_mulitplier: number) => {
                     localData.currentCrashMultiplier = remote_mulitplier;
                     if (this.validateBetAmount(betAmount, isFreeMode)) {
-
-                        
-
                         betting.betAmount = betAmount;
                         betting.isHolding = true;
                         gameState.state = GameState.FLYING;
@@ -517,15 +538,20 @@ export class MainGameUI extends CCComp {
         });
     }
 
-    private onHoldButtonTouchEnd(_event: EventTouch): void {
+    private onHoldButtonTouchEnd(_event: EventTouch | null): void {
         if (!smc.crashGame) return;
+        const betting = smc.crashGame.get(BettingComp);
+        if(this.isButtonHolding) {
+            this.needHoldUp = true; // 标记为需要松开状态
+            return; // 如果已经在按住状态，则不处理松开事件
+        }
         this.hold_unpressed_node.active = true;
         this.hold_pressed_node.active = false;
         const gameState = smc.crashGame.get(GameStateComp);
-        const betting = smc.crashGame.get(BettingComp);
+        
         const multiplier = smc.crashGame.get(MultiplierComp);
 
-        if (gameState.state === GameState.FLYING && betting.isHolding) {
+        if ((gameState.state === GameState.FLYING ||gameState.state === GameState.WAITING)) {
             // 用户手动提现 - 如果当前是自动模式，切换到手动模式
             if (betting.autoCashOutEnabled) {
                 console.log("MainGameUI: User manually cashed out, disabling auto betting");

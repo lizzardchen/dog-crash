@@ -55,7 +55,7 @@ export class RocketSystem extends ecs.ComblockSystem implements ecs.ISystemUpdat
 
     private handleCrashedState(rocketView: RocketViewComp): void {
         // 播放崩盘动画（只播放一次）
-        if (rocketView.rocketState === RocketState.FLYING) {
+        if (rocketView.rocketState === RocketState.FLYING|| rocketView.rocketState === RocketState.IDLE) {
             rocketView.setCrashState();
             console.log("Rocket crashed!");
         }
@@ -63,7 +63,7 @@ export class RocketSystem extends ecs.ComblockSystem implements ecs.ISystemUpdat
 
     private handleCashedOutState(rocketView: RocketViewComp): void {
         // 播放成功着陆动画（只播放一次）
-        if (rocketView.rocketState === RocketState.FLYING) {
+        if (rocketView.rocketState === RocketState.FLYING || rocketView.rocketState === RocketState.IDLE) {
             rocketView.setLandingState();
             console.log("Rocket landed successfully!");
         }

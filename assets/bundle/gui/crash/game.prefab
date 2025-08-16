@@ -944,6 +944,9 @@
     "__prefab": {
       "__id__": 38
     },
+    "rocket_view_parent": {
+      "__id__": 23
+    },
     "rocketSkeleton": {
       "__id__": 27
     },

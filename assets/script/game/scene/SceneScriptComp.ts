@@ -47,6 +47,10 @@ export class SceneNodeConfig {
     restoreNodeY(){
         this.targetNode.y = this._originalY;
     }
+
+    originalY():number{
+        return this._originalY;
+    }
 }
 
 /**
@@ -73,16 +77,12 @@ export class SceneScriptComp extends Component {
     // 运行时数据 - 这些信息由外部系统设置
     private sceneInfo: { type: string, layer: string } = { type: "unknown", layer: "unknown" };
     private isActive: boolean = false;
+    private isNeedStartMotion:boolean = false;
     private nodeTweens: Map<Node, Tween<Node>> = new Map();
     private currentGlobalSpeed: number = 1.0;
     private scrollTween: Tween<Node> | null = null;
     private nodeDataMap: Map<Node, {originalY: number}> = new Map();
     private lastGameState: GameState | null = null;
-
-    onLoad() {
-        console.log(`SceneScriptComp loaded: ${this.node.name}`);
-        this.initializeNodes();
-    }
 
     start() {
         // 初始化场景状态 - 默认不激活
@@ -100,6 +100,10 @@ export class SceneScriptComp extends Component {
                     this.onGameStateChanged(this.lastGameState, currentState);
                     this.lastGameState = currentState;
                 }
+                if(currentState === GameState.FLYING&&this.isNeedStartMotion){
+                    this.startSceneEffects();
+                    this.isNeedStartMotion = false;
+                }
             }
         }
     }
@@ -115,6 +119,7 @@ export class SceneScriptComp extends Component {
             // 启动场景效果（包括非背景节点动画）
             this.stopSceneEffects();
             this.startSceneEffects();
+            this.isNeedStartMotion = false;
         }
     }
 
@@ -129,10 +134,11 @@ export class SceneScriptComp extends Component {
     }
 
     /** 初始化所有子节点 */
-    private initializeNodes(): void {
+    public initializeNodes(): void {
         this.nodeConfigs.forEach(config => {
             if (!config.targetNode) return;
 
+            config.backNodeY();
             // 根据节点类型进行初始化
             switch (config.nodeType) {
                 case "spine":
@@ -182,18 +188,24 @@ export class SceneScriptComp extends Component {
         this.isActive = active;
         // 注意：不要设置node.active，因为这会影响整个场景节点的显示
         // this.node.active = active;
-
+        const gameStateComp = smc.crashGame.get(GameStateComp);
+        if (gameStateComp) {
+            this.lastGameState = gameStateComp.state;
+        }
         if (active) {
-            this.startSceneEffects();
+            if( this.lastGameState === GameState.FLYING ){
+                this.startSceneEffects();
+                this.isNeedStartMotion = false;
+            }
+            else{
+                this.isNeedStartMotion = true;
+            }
             console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} activated`);
         } else {
             this.stopSceneEffects();
             console.log(`Scene ${this.sceneInfo.type}_${this.sceneInfo.layer} deactivated`);
         }
-        const gameStateComp = smc.crashGame.get(GameStateComp);
-        if (gameStateComp) {
-            this.lastGameState = gameStateComp.state;
-        }
+        
     }
 
     ResetScenePhysicInfo(physicInfo: ScenePhysicalResult): void {
@@ -245,14 +257,9 @@ export class SceneScriptComp extends Component {
         // 调整所有非背景节点的位置
         this.nodeConfigs.forEach(config => {
             if (!config.isBackground && config.targetNode) {
-                const currentPos = config.targetNode.position;
                 // 按比例调整Y位置（相对于场景中心）
-                const newY = currentPos.y * scaleRatio;
-                config.targetNode.setPosition(currentPos.x, newY, currentPos.z);
-
-                config.backNodeY(); // backNodeY方法记录初始Y位置
-
-                console.log(`Node ${config.targetNode.name} position adjusted: Y ${currentPos.y.toFixed(2)} -> ${newY.toFixed(2)}`);
+                const newY = config.originalY() * scaleRatio;
+                config.targetNode.y = newY;
             }
         });
     }
@@ -368,18 +375,34 @@ export class SceneScriptComp extends Component {
         const sceneHeight = this.node.getComponent(UITransform)?.contentSize.height || 0;
         if (sceneHeight <= 0) return;
 
-        const scrollSpeed = speed * 100; // 基础滚动速度
-        const scrollTime = sceneHeight / scrollSpeed;
+        // 获取节点自身的高度，用于计算完全移出屏幕的距离
+        const nodeHeight = node.getComponent(UITransform)?.contentSize.height || 0;
+        const totalScrollDistance = sceneHeight + nodeHeight; // 从顶部完全进入到底部完全移出的距离
+        
+        const startY = config.originalY();
+        const scrollSpeed = speed * 500; // 基础滚动速度
+
+        const scrollTime1 = (startY +sceneHeight/2)/ scrollSpeed;
+        const scrollTime2 = (nodeHeight/2+sceneHeight/2-startY) / scrollSpeed;
+        
+        // 设置初始位置到场景顶部之上（节点高度的距离）
+        
+        const endY = -sceneHeight / 2 - nodeHeight / 2;
+        
+        // 设置初始位置
+        node.y = startY;
 
         // 创建相对位移的无缝循环滚动（在整个场景高度范围内滚动）
         const scrollTween = tween(node)
             .repeatForever(
                 tween(node)
-                    .by(scrollTime, { y: -sceneHeight })
+                    .by(scrollTime1, { y: -sceneHeight/2-startY })
                     .call(() => {
-                        // 相对位移重置：向上移动sceneHeight，形成无缝循环
-                        const currentPos = node.position;
-                        node.setPosition(currentPos.x, currentPos.y + sceneHeight, currentPos.z);
+                        node.y = sceneHeight/2+nodeHeight/2;
+                    })
+                    .by(scrollTime2, {y:-nodeHeight/2-sceneHeight/2+startY})
+                    .call(() => {
+                        node.y = startY;
                     })
             )
             .start();

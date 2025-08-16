@@ -146,7 +146,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "bg2",
+    "_name": "gbg2",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
