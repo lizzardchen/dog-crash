@@ -115,10 +115,9 @@ export class RaceComp extends ecs.Comp {
      * 初始化比赛组件
      */
     public async initialize(): Promise<void> {
-        console.log("RaceComp initialized, using oops.http for API calls");
-        
-        // 立即获取一次数据
-        await this.fetchRaceData();
+        console.log("RaceComp initialized, using oops.http for API calls"); 
+        // // 立即获取一次数据
+        // await this.fetchRaceData();
     }
 
     /**

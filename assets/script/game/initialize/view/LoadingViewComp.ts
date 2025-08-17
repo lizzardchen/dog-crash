@@ -14,6 +14,7 @@ import { smc } from "../../common/SingletonModuleComp";
 import { UIID } from "../../common/config/GameUIConfig";
 import { MainGameUI } from "../../ui/MainGameUI";
 import { CrashGame } from "../../entity/CrashGame";
+import { tips } from "../../common/tips/TipsManager";
 
 const { ccclass, property } = _decorator;
 
@@ -93,7 +94,12 @@ export class LoadingViewComp extends CCVMParentComp {
     private async onUICompleteCallback() {
         // 直接跳转到崩盘游戏主界面
         smc.crashGame = ecs.getEntity<CrashGame>(CrashGame);
-        await smc.crashGame.InitServer();
+        const result = await smc.crashGame.InitServer();
+        if(!result){
+            tips.alert("NetWork Failed!");
+            console.error("Failed to initialize CrashGame");
+            return;
+        }
         await ModuleUtil.addViewUiAsync(smc.crashGame, MainGameUI, UIID.CrashGame);
         ModuleUtil.removeViewUi(this.ent, LoadingViewComp, UIID.Loading);
     }

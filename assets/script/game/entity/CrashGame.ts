@@ -57,7 +57,8 @@ export class CrashGame extends ecs.Entity {
     private isOnline: boolean = false;
     private lastSyncTime: number = 0;
 
-    public async InitServer(): Promise<void> {
+    public async InitServer(): Promise<boolean> {
+        let result:boolean = true;
         // 配置 HTTP 服务器地址
         oops.http.server = CrashGame.serverConfig.baseURL;
         oops.http.timeout = CrashGame.serverConfig.timeout;
@@ -66,7 +67,8 @@ export class CrashGame extends ecs.Entity {
         oops.http.addHeader("Content-Type", "application/json");
                 
         // 初始化用户数据和服务器连接
-        await this.initializeUserData();
+        const ret = await this.initializeUserData();
+        result = result&&ret;
 
         // 从服务器初始化倍率配置系统
         await MultiplierConfig.initialize();
@@ -78,16 +80,17 @@ export class CrashGame extends ecs.Entity {
         }
         this._isprepared = true;
         console.log("CrashGame: Server initialization completed................");
+        return result;
     }
 
     /**
      * 初始化用户数据 - 从服务器获取或创建用户
      */
-    private async initializeUserData(): Promise<void> {
+    private async initializeUserData(): Promise<boolean> {
         const userDataComp = this.get(UserDataComp);
         if (!userDataComp) {
             console.error("UserDataComp not found");
-            return;
+            return false;
         }
 
         try {
@@ -95,8 +98,26 @@ export class CrashGame extends ecs.Entity {
             const userId = userDataComp.getUserId();
             console.log(`Initializing user: ${userId}`);
 
-            // 2. 尝试从服务器获取用户信息
-            const serverUserData = await this.fetchUserFromServer(userId);
+            // 2. 尝试从服务器获取用户信息（带重试机制）
+            const maxRetries = 5;
+            const retryDelay = 5000; // 5秒
+            let serverUserData = null;
+
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                console.log(`Fetching user data, attempt ${attempt}/${maxRetries}`);
+                
+                serverUserData = await this.fetchUserFromServer(userId);
+                
+                if (serverUserData) {
+                    console.log(`Successfully fetched user data on attempt ${attempt}`);
+                    break;
+                }
+                
+                if (attempt < maxRetries) {
+                    console.log(`Attempt ${attempt} failed, retrying in ${retryDelay/1000} seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                }
+            }
             
             if (serverUserData) {
                 // 3. 合并服务器数据到本地
@@ -104,17 +125,21 @@ export class CrashGame extends ecs.Entity {
                 this.isOnline = true;
                 this.lastSyncTime = Date.now();
                 console.log("User data synced from server", serverUserData);
+                
+                // 4. 启动定期同步（每5分钟）
+                this.startPeriodicSync();
+                
+                return true;
             } else {
-                console.log("Using offline mode - server unavailable");
+                console.error(`Failed to fetch user data after ${maxRetries} attempts`);
                 this.isOnline = false;
+                return false;
             }
-
-            // 4. 启动定期同步（每5分钟）
-            this.startPeriodicSync();
 
         } catch (error) {
             console.error("Failed to initialize user data:", error);
             this.isOnline = false;
+            return false;
         }
     }
 

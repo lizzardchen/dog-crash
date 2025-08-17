@@ -460,6 +460,10 @@ export class MainGameUI extends CCComp {
             return;
         }
         const betting = smc.crashGame.get(BettingComp);
+        if(betting.balance < betting.currentBetItem.value) {
+            oops.gui.toast("Insufficient balance!");
+            return;
+        }
         if( betting.isHolding ) return;
 
         CrashGameAudio.playButtonClick();
@@ -550,6 +554,9 @@ export class MainGameUI extends CCComp {
         }
         if (!smc.crashGame) return;
         const betting = smc.crashGame.get(BettingComp);
+        if(betting.balance < betting.currentBetItem.value) {
+            return;
+        }
         if(this.isButtonHolding) {
             this.needHoldUp = true; // 标记为需要松开状态
             return; // 如果已经在按住状态，则不处理松开事件

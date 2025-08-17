@@ -159,7 +159,6 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
-        const localData = entity.get(LocalDataComp);
         
         // 上传游戏结果到服务器
         this.uploadGameResult(entity, false, multiplier.currentMultiplier, 0);
