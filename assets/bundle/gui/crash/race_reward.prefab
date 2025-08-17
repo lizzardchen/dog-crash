@@ -8036,6 +8036,15 @@
     "third_prize_label": {
       "__id__": 179
     },
+    "first_score_label": {
+      "__id__": 135
+    },
+    "second_score_label": {
+      "__id__": 85
+    },
+    "third_score_label": {
+      "__id__": 185
+    },
     "no_reward_node": {
       "__id__": 206
     },

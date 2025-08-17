@@ -48,13 +48,34 @@ export interface UserRaceInfo {
  */
 export interface UserPrizeInfo {
     _id: string;
+    userId:string,
     prizeId: string;
     raceId: string;
     rank: number;
     prizeAmount: number;
     score:number;
+    userNetProfit:number;
     status: 'pending' | 'claimed';
     createdAt: string;
+}
+
+/**
+ * 历史比赛奖励统计信息
+ */
+export interface RacePrizeStats {
+    totalPrizes: number;
+    totalAmount: number;
+    claimedAmount: number;
+    pendingAmount: number;
+}
+
+/**
+ * 历史比赛奖励信息
+ */
+export interface HistoryRacePrizesInfo {
+    raceId: string;
+    prizes: UserPrizeInfo[];
+    stats: RacePrizeStats;
 }
 
 /**
@@ -162,7 +183,7 @@ export class RaceComp extends ecs.Comp {
             console.log("fetchRaceData - raceResponse.success:", raceResponse.success);
             console.log("fetchRaceData - raceResponse.data:", raceResponse.data);
             
-            if (!raceResponse.success || !raceResponse.data || !raceResponse.data.hasActiveRace) {
+            if (!raceResponse.success || !raceResponse.data || !raceResponse.data.hasActiveRace || !raceResponse.data.race) {
                 console.log("No active race found or API not ready");
                 this.state = RaceState.NO_RACE;
                 this.currentRace = null;
@@ -183,25 +204,24 @@ export class RaceComp extends ecs.Comp {
             
             // 并行获取排行榜和用户奖励数据
             const [leaderboardResponse, prizesResponse] = await Promise.all([
-                this.fetchRaceLeaderboard(this.currentRace!.raceId, 11, userId),
+                this.fetchRaceLeaderboard(this.currentRace!.raceId, 20, userId),
                 this.fetchUserPendingPrizes(userId)
             ]);
             
             // 处理排行榜数据
-            if (leaderboardResponse.success) {
+            if (leaderboardResponse.success && leaderboardResponse.data) {
                 this.leaderboard = leaderboardResponse.data.topLeaderboard || [];
                 this.userRaceInfo = leaderboardResponse.data.userInfo || null;
             }
             
             // 处理奖励数据
-            if (prizesResponse.success) {
+            if (prizesResponse.success && prizesResponse.data) {
                 this.userPendingPrizes = prizesResponse.data.pendingPrizes || [];
-                this.totalPendingAmount = prizesResponse.data.totalPendingAmount || 0;
-                
-                // 检查是否有新的比赛结束需要显示
-                this.checkForRaceResults();
+                this.totalPendingAmount = prizesResponse.data.totalPendingAmount || 0;   
             }
-            
+            // 检查是否有新的比赛结束需要显示
+            this.checkForRaceResults();
+
             this.state = RaceState.ACTIVE;
             
             // 发送数据更新事件
@@ -269,17 +289,14 @@ export class RaceComp extends ecs.Comp {
      * 检查是否有新的比赛结果需要显示
      */
     private async checkForRaceResults(): Promise<void> {
-        // 查找最新的待领奖励（按创建时间排序）
-        const latestPrize = this.userPendingPrizes
-            .filter(prize => prize.status === 'pending')
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-        
-        if (latestPrize && latestPrize.raceId !== this.lastCheckedRaceId) {
-            console.log(`New race result detected: ${latestPrize.raceId}, fetching latest leaderboard for display`);
-            this.lastCheckedRaceId = latestPrize.raceId;
-            
-            // 直接触发显示比赛结果
-            this.showRaceResult(latestPrize.raceId,false);
+        if( !this.lastCheckedRaceId || this.lastCheckedRaceId == ''){
+            if(this.currentRace){
+                this.lastCheckedRaceId = this.currentRace?.raceId;
+            }
+        }
+        if(this.currentRace && this.currentRace.raceId != this.lastCheckedRaceId){
+            this.showRaceResult(this.lastCheckedRaceId);
+            this.lastCheckedRaceId = this.currentRace.raceId;
         }
     }
     
@@ -292,26 +309,55 @@ export class RaceComp extends ecs.Comp {
         }
     }
 
+    public async getUserPendingRaceId():Promise<string>{
+        if(this.userPendingPrizes && this.userPendingPrizes.length > 0){
+            return this.userPendingPrizes[0].raceId;
+        }
+        return new Promise((resolve, reject) => {
+            oops.http.get('race/history?limit=1', (ret) => {
+                console.log("=== fetch history completed race DEBUG ===");
+                console.log("ret object:", ret);
+                console.log("ret.isSucc:", ret.isSucc);
+                console.log("ret.res:", JSON.stringify(ret.res, null, 2));
+                
+                if (ret.isSucc && ret.res && ret.res.data) {
+                    const data = ret.res.data.history;
+                    // 验证返回数据的结构
+                    if(data && data.length > 0){
+                        resolve(data[0].raceId);
+                    } else {
+                        console.warn("Invalid data structure in race/history response:", data);
+                        reject(new Error("Invalid data structure in race/history response"));
+                    }
+                } else {
+                    console.warn("Failed to fetch race/history prizes:", ret);
+                    reject(new Error("Failed to fetch race/history prizes"));
+                }
+            });
+        });
+    }
+
+
     /**
      * 显示比赛结果弹窗
      */
-    public async showRaceResult(raceId: string,refetch:boolean = true): Promise<void> {
+    public async showRaceResult(raceId: string): Promise<void> {
         try {
             console.log(`Showing race result for: ${raceId}`);
-            
-            if( refetch ){
-                // 确保有最新的数据
-                await this.fetchRaceData();
+            // 获取用户ID
+            const userId = this.getCurrentUserId();
+            if (!userId) {
+                console.warn("No user ID available for race~!!!");
+                return;
             }
+            // 获取奖励数据
+            const racePrizes:HistoryRacePrizesInfo = await this.fetchHistoryRacePrizes(raceId);
             // 发送显示比赛结果事件
             oops.message.dispatchEvent("SHOW_RACE_RESULT", {
                 raceId: raceId,
-                topThree: this.leaderboard.slice(0, 3),
-                userPrize: this.userPendingPrizes.find(p => p.raceId === raceId),
-                userRank: this.userRaceInfo?.rank,
-                totalParticipants: this.currentRace?.prizePool.participants || 0
+                racePrizes: racePrizes?.prizes
             });
-            
+
         } catch (error) {
             console.error('Error showing race result:', error);
             oops.gui.toast("Failed to show race results");
@@ -319,6 +365,39 @@ export class RaceComp extends ecs.Comp {
     }
 
     // === API调用方法 ===
+
+    /**
+     * 获取历史race信息的API调用
+     * @param raceId 比赛ID
+     * @returns Promise<HistoryRacePrizesInfo> 历史比赛奖励信息
+     */
+    public async fetchHistoryRacePrizes(raceId: string): Promise<HistoryRacePrizesInfo> {
+        return new Promise((resolve, reject) => {
+            oops.http.get(`race/prizes/race/${raceId}`, (ret) => {
+                console.log("=== fetchHistoryRacePrizes DEBUG ===");
+                console.log("raceId:", raceId);
+                console.log("ret object:", ret);
+                console.log("ret.isSucc:", ret.isSucc);
+                console.log("ret.res:", JSON.stringify(ret.res, null, 2));
+                
+                if (ret.isSucc && ret.res && ret.res.data) {
+                    const data = ret.res.data;
+                    // 验证返回数据的结构
+                    if (data.raceId && data.prizes && data.stats) {
+                        resolve(data as HistoryRacePrizesInfo);
+                    } else {
+                        console.warn("Invalid data structure in history race prizes response:", data);
+                        reject(new Error("Invalid data structure in response"));
+                    }
+                } else {
+                    console.warn("Failed to fetch history race prizes:", ret);
+                    reject(new Error("Failed to fetch history race prizes"));
+                }
+            });
+        });
+    }
+
+    
 
     /**
      * 获取当前比赛信息的API调用
@@ -377,7 +456,7 @@ export class RaceComp extends ecs.Comp {
     /**
      * 获取当前用户ID
      */
-    private getCurrentUserId(): string | null {
+    public getCurrentUserId(): string | null {
         try {
             // 获取CrashGame实体
             const crashGameEntity = smc.crashGame;
@@ -390,9 +469,7 @@ export class RaceComp extends ecs.Comp {
             if (userData && userData.userId) {
                 return userData.userId;
             }
-            
-            // 如果没有UserDataComp，生成临时ID
-            return this.generateTempUserId();
+            return null;
         } catch (error) {
             console.error("Error getting user ID:", error);
             return this.generateTempUserId();

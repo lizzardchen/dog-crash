@@ -4,6 +4,7 @@ import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/O
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { smc } from "../common/SingletonModuleComp";
 import { RaceComp, UserPrizeInfo } from '../comp/RaceComp';
+import { UserDataComp } from '../comp/UserDataComp';
 import { CrashGameAudio } from '../config/CrashGameAudio';
 
 const { ccclass, property } = _decorator;
@@ -49,6 +50,16 @@ export class RaceResultUI extends CCComp {
     
     @property(Label) 
     third_prize_label: Label = null!;
+
+    @property(Label)
+    first_score_label: Label = null!;
+    
+    @property(Label)
+    second_score_label: Label = null!;
+    
+    @property(Label)
+    third_score_label: Label = null!;
+
     
     // 底部消息区域
     @property(Node) 
@@ -78,6 +89,8 @@ export class RaceResultUI extends CCComp {
     private _current_race_id: string = "";
     private _current_user_prize: UserPrizeInfo | null = null;
 
+    private _race:any = null;
+
     protected onLoad(): void {
         // 绑定按钮事件
         this.close_button.node.on('click', this.closePopup, this);
@@ -97,6 +110,7 @@ export class RaceResultUI extends CCComp {
      * 响应显示比赛结果事件
      */
     public onOpen(params: any, callback: Function): void {
+        this._race = params.race;
         this.showRaceResult(params.race.raceId, callback);
     }
 
@@ -108,7 +122,7 @@ export class RaceResultUI extends CCComp {
     public showRaceResult(raceId: string, callback?: Function): void {
         this._close_callback = callback || null;
         this._current_race_id = raceId;
-        
+        // this._race.racePrizes; //UserPrizeInfo[]
         console.log('Showing race result for race:', raceId);
         
         // 从 RaceComp 获取数据
@@ -118,10 +132,12 @@ export class RaceResultUI extends CCComp {
             oops.gui.toast("Race data not available");
             return;
         }
+
+        const userId = raceComp.getCurrentUserId();
         
         // 获取前三名和用户奖励
-        const topThree = raceComp.leaderboard.slice(0, 3);
-        const userPrize = raceComp.getUserPrizeForRace(raceId);
+        const topThree = this._race.racePrizes?.filter((item:UserPrizeInfo) => item.rank <= 3) || [];
+        const userPrize = this._race.racePrizes?.find((item:UserPrizeInfo) => item.userId == userId);
         this._current_user_prize = userPrize;
         
         this.updateDisplay(topThree, userPrize);
@@ -131,13 +147,13 @@ export class RaceResultUI extends CCComp {
     /**
      * 更新显示内容
      */
-    private updateDisplay(topThree: any[], userPrize: UserPrizeInfo | null): void {
+    private updateDisplay(topThree: UserPrizeInfo[], userPrize: UserPrizeInfo | null): void {
         // 显示前三名
         this.displayTopThree(topThree);
         
         // 根据用户是否获奖显示不同内容
         if (userPrize) {
-            this.displayUserPrize(userPrize, topThree);
+            this.displayUserPrize(userPrize);
         } else {
             this.displayNoReward();
         }
@@ -146,11 +162,11 @@ export class RaceResultUI extends CCComp {
     /**
      * 显示前三名信息
      */
-    private displayTopThree(topThree: any[]): void {
+    private displayTopThree(topThree: UserPrizeInfo[]): void {
         const labels = [
-            { username: this.first_username_label, prize: this.first_prize_label,node: this.first_place_node },
-            { username: this.second_username_label, prize: this.second_prize_label,  node: this.second_place_node },
-            { username: this.third_username_label, prize: this.third_prize_label, node: this.third_place_node }
+            { username: this.first_username_label, prize: this.first_prize_label,score:this.first_score_label,node: this.first_place_node },
+            { username: this.second_username_label, prize: this.second_prize_label ,score:this.second_score_label,node: this.second_place_node },
+            { username: this.third_username_label, prize: this.third_prize_label ,score:this.third_score_label,node: this.third_place_node }
         ];
         
         labels.forEach((labelSet, index) => {
@@ -159,7 +175,8 @@ export class RaceResultUI extends CCComp {
                 const raceComp = smc.crashGame?.get(RaceComp);
                 
                 labelSet.username.string = raceComp ? raceComp.formatUserId(player.userId) : player.userId;
-                labelSet.prize.string = raceComp ? raceComp.formatPrizeNumber(raceComp.calculatePrizeAmount(player.rank)) : player.rank.toString();
+                labelSet.prize.string = raceComp ? raceComp.formatPrizeNumber(player.prizeAmount) : player.rank.toString();
+                labelSet.score.string = raceComp.formatPrizeNumber(player.userNetProfit);
                 labelSet.node.active = true;
             } else {
                 labelSet.node.active = false;
@@ -170,20 +187,25 @@ export class RaceResultUI extends CCComp {
     /**
      * 显示用户奖励信息
      */
-    private displayUserPrize(userPrize: UserPrizeInfo | null, topThree: any[]): void {
+    private displayUserPrize(userPrize: UserPrizeInfo | null): void {
         if (!userPrize) {
             this.displayNoReward();
             return;
         }
-        // 用户不在前三名但有奖励，显示恭喜消息和领取按钮
         const raceComp = smc.crashGame?.get(RaceComp);
         const prizeText = raceComp ? raceComp.formatPrizeNumber(userPrize.prizeAmount) : userPrize.prizeAmount.toString();
         this.user_rank_label.string = `${userPrize.rank}`;
         this.user_prize_amount_label.string = prizeText;
-        this.user_score_label.string = `${userPrize.score}`;
+        this.user_score_label.string =raceComp.formatPrizeNumber(userPrize.userNetProfit);
         
         // 根据奖励状态设置按钮
-        this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM';
+        if( userPrize.status == 'claimed' ){
+            this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLOSE';
+        }
+        else{
+            this.claim_prize_button.getComponentInChildren(Label)!.string = 'CLAIM';
+        }
+        
     }
 
     /**
@@ -206,7 +228,13 @@ export class RaceResultUI extends CCComp {
             this.closePopup();
             return;
         }
-        
+
+        if(this._current_user_prize.status == 'claimed') {
+            console.log('Prize already claimed');
+            this.closePopup();
+            return;
+        }
+
         try {
             // 禁用按钮防止重复点击
             this.claim_prize_button.interactable = false;

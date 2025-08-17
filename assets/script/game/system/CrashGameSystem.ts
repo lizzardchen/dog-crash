@@ -8,6 +8,7 @@ import { LocalDataComp } from "../comp/LocalDataComp";
 import { EnergyComp } from "../comp/EnergyComp";
 import { UserDataComp } from "../comp/UserDataComp";
 import { RaceComp } from "../comp/RaceComp";
+import { smc } from "../common/SingletonModuleComp";
 
 @ecs.register('CrashGameSystem')
 export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
@@ -96,7 +97,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             console.log(`CrashGameSystem: Starting auto bet with amount: ${betAmount}, free: ${isFreeMode}`);
             
             // 验证下注金额和能源
-            if (this.validateBetAmount(betAmount, isFreeMode, betting) && this.validateAndConsumeEnergy(entity)) {
+            if (this.validateBetAmount(betAmount, isFreeMode) && this.validateAndConsumeEnergy(entity)) {
                 // 等待服务器生成崩盘倍率，然后开始游戏
                 localData.generateCrashMultiplierAsync().then((remote_multiplier: number) => {
                     localData.currentCrashMultiplier = remote_multiplier;
@@ -213,15 +214,17 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         }
     }
 
-    private validateBetAmount(amount: number, isFreeMode: boolean, betting: BettingComp): boolean {
+    private validateBetAmount(amount: number, isFreeMode: boolean): boolean {
         if (amount <= 0) {
             console.warn("Invalid bet amount:", amount);
             return false;
         }
 
+        const userData = smc.crashGame.get(UserDataComp);
+
         // 免费模式不需要检查余额
-        if (!isFreeMode && amount > betting.balance) {
-            console.warn("Insufficient balance:", amount, "vs", betting.balance);
+        if (!isFreeMode && amount > userData.balance) {
+            console.warn("Insufficient balance:", amount, "vs", userData.balance);
             return false;
         }
 
@@ -350,13 +353,22 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         // 更新本地用户数据
         userDataComp.updateGameStats(betting.betAmount, crashMultiplier, winAmount, isWin);
 
+        // 计算游戏持续时间，添加验证逻辑防止startTime为0的情况
+        let duration = Date.now() - gameState.startTime;
+        
+        // 如果startTime为0或duration超过合理范围（10分钟），使用默认值
+        if (gameState.startTime === 0 || duration < 0 || duration > 600000) {
+            console.warn(`CrashGameSystem: Invalid duration calculated (${duration}ms), startTime: ${gameState.startTime}, using default duration`);
+            duration = 5000; // 默认5秒
+        }
+
         // 准备游戏结果数据
         const gameResult = {
             betAmount: betting.betAmount,
             crashMultiplier: crashMultiplier,
             winAmount: winAmount,
             isWin: isWin,
-            duration: Date.now() - gameState.startTime,
+            duration: duration,
             isFreeMode: betting.currentBetItem.isFree
         };
 

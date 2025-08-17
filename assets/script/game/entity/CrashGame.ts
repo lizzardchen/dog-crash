@@ -76,7 +76,7 @@ export class CrashGame extends ecs.Entity {
         // 初始化RaceComp
         const raceComp = this.get(RaceComp);
         if (raceComp) {
-            raceComp.initialize();
+            await raceComp.fetchRaceData();
         }
         this._isprepared = true;
         console.log("CrashGame: Server initialization completed................");
@@ -150,7 +150,7 @@ export class CrashGame extends ecs.Entity {
         return new Promise((resolve) => {
             try {
                 oops.http.get(`user/${userId}`, (ret) => {
-                    if (ret.isSucc && ret.res) {
+                    if (ret.isSucc && ret.res && ret.res.data) {
                         resolve(ret.res.data);
                     } else {
                         console.error("Failed to fetch user from server:", ret.err);

@@ -15,8 +15,8 @@ export class BettingComp extends ecs.Comp {
     private static readonly SELECTED_BET_KEY = "crash_game_selected_bet";
 
     betAmount: number = 0;
-    balance: number = 1000;
-    money: number = 100;
+    // balance: number = 1000;
+    // money: number = 100;
     isHolding: boolean = false;
 
     // 下注金额数据

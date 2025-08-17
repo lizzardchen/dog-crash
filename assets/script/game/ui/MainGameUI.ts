@@ -439,6 +439,9 @@ export class MainGameUI extends CCComp {
         oops.message.on("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
         // 监听自动下注结束事件
         oops.message.on("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
+        //race 发奖励
+        oops.message.on("PRIZE_CLAIMED",this.onRaceClaimed,this);
+
 
         // 监听下注ScrollView滚动事件
         if (this.betScrollView) {
@@ -460,10 +463,12 @@ export class MainGameUI extends CCComp {
             return;
         }
         const betting = smc.crashGame.get(BettingComp);
-        if(betting.balance < betting.currentBetItem.value) {
+        const userData = smc.crashGame.get(UserDataComp);
+        if(userData.balance < betting.currentBetItem.value) {
             oops.gui.toast("Insufficient balance!");
             return;
         }
+        
         if( betting.isHolding ) return;
 
         CrashGameAudio.playButtonClick();
@@ -554,7 +559,8 @@ export class MainGameUI extends CCComp {
         }
         if (!smc.crashGame) return;
         const betting = smc.crashGame.get(BettingComp);
-        if(betting.balance < betting.currentBetItem.value) {
+        const userData = smc.crashGame.get(UserDataComp);
+        if(userData.balance < betting.currentBetItem.value) {
             return;
         }
         if(this.isButtonHolding) {
@@ -609,7 +615,7 @@ export class MainGameUI extends CCComp {
     private validateBetAmount(amount: number, isFreeMode: boolean = false): boolean {
         if (!smc.crashGame) return false;
 
-        const betting = smc.crashGame.get(BettingComp);
+        const userData = smc.crashGame.get(UserDataComp);
 
         if (amount <= 0) {
             console.warn("Invalid bet amount:", amount);
@@ -617,10 +623,10 @@ export class MainGameUI extends CCComp {
         }
 
         // 免费模式不需要检查余额
-        if (!isFreeMode && amount > betting.balance) {
-            console.warn("Insufficient balance:", amount, "vs", betting.balance);
+        if (!isFreeMode && amount > userData.balance) {
+            console.warn("Insufficient balance:", amount, "vs", userData.balance);
             // 金币不足，提示观看广告
-            this.showInsufficientCoinsDialog(amount - betting.balance);
+            this.showInsufficientCoinsDialog(amount - userData.balance);
             return false;
         }
 
@@ -658,13 +664,7 @@ export class MainGameUI extends CCComp {
             () => {
                 // 广告观看成功 - 增加金币
                 if (smc.crashGame) {
-                    const betting = smc.crashGame.get(BettingComp);
                     const userData = smc.crashGame.get(UserDataComp);
-                    
-                    if (betting) {
-                        betting.balance += coinAmount;
-                        console.log(`MainGameUI: Added ${coinAmount} coins, new balance: ${betting.balance}`);
-                    }
                     
                     if (userData) {
                         userData.balance += coinAmount;
@@ -676,7 +676,7 @@ export class MainGameUI extends CCComp {
                     // 发送金币更新事件
                     oops.message.dispatchEvent("COINS_UPDATED", { 
                         amount: coinAmount, 
-                        newBalance: betting ? betting.balance : 0 
+                        newBalance: userData ? userData.balance : 0 
                     });
                 }
             },
@@ -700,12 +700,13 @@ export class MainGameUI extends CCComp {
         const multiplier = smc.crashGame.get(MultiplierComp);
         const localData = smc.crashGame.get(LocalDataComp);
         const gameHistory = smc.crashGame.get(GameHistoryComp);
+        const userData = smc.crashGame.get(UserDataComp);
 
         const winAmount = betting.betAmount * multiplier.cashOutMultiplier;
 
         let profit: number = winAmount - betting.betAmount;
-        betting.balance += profit; // 正常模式加净收益
-        betting.money += profit/10; // 正常模式加money
+        userData.balance += profit; // 正常模式加净收益
+        userData.money += profit/10; // 正常模式加money
 
         // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
         if (gameHistory && localData) {
@@ -755,6 +756,7 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         const gameHistory = smc.crashGame.get(GameHistoryComp);
         const localData = smc.crashGame.get(LocalDataComp);
+        const userData = smc.crashGame.get(UserDataComp);
          const multiplier = _data.crashMultiplier;//smc.crashGame.get(MultiplierComp);
         const winAmount = betting.betAmount * multiplier;
 
@@ -762,7 +764,7 @@ export class MainGameUI extends CCComp {
 
         // 免费模式：不扣除余额，损失为0
         if (!betting.currentBetItem.isFree) {
-            betting.balance -= betting.betAmount;
+            userData.balance -= betting.betAmount;
         }
         // 游戏失败：能源已消耗，不退还
         console.log("Game crashed - energy consumed (not refunded)");
@@ -801,6 +803,7 @@ export class MainGameUI extends CCComp {
 
         const betting = smc.crashGame.get(BettingComp);
         const localData = smc.crashGame.get(LocalDataComp);
+        const userData = smc.crashGame.get(UserDataComp);
         const gameHistory = smc.crashGame.get(GameHistoryComp);
 
         // 安全检查data.cashOutMultiplier
@@ -810,8 +813,8 @@ export class MainGameUI extends CCComp {
         // 计算收益并更新余额（和processCashOut相同的逻辑）
         const winAmount = betting.betAmount * cashOutMultiplier;
         let profit: number = winAmount - betting.betAmount;
-        betting.balance += profit; // 正常模式加净收益
-        betting.money += profit/10;
+        userData.balance += profit; // 正常模式加净收益
+        userData.money += profit/10;
 
         // 游戏成功：退还消耗的能源
         if (this.refundEnergy(1)) {
@@ -889,6 +892,20 @@ export class MainGameUI extends CCComp {
         const multiplier = data && data.multiplier ? data.multiplier : 1.0;
         console.log(`Scene changed from ${oldScene} to ${newScene} at ${multiplier.toFixed(2)}x`);
         // 场景切换由SceneBackgroundSystem自动处理，这里只需要记录日志
+    }
+
+    //race 奖励
+    private onRaceClaimed(event:string,data: any): void {
+        console.log("Race claimed:", data);
+        // 在这里处理比赛奖励的逻辑
+        this.playCoinFlyAnimation(data.prizeAmount, () => {
+            console.log("Coin fly animation completed!");
+            const userData = smc.crashGame.get(UserDataComp);
+            if (userData) {
+                userData.balance += data.prizeAmount;
+                this.updateUI();
+            }
+        });
     }
 
     /**
@@ -1516,15 +1533,15 @@ export class MainGameUI extends CCComp {
     private updateUI(): void {
         if (!smc.crashGame) return;
 
-        const betting = smc.crashGame.get(BettingComp);
+        const userData = smc.crashGame.get(UserDataComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
 
         // 安全更新余额显示
         if (this.balanceLabel) {
-            this.balanceLabel.string = `${betting.balance.toFixed(0)}`;
+            this.balanceLabel.string = `${userData.balance.toFixed(0)}`;
         }
         if(this.moneyLabel){
-            this.moneyLabel.string = `${betting.money.toFixed(0)}`;
+            this.moneyLabel.string = `${userData.money.toFixed(0)}`;
         }
 
         // 安全更新倍数显示
@@ -1538,6 +1555,7 @@ export class MainGameUI extends CCComp {
         // 更新历史记录按钮
         this.updateHistoryButton();
 
+        const betting = smc.crashGame.get(BettingComp);
         // 更新下注按钮显示 - 使用短文本格式
         const shortText = this.formatValueToShortText(betting.currentBetItem.value);
         this.updateBetButtonDisplay(shortText);
@@ -1690,6 +1708,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
         oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
         oops.message.off("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
+         oops.message.off("PRIZE_CLAIMED",this.onRaceClaimed,this);
 
         // 清理余额标签点击事件
         if (this.balanceLabel) {
@@ -2678,7 +2697,10 @@ export class MainGameUI extends CCComp {
     private async showRaceResult(): Promise<void> {
         const raceComp = smc.crashGame.get(RaceComp);
         if (raceComp) {
-            await raceComp.showRaceResult(raceComp.currentRace?.raceId || "");
+            const raceid = await raceComp.getUserPendingRaceId();
+            if( raceid && raceid != '' ){
+                await raceComp.showRaceResult(raceid || "");
+            }
         }
     }
 
@@ -2731,8 +2753,8 @@ export class MainGameUI extends CCComp {
         CrashGameAudio.playButtonClick();
         
         // 获取当前余额
-        const betting = smc.crashGame.get(BettingComp);
-        const currentBalance = betting ? betting.balance : 0;
+        const userData = smc.crashGame.get(UserDataComp);
+        const currentBalance = userData ? userData.balance : 0;
 
         const callbacks: UICallbacks = {
             onAdded: (node: Node, params: any) => {
@@ -2754,8 +2776,8 @@ export class MainGameUI extends CCComp {
         CrashGameAudio.playButtonClick();
         
         // 获取当前余额
-        const betting = smc.crashGame.get(BettingComp);
-        const currentMoney = betting ? betting.money : 0;
+        const userData = smc.crashGame.get(UserDataComp);
+        const currentMoney = userData ? userData.money : 0;
         
         const callbacks: UICallbacks = {
             onAdded: (node: Node, params: any) => {

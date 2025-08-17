@@ -11,12 +11,12 @@ export enum GameState {
 @ecs.register('GameState')
 export class GameStateComp extends ecs.Comp {
     state: GameState = GameState.INIT;
-    startTime: number = 0;
+    startTime: number = Date.now();
     crashPoint: number = 0;  // 本局游戏预设的爆率（崩盘倍数）
 
     reset() {
         this.state = GameState.INIT;
-        this.startTime = 0;
+        this.startTime = Date.now();
         this.crashPoint = 0;
     }
 }
