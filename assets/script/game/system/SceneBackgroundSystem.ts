@@ -234,6 +234,10 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         this.last_scene_time = 0;
 
         this.global_offset_calculator = new GlobalScrollOffsetCalculator(scene_calculator.calculateAllSceneHeights());
+        
+        // 传递屏幕高度和场景初始位置信息给GlobalScrollOffsetCalculator
+        const sceneInitialPositions = this.scenePositions.map(pos => pos.initialY);
+        this.global_offset_calculator.setScenePositionInfo(this.screenHeight, sceneInitialPositions);
 
         this.isInitialized = true;
         console.log(`✅ Scene positions initialized. Total scenes: ${this.scenePositions.length}`);

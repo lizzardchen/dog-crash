@@ -356,19 +356,19 @@ export class MultiplierConfig {
         switch (state) {
             case RocketSceneState.GROUND:
                 // Ground: 5 → 10，逐渐增加，克服重力+阻力
-                return (t: number) => 1 + 1 * t / duration;
+                return (t: number) => -200 * t / duration;
 
             case RocketSceneState.SKY:
                 // Sky: 10 → 12，快速增加，空气阻力急剧减少
-                return (t: number) => 2 -  20* t / duration;
+                return (t: number) => -200 +  160* t / duration;
 
             case RocketSceneState.ATMOSPHERE:
                 // Atmosphere: 12 → 6，缓慢下降但保持较高值
-                return (t: number) => -18 + 12 * t / duration;
+                return (t: number) => -40 + 40 * t / duration;
 
             case RocketSceneState.SPACE:
                 // Space: 6 → 1，趋向稳定但保持正值，避免减速
-                return (t: number) => -6 + 6.1 * t / duration;
+                return (t: number) => 1.1 * t / duration;
 
             default:
                 return (t: number) => 1;

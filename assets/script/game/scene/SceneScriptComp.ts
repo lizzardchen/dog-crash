@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite, view, Vec3, Widget } from 'cc';
+import { _decorator, Component, Node, Animation, Tween, tween, CCString, CCFloat, CCBoolean, UITransform, sp, ParticleSystem2D, Sprite, view, Vec3, Widget, UIOpacity } from 'cc';
 import { SceneBackgroundComp, SceneLayer } from '../comp/SceneBackgroundComp';
 import { smc } from '../common/SingletonModuleComp';
 import { ScenePhysicalResult } from '../config/MultiplierConfig';
@@ -38,6 +38,8 @@ export class SceneNodeConfig {
 
     @property({ type: CCBoolean, tooltip: "是否是背景节点（用于滚动循环）" })
     isBackground: boolean = false;
+
+    public scrollTween:Tween<Node> | null = null;
 
     private _originalY: number = 0; // 用于记录初始Y位置
 
@@ -170,6 +172,14 @@ export class SceneScriptComp extends Component {
         const sprite = config.targetNode.getComponent(Sprite);
         if (sprite) {
             console.log(`Initialized image node: ${config.targetNode.name}`);
+            if(!config.targetNode.getComponent(UIOpacity)){
+              const uiopacity =  config.targetNode.addComponent(UIOpacity);
+              if( this.node.name.includes("ground") ){
+                uiopacity.opacity = 255;
+              }else{
+                uiopacity.opacity = 0;
+              }
+            }
         }
     }
 
@@ -330,10 +340,19 @@ export class SceneScriptComp extends Component {
         config.restoreNodeY(); // 恢复初始Y位置
 
         switch(config.nodeType){
-            case "spine":{
-                if( config.motionType == "static" ){
-                    config.targetNode.active = false;
+            case "sprite":
+                // 处理精灵节点的特殊逻辑
+                const uiopacity = config.targetNode.getComponent(UIOpacity);
+                if(uiopacity){
+                    if( !this.node.name.includes("ground") ){
+                        uiopacity.opacity = 0;
+                    }
                 }
+                break;
+            case "spine":{
+                // if( config.motionType == "static" ){
+                //     config.targetNode.active = false;
+                // }
                 break;
             }
         }
@@ -412,12 +431,16 @@ export class SceneScriptComp extends Component {
         node.y = startY;
 
         // 创建相对位移的无缝循环滚动（在整个场景高度范围内滚动）
-        const scrollTween = tween(node)
+        config.scrollTween = tween(node)
             .repeatForever(
                 tween(node)
                     .by(scrollTime1, { y: -sceneHeight/2-startY })
                     .call(() => {
-                        node.y = sceneHeight/2+nodeHeight/2;
+                        node.y = sceneHeight/2+nodeHeight*2;
+                        const uiopacity = node.getComponent(UIOpacity);
+                        if(uiopacity){
+                            uiopacity.opacity = 255;
+                        }
                     })
                     .by(scrollTime2, {y:-nodeHeight/2-sceneHeight/2+startY})
                     .call(() => {
@@ -426,7 +449,7 @@ export class SceneScriptComp extends Component {
             )
             .start();
 
-        this.nodeTweens.set(node, scrollTween);
+        this.nodeTweens.set(node, config.scrollTween);
     }
 
     /** 浮动运动 */

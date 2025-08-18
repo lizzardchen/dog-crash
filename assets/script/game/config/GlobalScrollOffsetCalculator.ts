@@ -6,10 +6,21 @@ import { ScenePhysicalResult } from "./MultiplierConfig";
  */
 export class GlobalScrollOffsetCalculator {
     private sceneResults: ScenePhysicalResult[];
+    private screenHeight: number = 1920; // 默认屏幕高度
+    private sceneInitialPositions: number[] = []; // 存储每个场景的初始Y位置
     
     constructor(sceneResults: ScenePhysicalResult[]) {
         this.sceneResults = sceneResults;
         console.log(`GlobalScrollOffsetCalculator初始化完成，包含${sceneResults.length}个场景`);
+    }
+    
+    /**
+     * 设置屏幕高度和场景初始位置（由SceneBackgroundSystem调用）
+     */
+    setScenePositionInfo(screenHeight: number, sceneInitialPositions: number[]): void {
+        this.screenHeight = screenHeight;
+        this.sceneInitialPositions = sceneInitialPositions;
+        console.log(`GlobalScrollOffsetCalculator: 设置屏幕高度=${screenHeight}, 场景数量=${sceneInitialPositions.length}`);
     }
     
     /**
@@ -36,7 +47,39 @@ export class GlobalScrollOffsetCalculator {
             // currentTime < startTime 的场景还未开始，不计算
         }
         
+        // 修复黑屏问题：限制最大滚动偏移，防止所有场景都移出屏幕
+        const maxOffset = this.calculateMaxScrollOffset();
+        if (maxOffset > 0 && globalOffset > maxOffset) {
+            globalOffset = maxOffset;
+            console.log(`🔒 GlobalScrollOffset限制在最大值: ${maxOffset.toFixed(2)}px`);
+        }
+        
         return globalOffset;
+    }
+    
+    /**
+     * 计算最大允许的滚动偏移量
+     * 目标：让最后一个场景的底部刚好到达屏幕顶部，避免黑屏
+     */
+    private calculateMaxScrollOffset(): number {
+        if (this.sceneResults.length === 0 || this.sceneInitialPositions.length === 0) {
+            return 0;
+        }
+        
+        const lastSceneIndex = this.sceneResults.length - 1;
+        const lastScene = this.sceneResults[lastSceneIndex];
+        const lastSceneInitialY = this.sceneInitialPositions[lastSceneIndex];
+        
+        // 修正策略：让最后场景的顶部刚好到达屏幕底部，保持场景可见
+        // 最后场景顶部位置 = initialY + sceneHeight/2
+        // 屏幕底部位置 = -screenHeight/2
+        // 要让顶部到达底部：lastSceneInitialY + lastScene.sceneHeight/2 - maxOffset = -screenHeight/2
+        // 解得：maxOffset = lastSceneInitialY + lastScene.sceneHeight/2 + screenHeight/2
+        const maxOffset = lastSceneInitialY + lastScene.sceneHeight / 2 + this.screenHeight / 2;
+        
+        console.log(`📏 计算最大滚动偏移: lastSceneY=${lastSceneInitialY}, lastSceneHeight=${lastScene.sceneHeight}, screenHeight=${this.screenHeight}, maxOffset=${maxOffset.toFixed(2)}`);
+        
+        return Math.max(maxOffset, 0); // 确保不为负数
     }
     
     /**

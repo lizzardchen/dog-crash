@@ -640,7 +640,7 @@ export class MainGameUI extends CCComp {
         const rewardAmount = Math.max(100, Math.ceil(neededAmount / 100) * 100); // 向上取整到100的倍数
         
         tips.confirm(
-            `Insufficient coins! Need ${neededAmount} more coins. Watch ad to get ${rewardAmount} coins. Continue?`,
+            `Insufficient coins!`,
             () => {
                 // 用户点击确认，播放广告
                 console.log("MainGameUI: User confirmed coins recovery ad");
