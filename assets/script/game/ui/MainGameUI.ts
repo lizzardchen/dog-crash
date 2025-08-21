@@ -24,13 +24,13 @@ import { RaceUI } from "./RaceUI";
 import { UICallbacks } from "../../../../extensions/oops-plugin-framework/assets/core/gui/layer/Defines";
 import { CrashGame } from '../entity/CrashGame';
 import { RaceResultUI } from './RaceResultUI';
-import { SDKMgr } from '../../ADSDK/SDKMgr';
 import { CoinFlyEffect } from '../effect/CoinFlyEffect';
 import { EnergyProgressBar } from './EnergyProgressBar';
 import { SimpleTutorial } from '../system/SimpleTutorial';
 import { GoldPopupUI } from './GoldPopupUI';
 import { MoneyPopupUI } from './MoneyPopupUI';
 import { EnergyBuyUI } from './EnergyBuyUI';
+import { SDKMgr } from '../common/SDKMgr';
 
 const { ccclass, property } = _decorator;
 
@@ -839,6 +839,7 @@ export class MainGameUI extends CCComp {
                 console.log("GameResultUI closed, game won!!");
                 // 先播放UI恢复动画，然后播放金币飞行动画
                 this.scheduleOnce(() => {
+                    console.log('start playGameEndUIAnimation');
                     this.playGameEndUIAnimation();
                 }, 0.1);
                 
@@ -1913,21 +1914,27 @@ export class MainGameUI extends CCComp {
      */
     private showGameResult(params: GameResultParams,onCloseGameResult: () => void): void {
         console.log("Showing game result with params:", params);
-
+        const maingameui_this = this;
         const callbacks: UICallbacks = {
             onAdded: (node: Node, params: any) => {
                 const gameResultUI = node.getComponent(GameResultUI);
                 if (gameResultUI) {
                     gameResultUI.onOpen(params, () => {
+                        console.log("game result callback inn ...1");
                         // 关闭弹窗回调
-                        oops.gui.remove(UIID.GameResult);
-                        //callback
-                        onCloseGameResult?.();
-                        // 重置游戏
-                        this.resetGame();
+                        oops.gui.remove(UIID.GameResult,false);
                     });
                 }
-            }
+            },
+            onRemoved(node, params) {
+                console.log("game result callback out ...1");
+                //callback
+                onCloseGameResult?.();
+                console.log("game result callback inn ...3");
+                // 重置游戏
+                maingameui_this.resetGame();
+                console.log("game result callback inn ...4");
+            },
         };
 
         oops.gui.open(UIID.GameResult, params, callbacks);
@@ -2822,9 +2829,9 @@ export class MainGameUI extends CCComp {
                         // 倒计时结束
                         this.onCountdownComplete(callback);
                     },0.1);
-                },1.0);
-            },1.0);
-        },1.0);
+                },0.6);
+            },0.6);
+        },0.6);
         
     }
 

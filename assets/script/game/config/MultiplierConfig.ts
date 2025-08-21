@@ -364,11 +364,11 @@ export class MultiplierConfig {
 
             case RocketSceneState.ATMOSPHERE:
                 // Atmosphere: 12 → 6，缓慢下降但保持较高值
-                return (t: number) => -40 + 40 * t / duration;
+                return (t: number) => -40 + 50 * t / duration;
 
             case RocketSceneState.SPACE:
                 // Space: 6 → 1，趋向稳定但保持正值，避免减速
-                return (t: number) => 1.1 * t / duration;
+                return (t: number) => 10-9* t / duration;
 
             default:
                 return (t: number) => 1;

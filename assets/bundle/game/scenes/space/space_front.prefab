@@ -681,7 +681,7 @@
     },
     "nodeType": "image",
     "motionType": "scroll",
-    "speedMultiplier": 5,
+    "speedMultiplier": 9,
     "affectedByGlobalSpeed": true,
     "isBackground": false
   },
@@ -692,7 +692,7 @@
     },
     "nodeType": "image",
     "motionType": "scroll",
-    "speedMultiplier": 6,
+    "speedMultiplier": 9.2,
     "affectedByGlobalSpeed": true,
     "isBackground": false
   },
@@ -703,7 +703,7 @@
     },
     "nodeType": "image",
     "motionType": "scroll",
-    "speedMultiplier": 8,
+    "speedMultiplier": 9.3,
     "affectedByGlobalSpeed": true,
     "isBackground": false
   },

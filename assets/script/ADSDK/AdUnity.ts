@@ -27,36 +27,38 @@ export class AdUnity {
     }
 
     switch (platform) {
-      // case sys.Platform.ANDROID:{
-      //     SDKData.getInstance().sdkType = SDK_TYPE.Android;
-      //     if(is_cn){
-      //         this.AD = new AndroidPangleSDK();
-      //     }else{
-      //         this.AD = new AndroidAdmobSDK();
-      //     }
-
-      //     break;
-      // }
-      // case sys.Platform.IOS:{
-      //     SDKData.getInstance().sdkType = SDK_TYPE.IOS;
-      //     if(is_cn){
-      //         this.AD = new IOSPangleSDK();
-      //     }
-      //     else{
-      //         this.AD = new IOSAdmobSDK();
-      //     }
-      //     break;
-      // }
+      case sys.Platform.ANDROID:{
+          SDKData.getInstance().sdkType = SDK_TYPE.Android;
+          // if(is_cn){
+          //     this.AD = new AndroidPangleSDK();
+          // }else
+          // {
+              this.AD = new AndroidAdmobSDK();
+          // }
+          break;
+      }
+      case sys.Platform.IOS:{
+          SDKData.getInstance().sdkType = SDK_TYPE.IOS;
+          // if(is_cn){
+          //     this.AD = new IOSPangleSDK();
+          // }
+          // else{
+              this.AD = new IOSAdmobSDK();
+          // }
+          break;
+      }
       default: {
         // 可以根据需要切换默认广告平台
+        SDKData.getInstance().sdkType = SDK_TYPE.Android
+        this.AD = new AndroidAdmobSDK();
         // SDKData.getInstance().sdkType = SDK_TYPE.Unity3D
         // this.AD = new Unity3DAdSDK()
         
         // SDKData.getInstance().sdkType = SDK_TYPE.default
         // this.AD = new DefaultAD()
 
-        SDKData.getInstance().sdkType = SDK_TYPE.AdSense
-        this.AD = new AdSenseSDK()
+        // SDKData.getInstance().sdkType = SDK_TYPE.default
+        // this.AD = new DefaultAD()
       }
     }
   }

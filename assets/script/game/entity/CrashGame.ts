@@ -43,7 +43,7 @@ export class CrashGame extends ecs.Entity {
         // 初始化音频系统
         CrashGameAudio.init();
 
-        SDKMgr.instance.init(true,true);
+        SDKMgr.instance.init(false,true);
     }
     // 服务器配置
     public static serverConfig = {

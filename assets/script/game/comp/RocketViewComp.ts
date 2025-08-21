@@ -167,7 +167,7 @@ export class RocketViewComp extends CCComp {
             }
             if( this.sceneState === RocketSceneState.SPACE ) {
                 if(this.rocket_view_parent){
-                    tween(this.rocket_view_parent).to(3.0, { scale: new Vec3(0.58,0.58,1) }, { easing: 'quadOut' }).start();
+                    tween(this.rocket_view_parent).to(3.0, { scale: new Vec3(0.55,0.55,1) }, { easing: 'quadOut' }).start();
                 }
             }
             this._backSceneState = this.sceneState;

@@ -4,18 +4,18 @@ import { SDKHelper } from "../SDKHelper";
 export class AndroidAdmobSDK extends ADInterface {
 
     isUseTestAd: boolean = false;
-    appID: string = "ca-app-pub-8376171902158678~1448800694";
-    rewaredVideoAdId: string = "ca-app-pub-8376171902158678/8705308334";
-    interstitialAdId: string = "ca-app-pub-8376171902158678/9398275613";
-    bannerAdId: string = "ca-app-pub-8376171902158678/5431110449";
+    appID: string = "ca-app-pub-9901822872000997~7797827796";
+    rewaredVideoAdId: string = "ca-app-pub-9901822872000997/7144858157";
+    interstitialAdId: string = "ca-app-pub-9901822872000997/9398275613";
+    bannerAdId: string = "ca-app-pub-9901822872000997/5431110449";
 
     public initAd() {
         /**激励视频广告id */
-        this.rewaredVideoAdId = this.isUseTestAd ? "ca-app-pub-3940256099942544/5224354917" : "ca-app-pub-8376171902158678/8705308334";
+        this.rewaredVideoAdId = this.isUseTestAd ? "ca-app-pub-3940256099942544/5224354917" : "ca-app-pub-9901822872000997/7144858157";
         /**插屏广告id */
-        this.interstitialAdId = this.isUseTestAd ? "ca-app-pub-3940256099942544/1033173712" : "ca-app-pub-8376171902158678/9398275613";
+        this.interstitialAdId = this.isUseTestAd ? "ca-app-pub-3940256099942544/1033173712" : "ca-app-pub-9901822872000997/9398275613";
         /**banner(横幅)广告id */
-        this.bannerAdId = this.isUseTestAd ? "ca-app-pub-3940256099942544/9214589741" : "ca-app-pub-8376171902158678/5431110449";
+        this.bannerAdId = this.isUseTestAd ? "ca-app-pub-3940256099942544/9214589741" : "ca-app-pub-9901822872000997/5431110449";
 
         SDKHelper.getInstance().initAd(this.rewaredVideoAdId, this.interstitialAdId, this.bannerAdId, true);
     }

@@ -54,6 +54,18 @@ export class GameResultUI extends CCComp {
     start() { }
 
     update(_deltaTime: number) {
+
+         if (this._can_close) {
+            this._can_close = false;
+            if (this._close_callback) {
+                console.log("game result close 1");
+                this.removeEvent();
+                console.log("game result close 2");
+                this._close_callback();
+                console.log("game result close 3");
+            }
+        }
+        
         // 更新倒计时
         if (this._countdown_timer > 0) {
             this._countdown_timer -= _deltaTime;
@@ -74,13 +86,7 @@ export class GameResultUI extends CCComp {
             }
         }
 
-        if (this._can_close) {
-            this._can_close = false;
-            if (this._close_callback) {
-                this.removeEvent();
-                this._close_callback();
-            }
-        }
+       
     }
 
     /**
@@ -188,6 +194,7 @@ export class GameResultUI extends CCComp {
     private onCloseButtonClick(): void {
         CrashGameAudio.playButtonClick();
         this.closeResult();
+        console.log("game result onCloseButtonClick");
     }
 
     /**
@@ -211,7 +218,7 @@ export class GameResultUI extends CCComp {
 
     removeEvent() {
         // 清理按钮事件监听
-        if (this.close_button) {
+        if (this.close_button && this.close_button.node) {
             this.close_button.node.off(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
     }

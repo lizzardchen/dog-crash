@@ -22,7 +22,6 @@ export class LocalDataComp extends ecs.Comp {
     /** 生成本局游戏的崩盘倍数（从服务器获取） */
     async generateCrashMultiplierAsync(): Promise<number> {
         try {
-            return 2000;
             // 尝试从服务器获取崩盘倍数
             if (smc.crashGame) {
                 const serverMultiplier = await smc.crashGame.fetchCrashMultiplierFromServer();

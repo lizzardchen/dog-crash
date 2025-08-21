@@ -2,7 +2,7 @@ import { ADInterface } from "../interface/ADInterface";
 import { sys } from "cc";
 
 export class Unity3DAdSDK extends ADInterface {
-    private gameId: string = "5918030"; // Android Game ID, will be overridden for iOS
+    private gameId: string = "5927937"; // Android Game ID, will be overridden for iOS
     private testMode: boolean = true;
     
     // 广告位ID
@@ -15,7 +15,7 @@ export class Unity3DAdSDK extends ADInterface {
         
         // 根据平台设置GameID和广告位ID
         if (sys.platform === sys.Platform.IOS) {
-            this.gameId = "5918031"; // iOS Game ID
+            this.gameId = "5927936"; // iOS Game ID
             this.rewardedPlacement = "Rewarded_iOS";
             this.interstitialPlacement = "Interstitial_iOS";
             this.bannerPlacement = "Banner_iOS";

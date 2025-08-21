@@ -83,6 +83,7 @@ export class CrashGameAudio {
         console.log("Playing button click sound");
         // TODO: 添加实际的音频资源后启用
         oops.audio.playEffect("game/sound/button-pressed");
+        console.log("Playing button click sound end");
     }
 
     static playCoinCollect(): void {

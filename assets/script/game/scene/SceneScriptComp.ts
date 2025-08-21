@@ -83,7 +83,7 @@ export class SceneScriptComp extends Component {
     @property({type:ThreeSliceStretch})
     bgStretch: ThreeSliceStretch = null!;
 
-    @property({ type: String, tooltip: "全局速度倍率" })
+    @property({ type: CCString, tooltip: "全局速度倍率" })
     front_or_back:String = "back";
 
     // 运行时数据 - 这些信息由外部系统设置

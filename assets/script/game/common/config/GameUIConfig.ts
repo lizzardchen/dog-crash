@@ -6,7 +6,6 @@
 
 import { LayerType, UIConfig } from "db://oops-framework/core/gui/layer/LayerManager";
 
-
 /** 界面唯一标识（方便服务器通过编号数据触发界面打开） */
 export enum UIID {
     /** 资源加载界面 */

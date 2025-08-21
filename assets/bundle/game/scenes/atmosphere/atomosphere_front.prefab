@@ -965,7 +965,7 @@
     },
     "nodeType": "image",
     "motionType": "scroll",
-    "speedMultiplier": 7,
+    "speedMultiplier": 8,
     "affectedByGlobalSpeed": true,
     "isBackground": false
   },
@@ -987,7 +987,7 @@
     },
     "nodeType": "image",
     "motionType": "scroll",
-    "speedMultiplier": 7.6,
+    "speedMultiplier": 8.6,
     "affectedByGlobalSpeed": true,
     "isBackground": false
   },
@@ -998,7 +998,7 @@
     },
     "nodeType": "image",
     "motionType": "scroll",
-    "speedMultiplier": 7.8,
+    "speedMultiplier": 8.8,
     "affectedByGlobalSpeed": true,
     "isBackground": false
   },
@@ -1009,7 +1009,7 @@
     },
     "nodeType": "image",
     "motionType": "scroll",
-    "speedMultiplier": 6,
+    "speedMultiplier": 8,
     "affectedByGlobalSpeed": true,
     "isBackground": false
   },
