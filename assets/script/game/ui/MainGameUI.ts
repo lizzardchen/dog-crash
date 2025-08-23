@@ -85,6 +85,9 @@ export class MainGameUI extends CCComp {
     @property(Button)
     historyButton: Button = null!;
 
+    @property(Label)
+    historyMuiltiplierLabel: Label = null!;
+
     @property(Button)
     betButton: Button = null!;
 
@@ -377,8 +380,8 @@ export class MainGameUI extends CCComp {
         if (this.holdButton) {
             // 使用触摸事件而不是点击事件，实现按住交互
             this.holdButton.node.on(Node.EventType.TOUCH_START, this.onHoldButtonTouchStart, this);
-            this.holdButton.node.on(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
-            this.holdButton.node.on(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
+            // this.holdButton.node.on(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
+            // this.holdButton.node.on(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
         }
 
         // 余额标签点击事件
@@ -432,6 +435,8 @@ export class MainGameUI extends CCComp {
         oops.message.on("GAME_STARTED", this.onGameStarted, this);
         oops.message.on("ENERGY_CHANGED", this.onEnergyChanged, this);
         oops.message.on("SCENE_CHANGED", this.onSceneChanged, this);
+        oops.message.on("AUTO_CANCEL_AUTOGAME", this.onAutoCancelAutoGame, this);
+        oops.message.on("SERVER_CANCEL_AUTOGAME",this.onServerCancelAutoGame,this);
         
         // 监听比赛数据更新事件
         oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
@@ -458,17 +463,20 @@ export class MainGameUI extends CCComp {
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
         const energycomp = smc.crashGame.get(EnergyComp);
-        if(energycomp && energycomp.currentEnergy <= 0) {
+        const betting = smc.crashGame.get(BettingComp);
+        if(energycomp && energycomp.currentEnergy <= 0 && !betting.autoCashOutEnabled) {
             oops.gui.toast("Energy not enough!");
             return;
         }
-        const betting = smc.crashGame.get(BettingComp);
         const userData = smc.crashGame.get(UserDataComp);
         if(userData.balance < betting.currentBetItem.value) {
             oops.gui.toast("Insufficient balance!");
             return;
         }
         
+        this.holdButton.node.on(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
+        this.holdButton.node.on(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
+
         if( betting.isHolding ) return;
 
         CrashGameAudio.playButtonClick();
@@ -553,16 +561,11 @@ export class MainGameUI extends CCComp {
     }
 
     private onHoldButtonTouchEnd(_event: EventTouch | null): void {
-        const energycomp = smc.crashGame.get(EnergyComp);
-        if(energycomp && energycomp.currentEnergy <= 0) {
-            return;
-        }
-        if (!smc.crashGame) return;
+        this.holdButton.node.off(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
+        this.holdButton.node.off(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
         const betting = smc.crashGame.get(BettingComp);
+        if (!smc.crashGame) return;
         const userData = smc.crashGame.get(UserDataComp);
-        if(userData.balance < betting.currentBetItem.value) {
-            return;
-        }
         if(this.isButtonHolding) {
             this.needHoldUp = true; // 标记为需要松开状态
             return; // 如果已经在按住状态，则不处理松开事件
@@ -570,9 +573,7 @@ export class MainGameUI extends CCComp {
         this.hold_unpressed_node.active = true;
         this.hold_pressed_node.active = false;
         const gameState = smc.crashGame.get(GameStateComp);
-        
         const multiplier = smc.crashGame.get(MultiplierComp);
-
         if ((gameState.state === GameState.FLYING ||gameState.state === GameState.WAITING)) {
             // 用户手动提现 - 如果当前是自动模式，切换到手动模式
             if (betting.autoCashOutEnabled) {
@@ -718,9 +719,12 @@ export class MainGameUI extends CCComp {
         console.log(`Cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x, won: ${winAmount.toFixed(0)} (free: ${betting.currentBetItem.isFree})`);
 
         // 游戏成功：退还消耗的能源
-        if (this.refundEnergy(1)) {
-            console.log("Game won - energy refunded");
+        if(profit > 0){
+            if (this.refundEnergy(1)) {
+                console.log("Game won - energy refunded");
+            }
         }
+        
 
         // 延迟显示成功结果弹窗
         this.scheduleOnce(() => {
@@ -752,6 +756,9 @@ export class MainGameUI extends CCComp {
     private onGameCrashed(event:string,_data: any): void {
         console.log("MainGameUI: onGameCrashed event received", _data);
         if (!smc.crashGame) return;
+        
+        this.holdButton.node.off(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
+        this.holdButton.node.off(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
 
         const betting = smc.crashGame.get(BettingComp);
         const gameHistory = smc.crashGame.get(GameHistoryComp);
@@ -796,7 +803,7 @@ export class MainGameUI extends CCComp {
         }, 0.2);
     }
 
-    private onGameCashedOut(data: any): void {
+    private onGameCashedOut(event:string,data: any): void {
         console.log("MainGameUI: onGameCashedOut event received", data);
 
         if (!smc.crashGame) return;
@@ -817,9 +824,12 @@ export class MainGameUI extends CCComp {
         userData.money += profit/10;
 
         // 游戏成功：退还消耗的能源
-        if (this.refundEnergy(1)) {
-            console.log("Game won - energy refunded");
+        if(profit > 0){
+            if (this.refundEnergy(1)) {
+                console.log("Game won - energy refunded");
+            }
         }
+        
 
         // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
         if (gameHistory && localData) {
@@ -844,18 +854,37 @@ export class MainGameUI extends CCComp {
                 }, 0.1);
                 
                 // 并行播放金币飞行动画（目标位置已经保存，不会受UI动画影响）
-                if (profit > 0) {
-                    this.scheduleOnce(() => {
-                        this.playCoinFlyAnimation(profit, () => {
-                            console.log("Coin fly animation completed!");
-                        });
-                        this.playMoneyFlyAnimation(profit/10, () => {
-                            console.log("money fly animation completed!");
-                        });
-                    }, 0.2); // 稍微延迟播放金币动画
-                }
+                // if (profit > 0) {
+                //     this.scheduleOnce(() => {
+                //         this.playCoinFlyAnimation(profit, () => {
+                //             console.log("Coin fly animation completed!");
+                //         });
+                //         this.playMoneyFlyAnimation(profit/10, () => {
+                //             console.log("money fly animation completed!");
+                //         });
+                //     }, 0.2); // 稍微延迟播放金币动画
+                // }
             });
         }, 0.2);
+    }
+
+    private onAutoCancelAutoGame(event:string,data:any):void{
+        const energy = smc.crashGame.get(EnergyComp);
+        if(energy && energy.currentEnergy <= 0){
+            oops.gui.toast("Not enough energy!");
+        }
+        const userdata = smc.crashGame.get(UserDataComp);
+        const betting = smc.crashGame.get(BettingComp);
+        if( userdata && userdata.balance <= betting.currentBetItem.value ){
+            oops.gui.toast("Not enough coins!");
+        }
+        this.playGameEndUIAnimation();
+        this.updateHoldButtonState();
+    }
+
+    private onServerCancelAutoGame(event:string,data:any):void{
+        this.playGameEndUIAnimation();
+        this.updateHoldButtonState();
     }
 
     private onGameStarted(data: any): void {
@@ -1539,10 +1568,10 @@ export class MainGameUI extends CCComp {
 
         // 安全更新余额显示
         if (this.balanceLabel) {
-            this.balanceLabel.string = `${userData.balance.toFixed(0)}`;
+            this.balanceLabel.string = CrashGame.formatPrizeNumber(userData.balance);
         }
         if(this.moneyLabel){
-            this.moneyLabel.string = `${userData.money.toFixed(0)}`;
+            this.moneyLabel.string = CrashGame.formatPrizeNumber(userData.money);
         }
 
         // 安全更新倍数显示
@@ -1586,7 +1615,7 @@ export class MainGameUI extends CCComp {
         }
 
         const gameHistory = smc.crashGame.get(GameHistoryComp);
-        const buttonLabel = this.historyButton.getComponentInChildren(Label);
+        const buttonLabel = this.historyMuiltiplierLabel;
 
         // console.log(`updateHistoryButton: gameHistory exists: ${!!gameHistory}, buttonLabel exists: ${!!buttonLabel}`);
 
@@ -1704,6 +1733,8 @@ export class MainGameUI extends CCComp {
         oops.message.off("GAME_CRASHED", this.onGameCrashed, this);
         oops.message.off("GAME_CASHED_OUT", this.onGameCashedOut, this);
         oops.message.off("GAME_STARTED", this.onGameStarted, this);
+        oops.message.off("AUTO_CANCEL_AUTOGAME", this.onAutoCancelAutoGame, this);
+        oops.message.off("SERVER_CANCEL_AUTOGAME",this.onServerCancelAutoGame,this);
         oops.message.off("ENERGY_CHANGED", this.onEnergyChanged, this);
         oops.message.off("SCENE_CHANGED", this.onSceneChanged, this);
         oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
@@ -2704,10 +2735,15 @@ export class MainGameUI extends CCComp {
     private async showRaceResult(): Promise<void> {
         const raceComp = smc.crashGame.get(RaceComp);
         if (raceComp) {
-            const raceid = await raceComp.getUserPendingRaceId();
-            if( raceid && raceid != '' ){
-                await raceComp.showRaceResult(raceid || "");
+            try {
+                const raceid = await raceComp.getUserPendingRaceId();
+                if( raceid && raceid != '' ){
+                    await raceComp.showRaceResult(raceid || "");
+                }
+            } catch (error) {
+                console.log(error);
             }
+            
         }
     }
 

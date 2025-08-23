@@ -47,7 +47,8 @@ export class CrashGame extends ecs.Entity {
     }
     // 服务器配置
     public static serverConfig = {
-        baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
+        baseURL: "https://dog-crash-api.bulletnews.vip/api/",
+        // baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
         // baseURL: "http://localhost:3000/api/",
         timeout: 10000,
         retryAttempts: 3
@@ -375,7 +376,21 @@ export class CrashGame extends ecs.Entity {
             }
         });
     }
-
+    /**
+     * 格式化奖励数字显示
+     */
+    public static formatPrizeNumber(value: number): string {
+        const absValue = Math.abs(value);
+        if (absValue >= 1000000) {
+            const formatted = `${(absValue / 1000000).toFixed(2)}M`;
+            return value < 0 ? `-${formatted}` : formatted;
+        } else if (absValue >= 1000) {
+            const formatted = `${(absValue / 1000).toFixed(2)}K`;
+            return value < 0 ? `-${formatted}` : formatted;
+        } else {
+            return value.toFixed(2);
+        }
+    }
 }
 
 // 游戏结果数据接口

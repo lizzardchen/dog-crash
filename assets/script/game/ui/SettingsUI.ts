@@ -1,4 +1,4 @@
-import { _decorator, Label, Button, Toggle, Sprite } from 'cc';
+import { _decorator, Label, Button, Toggle, Sprite, UITransform } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
@@ -111,7 +111,18 @@ export class SettingsUI extends CCComp {
         
         // 更新用户名
         if (this.usernameLabel) {
-            this.usernameLabel.string = this.userDataComp.username || this.userDataComp.getUserId().substring(0, 12);
+            const username = this.userDataComp.username || this.userDataComp.getUserId().substring(0, 12);
+            // 手动处理文本溢出，添加省略号
+            this.usernameLabel.overflow = Label.Overflow.CLAMP;
+            this.usernameLabel.enableWrapText = false;
+            
+            // 设置文本并检查是否需要截断
+            this.usernameLabel.string = username;
+            
+            // 使用scheduleOnce在下一帧检查文本是否被截断，如果是则手动添加省略号
+            this.scheduleOnce(() => {
+                this.checkAndAddEllipsis(username);
+            }, 0);
         }
         
         if (this.musicToggle) {
@@ -128,6 +139,22 @@ export class SettingsUI extends CCComp {
     private updateAvatarDisplay(): void {
         // 头像显示已简化，不需要切换功能
         console.log("Avatar display updated (static display only)");
+    }
+
+    /**
+     * 检查文本是否被截断，如果是则手动添加省略号
+     */
+    private checkAndAddEllipsis(originalText: string): void {
+        if (!this.usernameLabel) return;
+        
+        // 简单的长度限制方法：如果文本超过指定长度，则截断并添加省略号
+        const maxDisplayLength = 10; // 最大显示字符数，可根据UI设计调整
+        
+        if (originalText.length > maxDisplayLength) {
+            this.usernameLabel.string = originalText.substring(0, maxDisplayLength) + '...';
+        } else {
+            this.usernameLabel.string = originalText;
+        }
     }
 
     /**

@@ -1,9 +1,12 @@
-import { _decorator, Node, Label, Button, UIOpacity, EditBox, Color } from 'cc';
+import { _decorator, Node, Label, Button, UIOpacity, EditBox, Color, Sprite } from 'cc';
 import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/module/common/CCComp";
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
+import { EnergyComp } from '../comp/EnergyComp';
+import { smc } from '../common/SingletonModuleComp';
+import { tips } from '../common/tips/TipsManager';
 
 const { ccclass, property } = _decorator;
 
@@ -62,6 +65,8 @@ export class AutoCashOutUI extends CCComp {
 
     private _close_callback: Function | null = null;
     private _start_callback: Function | null = null;
+
+    private _params:any = null;
     
     // 当前选中的总下注按钮
     private selectedTotalBetsButton: Button | null = null;
@@ -84,6 +89,8 @@ export class AutoCashOutUI extends CCComp {
     onOpen(params: AutoCashOutParams, onStart: (multiplier: number, totalBets: number) => void, onClose: Function): void {
         this._start_callback = onStart;
         this._close_callback = onClose;
+
+        this._params = params;
 
         console.log("AutoCashOutUI opened with params:", params);
 
@@ -121,16 +128,16 @@ export class AutoCashOutUI extends CCComp {
 
         // 预设倍数按钮
         if (this.multiplier_1_25_button) {
-            this.multiplier_1_25_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(1.25), this);
+            this.multiplier_1_25_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(this._params.multiplier*0.5), this);
         }
         if (this.multiplier_1_5_button) {
-            this.multiplier_1_5_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(1.5), this);
+            this.multiplier_1_5_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(this._params.multiplier-0.01), this);
         }
         if (this.multiplier_2_button) {
-            this.multiplier_2_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(2.0), this);
+            this.multiplier_2_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(this._params.multiplier+0.01), this);
         }
         if (this.multiplier_5_button) {
-            this.multiplier_5_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(5.0), this);
+            this.multiplier_5_button.node.on(Button.EventType.CLICK, () => this.setMultiplier(this._params.multiplier*2), this);
         }
 
         // 预设总下注按钮
@@ -169,9 +176,29 @@ export class AutoCashOutUI extends CCComp {
      */
     private setMultiplier(multiplier: number): void {
         CrashGameAudio.playButtonClick();
-
+        if( multiplier < 1.01 ){
+            this._params.multiplier = 1.00; 
+            if (this.multiplier_input) {
+                this.multiplier_input.string = "DISABLE";
+            }
+            this.start_button.interactable = false;
+            const sprite = this.start_button.getComponent(Sprite);
+            if(sprite){
+                sprite.grayscale = true;
+            }
+            return;
+        }
+        this._params.multiplier = multiplier;
+        if( multiplier >= 1000 ){
+            this._params.multiplier = 1000;
+        }
         if (this.multiplier_input) {
-            this.multiplier_input.string = multiplier.toFixed(2);
+            this.multiplier_input.string = this._params.multiplier.toFixed(2);
+        }
+        this.start_button.interactable = true;
+        const sprite = this.start_button.getComponent(Sprite);
+        if(sprite){
+            sprite.grayscale = false;
         }
 
         console.log(`Set multiplier to: ${multiplier}`);
@@ -200,10 +227,9 @@ export class AutoCashOutUI extends CCComp {
         CrashGameAudio.playButtonClick();
 
         // 获取输入值
-        const multiplierStr = this.multiplier_input ? this.multiplier_input.string : "2.00";
         const totalBetsStr = this.total_bets_input ? this.total_bets_input.string : "∞";
 
-        const multiplier = parseFloat(multiplierStr) || 2.0;
+        const multiplier = (this._params.multiplier) as number;
         const totalBets = totalBetsStr === "∞" ? -1 : (parseInt(totalBetsStr) || -1);
 
         // 验证输入
@@ -213,8 +239,13 @@ export class AutoCashOutUI extends CCComp {
             return;
         }
 
+        const energycomp = smc.crashGame.get(EnergyComp);
+        if(energycomp.currentEnergy <= 0){
+            oops.gui.toast("Not enough energy!")
+            return;
+        }
+
         console.log(`AutoCashOutUI: Starting auto cashout with multiplier=${multiplier}, totalBets=${totalBets}`);
-        console.log(`AutoCashOutUI: multiplierStr="${multiplierStr}", totalBetsStr="${totalBetsStr}"`);
 
         // 调用开始回调
         if (this._start_callback) {

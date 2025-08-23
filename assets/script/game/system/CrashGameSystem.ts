@@ -95,7 +95,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             const localData = entity.get(LocalDataComp);
             
             console.log(`CrashGameSystem: Starting auto bet with amount: ${betAmount}, free: ${isFreeMode}`);
-            
+            betting.isHolding = true;
             // 验证下注金额和能源
             if (this.validateBetAmount(betAmount, isFreeMode) && this.validateAndConsumeEnergy(entity)) {
                 // 等待服务器生成崩盘倍率，然后开始游戏
@@ -103,7 +103,6 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                     localData.currentCrashMultiplier = remote_multiplier;
                     
                     betting.betAmount = betAmount;
-                    betting.isHolding = true;
                     gameState.state = GameState.FLYING;
                     gameState.startTime = Date.now();
                     multiplier.startTime = Date.now();
@@ -111,14 +110,18 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                     console.log(`CrashGameSystem: Auto bet started: ${betAmount} (free: ${isFreeMode}), target crash: ${remote_multiplier.toFixed(2)}x`);
                     oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
                 }).catch((error) => {
+                    betting.isHolding = false;
                     console.error("CrashGameSystem: Failed to generate crash multiplier for auto bet:", error);
                     // 如果服务器请求失败，禁用自动下注
                     betting.setAutoCashOut(false);
+                    oops.message.dispatchEvent("SERVER_CANCEL_AUTOGAME");
                 });
             } else {
+                betting.isHolding = false;
                 console.log(`CrashGameSystem: Auto bet validation failed (insufficient balance or energy)`);
                 // 如果验证失败，禁用自动下注
                 betting.setAutoCashOut(false);
+                oops.message.dispatchEvent("AUTO_CANCEL_AUTOGAME");
             }
         }
     }
@@ -131,17 +134,14 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         
         // 检查自动提现条件
         if (betting.isHolding && betting.shouldAutoCashOut(multiplier.currentMultiplier)) {
-            // 自动提现
-            betting.isHolding = false;
             gameState.state = GameState.CASHED_OUT;
             multiplier.cashOutMultiplier = multiplier.currentMultiplier;
-            
             console.log(`Auto cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x`);
-            
             // 游戏成功：退还能源
             this.refundEnergy(entity);
-            
             oops.message.dispatchEvent("GAME_CASHED_OUT", { cashOutMultiplier: multiplier.cashOutMultiplier });
+            // 自动提现
+            betting.isHolding = false;
         }
     }
 

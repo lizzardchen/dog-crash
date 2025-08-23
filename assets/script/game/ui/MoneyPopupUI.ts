@@ -4,6 +4,7 @@ import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ec
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
 import { UIID } from "../common/config/GameUIConfig";
+import { CrashGame } from '../entity/CrashGame';
 
 const { ccclass, property } = _decorator;
 
@@ -49,7 +50,7 @@ export class MoneyPopupUI extends CCComp {
      */
     private updateBalanceDisplay(): void {
         if (this.balance_label) {
-            this.balance_label.string = this.currentBalance.toString();
+            this.balance_label.string = CrashGame.formatPrizeNumber(this.currentBalance);
         }
     }
 

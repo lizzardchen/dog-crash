@@ -15,7 +15,7 @@ export class AdUnity {
   public static AD: ADInterface
   public static init() {
     //根据ADManager.instance.sdkType 利用工程模式生成adInterface
-    let platform = sys.platform
+    let platform = sys.os;
     let type: string
     let className: string
     const languageCode: string = sys.languageCode
@@ -27,7 +27,7 @@ export class AdUnity {
     }
 
     switch (platform) {
-      case sys.Platform.ANDROID:{
+      case sys.OS.ANDROID:{
           SDKData.getInstance().sdkType = SDK_TYPE.Android;
           // if(is_cn){
           //     this.AD = new AndroidPangleSDK();
@@ -35,9 +35,10 @@ export class AdUnity {
           // {
               this.AD = new AndroidAdmobSDK();
           // }
+          console.log(".............android platform..........");
           break;
       }
-      case sys.Platform.IOS:{
+      case sys.OS.IOS:{
           SDKData.getInstance().sdkType = SDK_TYPE.IOS;
           // if(is_cn){
           //     this.AD = new IOSPangleSDK();
@@ -49,16 +50,21 @@ export class AdUnity {
       }
       default: {
         // 可以根据需要切换默认广告平台
-        SDKData.getInstance().sdkType = SDK_TYPE.Android
-        this.AD = new AndroidAdmobSDK();
+        // SDKData.getInstance().sdkType = SDK_TYPE.Android
+        // this.AD = new AndroidAdmobSDK();
+
+        // SDKData.getInstance().sdkType = SDK_TYPE.IOS;
+        // this.AD = new IOSAdmobSDK();
+
         // SDKData.getInstance().sdkType = SDK_TYPE.Unity3D
         // this.AD = new Unity3DAdSDK()
         
         // SDKData.getInstance().sdkType = SDK_TYPE.default
         // this.AD = new DefaultAD()
 
-        // SDKData.getInstance().sdkType = SDK_TYPE.default
-        // this.AD = new DefaultAD()
+        SDKData.getInstance().sdkType = SDK_TYPE.default
+        this.AD = new DefaultAD()
+        break;
       }
     }
   }

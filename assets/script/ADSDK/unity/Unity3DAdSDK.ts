@@ -1,6 +1,16 @@
 import { ADInterface } from "../interface/ADInterface";
 import { sys } from "cc";
 
+// 扩展jsb类型定义以支持reflection
+declare global {
+    namespace jsb {
+        namespace reflection {
+            function callStaticMethod(className: string, methodName: string, signature: string, ...args: any[]): any;
+            function callStaticMethod(className: string, methodName: string, ...args: any[]): any;
+        }
+    }
+}
+
 export class Unity3DAdSDK extends ADInterface {
     private gameId: string = "5927937"; // Android Game ID, will be overridden for iOS
     private testMode: boolean = true;
@@ -13,8 +23,24 @@ export class Unity3DAdSDK extends ADInterface {
     public initAd(): void {
         console.log("Unity3DAdSDK: Initializing Unity Ads");
         
+        // 更可靠的平台检测方法
+        let isIOS = false;
+        
+        // 方法1: 使用编译时常量（推荐）
+        if (typeof cc !== 'undefined') {
+            // @ts-ignore - 编译时常量可能不在类型定义中
+            isIOS = cc.IOS === true;
+        }
+        
+        // 方法2: 如果编译时常量不可用，使用字符串比较和OS检测
+         if (!isIOS) {
+             isIOS = sys.platform.toString() === 'IOS' || sys.os === sys.OS.IOS;
+         }
+        
+        console.log('Unity3DAdSDK - iOS platform detected:', isIOS);
+        
         // 根据平台设置GameID和广告位ID
-        if (sys.platform === sys.Platform.IOS) {
+        if (isIOS) {
             this.gameId = "5927936"; // iOS Game ID
             this.rewardedPlacement = "Rewarded_iOS";
             this.interstitialPlacement = "Interstitial_iOS";
@@ -41,12 +67,33 @@ export class Unity3DAdSDK extends ADInterface {
 
     private initNative(): void {
         try {
-            if (sys.platform === sys.Platform.ANDROID) {
-                jsb.reflection.callStaticMethod("com/unity3d/ads/UnityAds", "initialize", 
-                    "(Ljava/lang/String;Z)V", this.gameId, this.testMode);
-            } else if (sys.platform === sys.Platform.IOS) {
-                jsb.reflection.callStaticMethod("UnityAds", "initialize:testMode:", 
-                    this.gameId, this.testMode);
+            // 检查jsb和reflection是否可用
+            if (typeof jsb !== 'undefined' && jsb.reflection) {
+                // 使用改进的平台检测
+                let isAndroid = false;
+                let isIOS = false;
+                
+                if (typeof cc !== 'undefined') {
+                    // @ts-ignore
+                    isAndroid = cc.ANDROID === true;
+                    // @ts-ignore
+                    isIOS = cc.IOS === true;
+                }
+                
+                if (!isAndroid && !isIOS) {
+                    isAndroid = sys.platform.toString() === 'ANDROID' || sys.os === sys.OS.ANDROID;
+                    isIOS = sys.platform.toString() === 'IOS' || sys.os === sys.OS.IOS;
+                }
+                
+                if (isAndroid) {
+                    jsb.reflection.callStaticMethod("com/unity3d/ads/UnityAds", "initialize", 
+                        "(Ljava/lang/String;Z)V", this.gameId, this.testMode);
+                } else if (isIOS) {
+                    jsb.reflection.callStaticMethod("UnityAds", "initialize:testMode:", 
+                        this.gameId, this.testMode);
+                }
+            } else {
+                console.log("Unity3DAdSDK: jsb.reflection not available, using mock mode");
             }
         } catch (error) {
             console.error("Unity3DAdSDK native init error:", error);
@@ -121,9 +168,23 @@ export class Unity3DAdSDK extends ADInterface {
                 (window as any).UnityAds.show(this.interstitialPlacement);
             } else if (typeof jsb !== 'undefined') {
                 // 原生调用
-                if (sys.platform === sys.Platform.ANDROID) {
-                    jsb.reflection.callStaticMethod("com/unity3d/ads/UnityAds", "show", 
-                        "(Ljava/lang/String;)V", this.interstitialPlacement);
+                if (typeof jsb !== 'undefined' && jsb.reflection) {
+                    // 使用改进的平台检测
+                    let isAndroid = false;
+                    
+                    if (typeof cc !== 'undefined') {
+                        // @ts-ignore
+                        isAndroid = cc.ANDROID === true;
+                    }
+                    
+                    if (!isAndroid) {
+                        isAndroid = sys.platform.toString() === 'ANDROID' || sys.os === sys.OS.ANDROID;
+                    }
+                    
+                    if (isAndroid) {
+                        jsb.reflection.callStaticMethod("com/unity3d/ads/UnityAds", "show", 
+                            "(Ljava/lang/String;)V", this.interstitialPlacement);
+                    }
                 }
             }
         } catch (error) {
