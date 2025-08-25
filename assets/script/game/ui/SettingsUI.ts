@@ -111,7 +111,7 @@ export class SettingsUI extends CCComp {
         
         // 更新用户名
         if (this.usernameLabel) {
-            const username = this.userDataComp.username || this.userDataComp.getUserId().substring(0, 12);
+            const username = this.userDataComp.getUserId();
             // 手动处理文本溢出，添加省略号
             this.usernameLabel.overflow = Label.Overflow.CLAMP;
             this.usernameLabel.enableWrapText = false;
@@ -127,6 +127,9 @@ export class SettingsUI extends CCComp {
         
         if (this.musicToggle) {
             this.musicToggle.isChecked = settings.musicEnabled;
+        }
+        if(this.soundToggle){
+           this.soundToggle.isChecked = settings.soundEnabled;
         }
         
         // 更新头像显示

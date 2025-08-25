@@ -95,6 +95,10 @@ export class CrashGameAudio {
     /** 设置音乐开关 */
     static setMusicEnabled(enabled: boolean): void {
         oops.audio.switchMusic = enabled;
+        if(enabled){
+            // 注意：背景音乐需要在资源准备好后再播放
+            oops.audio.playMusicLoop("game/sound/background_music");
+        }
     }
 
     /** 设置音效开关 */

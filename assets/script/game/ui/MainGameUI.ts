@@ -1595,6 +1595,13 @@ export class MainGameUI extends CCComp {
 
         // 更新能源显示
         this.updateEnergyDisplay();
+
+        const racecomp = smc.crashGame.get(RaceComp);
+        if(racecomp && racecomp.currentRace){
+            this.localRaceRemainingTime = racecomp.currentRace.remainingTime;
+            this.updateRaceCountdownDisplay(racecomp.currentRace.remainingTime);
+        }
+        
     }
 
     private updatePotentialWin(): void {

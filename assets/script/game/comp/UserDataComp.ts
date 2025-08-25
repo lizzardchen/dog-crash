@@ -56,7 +56,7 @@ export class UserDataComp extends ecs.Comp {
     getUserId(): string {
         if (!this.userId) {
             this.userId = UserIdManager.getUserId();
-            this.username = `Player_${this.userId.substring(0, 8)}`;
+            this.username = this.userId;//`Player_${this.userId.substring(0, 8)}`;
         }
         return this.userId;
     }
@@ -135,7 +135,7 @@ export class UserDataComp extends ecs.Comp {
         const userData = UserIdManager.loadUserData();
         if (userData && Object.keys(userData).length > 0) {
             this.userId = userData.userId || this.getUserId();
-            this.username = userData.username || `Player_${this.userId.substring(0, 8)}`;
+            this.username = this.userId;//userData.username || `Player_${this.userId.substring(0, 8)}`;
             this.balance = userData.balance || 1000;
             this.totalFlights = userData.totalFlights || 0;
             this.flightsWon = userData.flightsWon || 0;
@@ -173,9 +173,13 @@ export class UserIdManager {
 
     // 生成唯一用户ID
     private static generateUserId(): string {
-        const timestamp = Date.now().toString(36);
-        const randomStr = Math.random().toString(36).substring(2, 15);
-        return `${timestamp}_${randomStr}`;
+        // 结合时间戳和随机数生成8位数的唯一数字
+        const timestamp = Date.now();
+        const random = Math.floor(Math.random() * 1000);
+        // 取时间戳的后5位 + 3位随机数，确保8位数字且具有唯一性
+        const timestampPart = (timestamp % 100000).toString().padStart(5, '0');
+        const randomPart = random.toString().padStart(3, '0');
+        return timestampPart + randomPart;
     }
 
     // 清除用户ID（用于测试或重置）

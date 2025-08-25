@@ -199,7 +199,7 @@ export class UserProfileUI extends CCComp {
         
         // 用户名
         if (this.usernameValueLabel) {
-            this.usernameValueLabel.string = this.userDataComp.username;
+            this.usernameValueLabel.string = this.userDataComp.userId;
         }
         
         // 加入时间

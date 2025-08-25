@@ -28,12 +28,19 @@ export class AdUnity {
 
     switch (platform) {
       case sys.OS.ANDROID:{
-          SDKData.getInstance().sdkType = SDK_TYPE.Android;
+          
           // if(is_cn){
           //     this.AD = new AndroidPangleSDK();
           // }else
           // {
-              this.AD = new AndroidAdmobSDK();
+          if( sys.platform === sys.Platform.MOBILE_BROWSER || sys.platform === sys.Platform.DESKTOP_BROWSER ){
+              SDKData.getInstance().sdkType = SDK_TYPE.default
+              AdUnity.AD = new DefaultAD();
+          }
+          else{
+            SDKData.getInstance().sdkType = SDK_TYPE.Android;
+            this.AD = new AndroidAdmobSDK();
+          }
           // }
           console.log(".............android platform..........");
           break;
@@ -44,7 +51,14 @@ export class AdUnity {
           //     this.AD = new IOSPangleSDK();
           // }
           // else{
-              this.AD = new IOSAdmobSDK();
+          if( sys.platform === sys.Platform.MOBILE_BROWSER || sys.platform === sys.Platform.DESKTOP_BROWSER ){
+              SDKData.getInstance().sdkType = SDK_TYPE.default
+              AdUnity.AD = new DefaultAD();
+          }else{
+            SDKData.getInstance().sdkType = SDK_TYPE.IOS
+            this.AD = new IOSAdmobSDK();  
+          }
+              
           // }
           break;
       }
