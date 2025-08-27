@@ -941,14 +941,14 @@ export class MainGameUI extends CCComp {
     /**
      * 自动下注结束事件处理
      */
-    private onAutoCashOutEnded(data: any): void {
+    private onAutoCashOutEnded(event:string,data: any): void {
         console.log("MainGameUI: Auto cashout ended event received", data);
         
         // 显示通知告知用户自动下注已结束
         if (data && data.reason) {
             let message = "Auto cashout ended";
             if (data.reason === "limit_reached") {
-                message = `Auto cashout completed: ${data.totalBets} bets finished`;
+                message = 'Auto cashout completed';
             }
             oops.gui.toast(message);
         }
@@ -959,16 +959,16 @@ export class MainGameUI extends CCComp {
         // 更新HOLD按钮状态（能量不足时自动下注结束，需要恢复按钮状态）
         this.updateHoldButtonState();
         
-        // 播放UI恢复动画（如果游戏当前处于非游戏状态）
-        if (smc.crashGame) {
-            const gameState = smc.crashGame.get(GameStateComp);
-            if (gameState.state === GameState.WAITING) {
-                // 如果当前是等待状态，说明游戏已经结束，播放UI恢复动画
-                this.scheduleOnce(() => {
-                    this.playGameEndUIAnimation();
-                }, 0.1);
-            }
-        }
+        // // 播放UI恢复动画（如果游戏当前处于非游戏状态）
+        // if (smc.crashGame) {
+        //     const gameState = smc.crashGame.get(GameStateComp);
+        //     if (gameState.state === GameState.WAITING || gameState.state === GameState.FLYING) {
+        //         // 如果当前是等待状态，说明游戏已经结束，播放UI恢复动画
+        //         this.scheduleOnce(() => {
+        //             this.playGameEndUIAnimation();
+        //         }, 0.1);
+        //     }
+        // }
     }
 
     /**
@@ -983,23 +983,20 @@ export class MainGameUI extends CCComp {
         }
     }
 
-    private resetGame(): void {
+    private resetGame(isauto:boolean = false): void {
         if (!smc.crashGame) return;
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
         const sceneComp = smc.crashGame.get(SceneBackgroundComp);
-
         // 重置游戏状态
         gameState.reset();
         betting.reset();
         multiplier.reset();
         sceneComp.reset();
-
         // 重置场景到地面场景
         this.resetToGroundScene();
-
         this.updateHoldButtonState();
         this.updateUI();
 
@@ -1970,7 +1967,12 @@ export class MainGameUI extends CCComp {
                 onCloseGameResult?.();
                 console.log("game result callback inn ...3");
                 // 重置游戏
+                
                 maingameui_this.resetGame();
+                const betting = smc.crashGame.get(BettingComp);
+                if (betting && betting.autoCashOutEnabled) {
+                    betting.goNextRound = true;
+                }
                 console.log("game result callback inn ...4");
             },
         };

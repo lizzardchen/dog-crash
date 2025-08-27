@@ -64,6 +64,7 @@ export class GameResultUI extends CCComp {
                 this._close_callback();
                 console.log("game result close 3");
             }
+            return;
         }
         
         // 更新倒计时

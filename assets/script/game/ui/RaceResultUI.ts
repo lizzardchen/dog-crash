@@ -59,8 +59,10 @@ export class RaceResultUI extends CCComp {
     
     @property(Label)
     third_score_label: Label = null!;
-
     
+    @property(Label)
+    no_participation_label: Label = null!;
+
     // 底部消息区域
     @property(Node) 
     no_reward_node: Node = null!;
@@ -182,6 +184,12 @@ export class RaceResultUI extends CCComp {
                 labelSet.node.active = false;
             }
         });
+
+        if( topThree.length === 0 ){
+            this.no_participation_label.node.active = true;
+        }else{
+            this.no_participation_label.node.active = false;
+        }
     }
 
     /**

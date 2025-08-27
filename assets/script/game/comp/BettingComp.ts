@@ -49,6 +49,14 @@ export class BettingComp extends ecs.Comp {
     autoCashOutMultiplier: number = 2.0;
     autoCashOutTotalBets: number = -1; // -1表示无限
     autoCashOutCurrentBets: number = 0; // 当前已进行的下注次数
+    private _autoCashOut_GoNextROUND:boolean = false;
+
+    public get goNextRound(): boolean {
+        return this._autoCashOut_GoNextROUND;
+    }
+    public set goNextRound(value: boolean) {
+        this._autoCashOut_GoNextROUND = value;
+    }
 
     reset() {
         this.betAmount = 0;

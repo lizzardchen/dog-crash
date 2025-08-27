@@ -6,8 +6,8 @@ export class UserDataComp extends ecs.Comp {
     userId: string = "";
     username: string = "";
     joinDate: Date = new Date();
-    balance: number = 1000;
-    money:number = 100;
+    private _balance: number = 1000;
+    private _money:number = 100;
     totalFlights: number = 0;
     flightsWon: number = 0;
     highestMultiplier: number = 1.0;
@@ -26,6 +26,24 @@ export class UserDataComp extends ecs.Comp {
             totalBets: -1
         }
     };
+
+    public get balance(): number {
+    return this._balance;
+}
+
+    public set balance(value: number) {
+        this._balance = value;
+        if(this._balance <= 0) this.balance = 0;
+    }
+
+    public get money(): number {
+        return this._money;
+    }
+
+    public set money(value: number) {
+        this._money = value;
+        if(this._money <= 0) this.money = 0;
+    }
 
     reset() {
         this.userId = "";
@@ -84,7 +102,7 @@ export class UserDataComp extends ecs.Comp {
         
         if (isWin) {
             this.flightsWon += 1;
-            this.balance += (winAmount - betAmount); // 净收益
+            // this.balance += (winAmount - betAmount); // 净收益
             
             // 更新最高记录
             if (multiplier > this.highestMultiplier) {
@@ -92,9 +110,10 @@ export class UserDataComp extends ecs.Comp {
                 this.highestBetAmount = betAmount;
                 this.highestWinAmount = winAmount;
             }
-        } else {
-            this.balance -= betAmount; // 损失
         }
+        // else {
+            // this.balance -= betAmount; // 损失
+        // }
         
         this.lastSyncTime = new Date();
         

@@ -231,6 +231,11 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         return true;
     }
 
+    public goNextRound():void{
+        const currentTime = Date.now();
+        this.autoRestartStartTime = currentTime - this.autoRestartDelay;
+    }
+
     private async resetForNextRound(entity: CrashGame): Promise<void> {
         const gameState = entity.get(GameStateComp);
         const betting = entity.get(BettingComp);
@@ -281,10 +286,11 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
 
             // 检查是否到时间了
             const currentTime = Date.now();
-            if (currentTime - this.autoRestartStartTime >= this.autoRestartDelay) {
+            if (currentTime - this.autoRestartStartTime >= this.autoRestartDelay || betting.goNextRound) {
                 console.log("CrashGameSystem: Auto restart timer expired, resetting game");
                 this.autoRestartTimer = 0;
                 this.autoRestartStartTime = 0;
+                betting.goNextRound = false;
                 this.resetForNextRound(entity); // 异步调用，不等待
             }
         }
