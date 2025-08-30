@@ -44,24 +44,38 @@ export class BettingComp extends ecs.Comp {
     // 当前选择的下注项
     currentBetItem: BetAmountItem = this.betAmountData[2]; // 默认选择free
 
-    // 自动提现设置
-    autoCashOutEnabled: boolean = false;
-    autoCashOutMultiplier: number = 2.0;
-    autoCashOutTotalBets: number = -1; // -1表示无限
-    autoCashOutCurrentBets: number = 0; // 当前已进行的下注次数
-    private _autoCashOut_GoNextROUND:boolean = false;
+    // 游戏模式设置
+    _gameMode: "SPG" | "PIG" = "SPG"; // SPG=Single-Player Game, PIG=Play Interactive Games
+    
+    // PIG模式下的自动提现设置
+    pigCashOutMultiplier: number = 0.0;
+    pigTotalBets: number = -1; // -1表示无限
+    pigCurrentBets: number = 0; // 当前已进行的下注次数
+    
+    // PIG模式下的服务器状态
+    serverPhase: "betting" | "waiting" | "gaming" | "idle" = "idle";
+    serverRemainingTime: number = 0;
+    serverIsCountingDown: boolean = false;
+    serverCrashMultiplier: number = 0; // 服务器返回的爆率值
 
-    public get goNextRound(): boolean {
-        return this._autoCashOut_GoNextROUND;
+    pigCountdownActive: boolean = false; // 倒计时是否激活
+    pigGameEndByUIThisTurn: boolean = false; // 游戏手是否结束当前回合
+    private lastUpdateTime: number = 0; // 上次更新时间，用于计算时间差
+    
+    public get gameMode(){
+        return this._gameMode;
     }
-    public set goNextRound(value: boolean) {
-        this._autoCashOut_GoNextROUND = value;
+
+    public set gameMode(gameMode:"SPG" | "PIG"){
+        this._gameMode = gameMode;
     }
+
+    // 客户端倒计时同步已移至CrashGameSystem
 
     reset() {
         this.betAmount = 0;
         this.isHolding = false;
-        // 注意：不重置currentBetItem和自动提现设置，保持用户的选择
+        // 注意：不重置currentBetItem和游戏模式设置，保持用户的选择
     }
 
     /**
@@ -70,6 +84,15 @@ export class BettingComp extends ecs.Comp {
     init(): void {
         this.loadSavedBetSelection();
     }
+
+    public set goNextRound(bend:boolean){
+        this.pigGameEndByUIThisTurn = bend;
+    }
+
+    public get goNextRound():boolean{
+        return this.pigGameEndByUIThisTurn;
+    }
+
 
     /**
      * 设置当前下注选择
@@ -161,78 +184,313 @@ export class BettingComp extends ecs.Comp {
     }
 
     /**
-     * 设置自动提现
-     * @param enabled 是否启用
-     * @param multiplier 自动提现倍数
-     * @param totalBets 总下注次数 (-1表示无限)
+     * 设置游戏模式
+     * @param mode 游戏模式 ("SPG" | "PIG")
      */
-    setAutoCashOut(enabled: boolean, multiplier: number = 2.0, totalBets: number = -1): void {
-        const wasEnabled = this.autoCashOutEnabled;
-        
-        this.autoCashOutEnabled = enabled;
-        this.autoCashOutMultiplier = multiplier;
-        this.autoCashOutTotalBets = totalBets;
-        this.autoCashOutCurrentBets = 0; // 重置计数
-
-        console.log(`Auto cashout ${enabled ? 'enabled' : 'disabled'}: multiplier=${multiplier}, totalBets=${totalBets}`);
-        
-        // 如果从启用状态变为禁用状态，发送自动下注结束事件
-        if (wasEnabled && !enabled) {
-            oops.message.dispatchEvent("AUTO_CASHOUT_ENDED", {
-                reason: "user_disabled",
-                totalBets: this.autoCashOutTotalBets,
-                completedBets: this.autoCashOutCurrentBets
+    setGameMode(mode: "SPG" | "PIG"): void {
+        const wasInPigMode = this.gameMode === "PIG";
+        this.gameMode = mode;
+        if( mode == "PIG" ){
+            this.pigCountdownActive = true;
+        }
+        console.log(`Game mode set to: ${mode}`);        
+        // 如果从PIG模式切换到SPG模式，发送模式切换事件
+        if (wasInPigMode && mode === "SPG") {
+            oops.message.dispatchEvent("GAME_MODE_CHANGED", {
+                from: "PIG",
+                to: "SPG"
             });
         }
     }
-
+    
     /**
-     * 检查是否应该自动提现
-     * @param currentMultiplier 当前倍数
-     * @returns 是否应该自动提现
+     * 设置PIG模式的自动提现参数
+     * @param multiplier 自动提现倍数
+     * @param totalBets 总下注次数 (-1表示无限)
      */
-    shouldAutoCashOut(currentMultiplier: number): boolean {
-        if (!this.autoCashOutEnabled) return false;
+    setPigCashOut(multiplier: number = 2.0, totalBets: number = -1): void {
+        this.pigCashOutMultiplier = multiplier;
+        this.pigTotalBets = totalBets;
+        this.pigCurrentBets = 0; // 重置计数
+        if( multiplier <= 0 ){
+            this.pigCashOutMultiplier = 0;
+            this.goNextRound = true;
+        }else{
+            if( this.serverPhase == "betting" || this.serverPhase == "idle" ){
+                this.goNextRound = false;
+            }else{
+                this.pigCashOutMultiplier = 0;
+                this.goNextRound = true;
+            }
+        }
 
-        return currentMultiplier >= this.autoCashOutMultiplier;
+        console.log(`PIG mode cashout set: multiplier=${multiplier}, totalBets=${totalBets}`);
     }
 
     /**
-     * 增加自动提现计数
+     * 检查是否应该进行PIG模式自动提现
      */
-    incrementAutoCashOutBets(): void {
-        if (this.autoCashOutEnabled) {
-            this.autoCashOutCurrentBets++;
-            console.log(`BettingComp: Incremented auto cashout bets: ${this.autoCashOutCurrentBets}/${this.autoCashOutTotalBets === -1 ? 'infinite' : this.autoCashOutTotalBets}`);
+    shouldPigCashOut(currentMultiplier: number): boolean {
+        return this.gameMode === "PIG" && 
+               this.pigCashOutMultiplier > 0 && 
+               currentMultiplier >= this.pigCashOutMultiplier;
+    }
+
+    /**
+     * 增加PIG模式下注计数
+     */
+    incrementPigBets(): void {
+        if (this.gameMode === "PIG") {
+            this.pigCurrentBets++;
+            console.log(`BettingComp: Incremented PIG bets: ${this.pigCurrentBets}/${this.pigTotalBets === -1 ? 'infinite' : this.pigTotalBets}`);
 
             // 检查是否达到总次数限制
-            if (this.autoCashOutTotalBets > 0 && this.autoCashOutCurrentBets >= this.autoCashOutTotalBets) {
-                this.autoCashOutEnabled = false;
-                console.log(`BettingComp: Auto cashout disabled: reached total bets limit (${this.autoCashOutTotalBets})`);
-                
-                // 发送自动下注结束事件
-                oops.message.dispatchEvent("AUTO_CASHOUT_ENDED", {
+            if (this.pigTotalBets > 0 && this.pigCurrentBets >= this.pigTotalBets) {
+                // 发送PIG模式结束事件
+                oops.message.dispatchEvent("PIG_MODE_ENDED", {
                     reason: "limit_reached",
-                    totalBets: this.autoCashOutTotalBets,
-                    completedBets: this.autoCashOutCurrentBets
+                    totalBets: this.pigTotalBets,
+                    completedBets: this.pigCurrentBets
                 });
+                // this.gameMode = "SPG";
+                this.setGameMode("SPG");
+                console.log(`BettingComp: PIG mode disabled: reached total bets limit (${this.pigTotalBets})`);
             } else {
-                console.log(`BettingComp: Auto cashout still enabled, continuing...`);
+                console.log(`BettingComp: PIG mode still enabled, continuing...`);
             }
         } else {
-            console.log(`BettingComp: incrementAutoCashOutBets called but auto cashout is disabled`);
+            console.log(`BettingComp: incrementPigBets called but not in PIG mode`);
         }
     }
 
     /**
-     * 获取自动提现状态信息
+     * 获取游戏模式状态信息
      */
-    getAutoCashOutStatus(): { enabled: boolean; multiplier: number; totalBets: number; currentBets: number } {
+    getGameModeStatus(): { 
+        mode: "SPG" | "PIG"; 
+        pigMultiplier: number; 
+        pigTotalBets: number; 
+        pigCurrentBets: number;
+        serverPhase: "betting" | "waiting" | "gaming" | "idle";
+        serverRemainingTime: number;
+    } {
         return {
-            enabled: this.autoCashOutEnabled,
-            multiplier: this.autoCashOutMultiplier,
-            totalBets: this.autoCashOutTotalBets,
-            currentBets: this.autoCashOutCurrentBets
+            mode: this.gameMode,
+            pigMultiplier: this.pigCashOutMultiplier,
+            pigTotalBets: this.pigTotalBets,
+            pigCurrentBets: this.pigCurrentBets,
+            serverPhase: this.serverPhase,
+            serverRemainingTime: this.serverRemainingTime
+        };
+    }
+    
+    /**
+     * 更新服务器状态 (PIG模式使用)
+     */
+    updateServerStatus(phase: "betting" | "waiting" | "gaming" | "idle", remainingTime: number, isCountingDown: boolean): void {
+        this.serverPhase = phase;
+        this.serverRemainingTime = remainingTime;
+        this.serverIsCountingDown = isCountingDown;
+        
+        console.log(`Server status updated: phase=${phase}, remainingTime=${remainingTime}, isCountingDown=${isCountingDown}`);
+    }
+    
+    /**
+     * 获取服务器倒计时状态 (通过API)
+     */
+    async fetchServerCountdown(): Promise<any> {
+        return new Promise((resolve) => {
+            oops.http.get('game/countdown', (ret) => {
+                console.log("=== fetchServerCountdown DEBUG ===");
+                console.log("ret object:", ret);
+                console.log("ret.isSucc:", ret.isSucc);
+                console.log("ret.res type:", typeof ret.res);
+                console.log("ret.res:", JSON.stringify(ret.res, null, 2));
+                
+                if (ret.isSucc && ret.res && ret.res.success) {
+                    const data = ret.res;
+                    this.updateServerStatus(
+                        data.data.phase,
+                        data.data.remainingTime,
+                        data.data.isCountingDown
+                    );
+                    
+                    // 存储服务器返回的爆率值
+                    if (data.data.fixedCrashMultiplier !== undefined) {
+                        this.serverCrashMultiplier = data.data.fixedCrashMultiplier;
+                        console.log(`Server crash multiplier: ${this.serverCrashMultiplier}`);
+                    }
+                    
+                    resolve(data.data);
+                } else {
+                    console.error('Failed to fetch server countdown:', ret.err);
+                    resolve(null);
+                }
+            });
+        });
+    }
+    
+    /**
+     * 启动PIG模式下注倒计时
+     */
+    async startPigBettingCountdown(): Promise<void> {
+        if (this.gameMode !== "PIG") return;
+        const serverData = await this.fetchServerCountdown();
+        if (serverData) {
+            this.pigCountdownActive = true;
+            this.lastUpdateTime = 0; // 重置更新时间
+        }
+    }
+    /**
+     * 启动PIG模式等待游戏开始倒计时
+     */
+    async startPigWaitingCountdown(): Promise<void> {
+        if (this.gameMode !== "PIG") return;
+        
+        // 获取服务器等待倒计时
+        const serverData = await this.fetchServerCountdown();
+        if (serverData) {
+            this.pigCountdownActive = true;
+            this.lastUpdateTime = 0; // 重置更新时间
+            // 客户端倒计时同步已移至CrashGameSystem
+            
+            console.log(`PIG waiting countdown started: ${this.serverRemainingTime}ms`);
+        } else {
+            console.error("Failed to get server waiting countdown, falling back to betting countdown");
+            this.startPigBettingCountdown();
+        }
+    }
+    
+    /**
+     * 启动PIG模式游戏倒计时
+     */
+    async startPigGameCountdown(): Promise<void> {
+        if (this.gameMode !== "PIG") return;
+        
+        // 获取服务器游戏倒计时
+        const serverData = await this.fetchServerCountdown();
+        if (serverData) {
+            this.pigCountdownActive = true;
+            // 客户端倒计时同步已移至CrashGameSystem
+            console.log(`PIG game countdown started: ${this.serverRemainingTime}ms`);
+        } else {
+            console.error("Failed to get server countdown, falling back to waiting countdown");
+            await this.startPigWaitingCountdown();
+        }
+    }
+    
+    /**
+     * 停止PIG模式倒计时
+     */
+    stopPigCountdown(): void {
+        this.serverPhase = "idle";
+        this.pigCountdownActive = false;
+        this.lastUpdateTime = 0; // 重置更新时间
+        // 客户端倒计时同步已移至CrashGameSystem
+        console.log("PIG countdown stopped");
+        this.goNextRound = false;
+    }
+    
+    /**
+     * 获取当前倒计时剩余时间
+     */
+    getPigCountdownRemainingTime(): number {
+        if (!this.pigCountdownActive) {
+            return 0;
+        }
+       return this.serverRemainingTime;
+    }
+    
+    /**
+     * 检查倒计时是否结束
+     */
+    isPigCountdownFinished(): boolean {
+        return this.pigCountdownActive && this.getPigCountdownRemainingTime() <= 0;
+    }
+    
+    /**
+     * 统一的倒计时更新方法 - 集中管理所有倒计时逻辑
+     */
+    updatePigCountdown(): void {
+        // 只有在PIG模式且倒计时激活时才处理
+        if (this.gameMode !== "PIG" || !this.pigCountdownActive) {
+            return;
+        }
+        
+        const currentTime = Date.now();
+        
+        // 初始化lastUpdateTime
+        if (this.lastUpdateTime === 0) {
+            this.lastUpdateTime = currentTime;
+            return;
+        }
+        
+        // 计算时间差（毫秒）
+        const deltaTime = currentTime - this.lastUpdateTime;
+        this.lastUpdateTime = currentTime;
+        
+        // 减少剩余时间
+        this.serverRemainingTime = Math.max(0, this.serverRemainingTime - deltaTime);
+        
+        const remainingTime = this.getPigCountdownRemainingTime();
+        
+        // 分发倒计时更新事件
+        oops.message.dispatchEvent("PIG_COUNTDOWN_UPDATE", {
+            phase: this.serverPhase,
+            remainingTime: remainingTime
+        });
+        
+        // 检查倒计时是否结束
+        if (remainingTime <= 0) {
+            console.log(`BettingComp: Countdown finished for phase: ${this.serverPhase}`);
+            
+            // 分发倒计时结束事件
+            oops.message.dispatchEvent("PIG_COUNTDOWN_FINISHED", {
+                phase: this.serverPhase
+            });
+            
+            // 处理阶段转换
+            this.handleCountdownPhaseTransition();
+        }
+    }
+    
+    /**
+     * 处理倒计时阶段转换
+     */
+    private handleCountdownPhaseTransition(): void {
+        if (this.serverPhase === "betting") {
+            // 下注倒计时结束，开始等待游戏开始倒计时
+            console.log("BettingComp: Betting countdown finished, starting waiting countdown");
+            this.startPigWaitingCountdown();
+        } else if (this.serverPhase === "waiting") {
+            // 等待倒计时结束，开始游戏倒计时
+            console.log("BettingComp: Waiting countdown finished, starting game countdown");
+            this.startPigGameCountdown();
+        } else if (this.serverPhase === "gaming") {
+            // 游戏倒计时结束，停止倒计时并准备新游戏
+            console.log("BettingComp: Game countdown finished, stopping countdown");
+            this.stopPigCountdown();
+            // 通知系统重置游戏
+            oops.message.dispatchEvent("PIG_GAME_RESET_NEEDED");
+        }
+    }
+    
+    /**
+     * 获取倒计时状态信息
+     */
+    getCountdownStatus(): {
+        active: boolean;
+        phase: "betting" | "waiting" | "gaming" | "idle";
+        remainingTime: number;
+        remainingSeconds: number;
+    } {
+        const remainingTime = this.getPigCountdownRemainingTime();
+        
+        return {
+            active: this.pigCountdownActive,
+            phase: this.serverPhase as "betting" | "waiting" | "gaming" | "idle",
+            remainingTime: remainingTime,
+            remainingSeconds: Math.ceil(remainingTime / 1000)
         };
     }
 }

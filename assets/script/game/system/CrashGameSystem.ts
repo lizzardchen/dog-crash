@@ -13,9 +13,6 @@ import { smc } from "../common/SingletonModuleComp";
 @ecs.register('CrashGameSystem')
 export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
     private processedStates = new Set<string>();
-    private autoRestartTimer: number = 0;
-    private autoRestartStartTime: number = 0;
-    private autoRestartDelay: number = 4000; // 4秒延迟
     
     filter(): ecs.IMatcher {
         return ecs.allOf(GameStateComp, BettingComp, MultiplierComp, LocalDataComp, EnergyComp, UserDataComp, RaceComp);
@@ -39,14 +36,14 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             race.updateRaceData(Date.now());
         }
 
-        // 处理自动重启计时器
-        this.handleAutoRestartTimer(entity);
+        // 处理PIG模式倒计时
+        this.handlePigCountdown(entity);
 
-        // 减少日志频率，只在状态改变时或auto betting相关时记录
-        if (gameState.state !== this.lastLoggedState || betting.autoCashOutEnabled) {
-            console.log(`CrashGameSystem: update - state: ${gameState.state}, autoBetting: ${betting.autoCashOutEnabled}`);
-            this.lastLoggedState = gameState.state;
-        }
+        // 减少日志频率，只在状态改变时或PIG模式相关时记录
+        // if (gameState.state !== this.lastLoggedState || betting.gameMode === "PIG") {
+        //     console.log(`CrashGameSystem: update - state: ${gameState.state}, gameMode: ${betting.gameMode}`);
+        //     this.lastLoggedState = gameState.state;
+        // }
 
         switch (gameState.state) {
             case GameState.INIT:
@@ -81,47 +78,51 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
 
     private handleWaitingState(entity: CrashGame): void {
         // 等待玩家下注和按住HOLD按钮
-        // 检查是否启用了自动下注
+        // SPG模式下等待用户手动操作
+        
         const betting = entity.get(BettingComp);
         const gameState = entity.get(GameStateComp);
         const multiplier = entity.get(MultiplierComp);
         
-        // 防止在同一个等待周期内重复开始游戏
-        const waitingKey = `waiting_${Date.now()}`;
-        if (betting.autoCashOutEnabled && !betting.isHolding && gameState.startTime === 0) {
-            // 自动开始游戏
-            const betAmount = betting.currentBetItem.value;
-            const isFreeMode = betting.currentBetItem.isFree;
-            const localData = entity.get(LocalDataComp);
-            
-            console.log(`CrashGameSystem: Starting auto bet with amount: ${betAmount}, free: ${isFreeMode}`);
-            betting.isHolding = true;
-            // 验证下注金额和能源
-            if (this.validateBetAmount(betAmount, isFreeMode) && this.validateAndConsumeEnergy(entity)) {
-                // 等待服务器生成崩盘倍率，然后开始游戏
-                localData.generateCrashMultiplierAsync().then((remote_multiplier: number) => {
-                    localData.currentCrashMultiplier = remote_multiplier;
-                    
-                    betting.betAmount = betAmount;
-                    gameState.state = GameState.FLYING;
-                    gameState.startTime = Date.now();
-                    multiplier.startTime = Date.now();
-                    
-                    console.log(`CrashGameSystem: Auto bet started: ${betAmount} (free: ${isFreeMode}), target crash: ${remote_multiplier.toFixed(2)}x`);
-                    oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
-                }).catch((error) => {
+        // PIG模式自动游戏逻辑
+        if (betting.gameMode === "PIG" && !betting.isHolding && !betting.goNextRound) {
+            // 检查是否应该开始游戏（在合适的倒计时阶段）
+            if (betting.serverPhase === "gaming" && betting.pigCountdownActive) {
+                const betAmount = betting.currentBetItem.value;
+                const isFreeMode = betting.currentBetItem.isFree;
+                const localData = entity.get(LocalDataComp);
+                
+                console.log(`CrashGameSystem: Starting PIG mode bet with amount: ${betAmount}, free: ${isFreeMode}`);
+                betting.isHolding = true;
+                
+                // 验证下注金额和能源
+                if (this.validateBetAmount(betAmount, isFreeMode) && this.validateAndConsumeEnergy(entity)) {
+                    // PIG模式使用/api/game/countdown返回的倍率
+                    const remote_multiplier = betting.serverCrashMultiplier;
+                    if (remote_multiplier > 0) {
+                        localData.currentCrashMultiplier = remote_multiplier;
+                        
+                        betting.betAmount = betAmount;
+                        gameState.state = GameState.FLYING;
+                        gameState.startTime = Date.now();
+                        multiplier.startTime = Date.now();
+                        
+                        console.log(`CrashGameSystem: PIG mode bet started: ${betAmount} (free: ${isFreeMode}), target crash: ${remote_multiplier.toFixed(2)}x`);
+                        oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
+                    } else {
+                        betting.isHolding = false;
+                        console.error("CrashGameSystem: Invalid server crash multiplier for PIG mode:", remote_multiplier);
+                        // 如果服务器倍率无效，切换到SPG模式
+                        betting.setGameMode("SPG");
+                        oops.message.dispatchEvent("SERVER_CANCEL_AUTOGAME");
+                    }
+                } else {
                     betting.isHolding = false;
-                    console.error("CrashGameSystem: Failed to generate crash multiplier for auto bet:", error);
-                    // 如果服务器请求失败，禁用自动下注
-                    betting.setAutoCashOut(false);
-                    oops.message.dispatchEvent("SERVER_CANCEL_AUTOGAME");
-                });
-            } else {
-                betting.isHolding = false;
-                console.log(`CrashGameSystem: Auto bet validation failed (insufficient balance or energy)`);
-                // 如果验证失败，禁用自动下注
-                betting.setAutoCashOut(false);
-                oops.message.dispatchEvent("AUTO_CANCEL_AUTOGAME");
+                    console.log(`CrashGameSystem: PIG mode bet validation failed (insufficient balance or energy)`);
+                    // 如果验证失败，切换到SPG模式
+                    betting.setGameMode("SPG");
+                    oops.message.dispatchEvent("AUTO_CANCEL_AUTOGAME");
+                }
             }
         }
     }
@@ -132,11 +133,11 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         const multiplier = entity.get(MultiplierComp);
         const gameState = entity.get(GameStateComp);
         
-        // 检查自动提现条件
-        if (betting.isHolding && betting.shouldAutoCashOut(multiplier.currentMultiplier)) {
+        // 检查自动提现条件（PIG模式）
+        if (betting.isHolding && betting.gameMode === "PIG" && betting.shouldPigCashOut(multiplier.currentMultiplier)) {
             gameState.state = GameState.CASHED_OUT;
             multiplier.cashOutMultiplier = multiplier.currentMultiplier;
-            console.log(`Auto cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x`);
+            console.log(`PIG mode auto cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x`);
             // 游戏成功：退还能源
             this.refundEnergy(entity);
             oops.message.dispatchEvent("GAME_CASHED_OUT", { cashOutMultiplier: multiplier.cashOutMultiplier });
@@ -164,17 +165,17 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         // 上传游戏结果到服务器
         this.uploadGameResult(entity, false, multiplier.currentMultiplier, 0);
         
-        console.log(`CrashGameSystem: handleCrashedState - autoCashOutEnabled: ${betting.autoCashOutEnabled}`);
+        console.log(`CrashGameSystem: handleCrashedState - gameMode: ${betting.gameMode}`);
         
-        if (betting.autoCashOutEnabled) {
-            // 增加自动下注计数
-            betting.incrementAutoCashOutBets();
-            console.log(`CrashGameSystem: Auto betting - incremented bet count, still enabled: ${betting.autoCashOutEnabled}`);
-        }
-        
-        // 如果启用自动下注，开始计时等待重启
-        if (betting.autoCashOutEnabled) {
-            this.startAutoRestartTimer();
+        if (betting.gameMode === "PIG") {
+            // 增加PIG模式下注计数
+            betting.incrementPigBets();
+            console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
+            
+            // // 如果仍在PIG模式，启动下注倒计时
+            // if (betting.gameMode === "PIG") {
+            //     betting.startPigBettingCountdown();
+            // }
         }
     }
 
@@ -200,17 +201,17 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         // 上传游戏结果到服务器
         this.uploadGameResult(entity, true, multiplier.cashOutMultiplier, winAmount);
         
-        console.log(`CrashGameSystem: handleCashedOutState - autoCashOutEnabled: ${betting.autoCashOutEnabled}`);
+        console.log(`CrashGameSystem: handleCashedOutState - gameMode: ${betting.gameMode}`);
         
-        if (betting.autoCashOutEnabled) {
-            // 增加自动下注计数
-            betting.incrementAutoCashOutBets();
-            console.log(`CrashGameSystem: Auto betting - incremented bet count, still enabled: ${betting.autoCashOutEnabled}`);
-        }
-        
-        // 如果启用自动下注，开始计时等待重启
-        if (betting.autoCashOutEnabled) {
-            this.startAutoRestartTimer();
+        if (betting.gameMode === "PIG") {
+            // 增加PIG模式下注计数
+            betting.incrementPigBets();
+            console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
+            
+            // // 如果仍在PIG模式，启动下注倒计时
+            // if (betting.gameMode === "PIG") {
+            //     betting.startPigBettingCountdown();
+            // }
         }
     }
 
@@ -231,22 +232,13 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         return true;
     }
 
-    public goNextRound():void{
-        const currentTime = Date.now();
-        this.autoRestartStartTime = currentTime - this.autoRestartDelay;
-    }
+
 
     private async resetForNextRound(entity: CrashGame): Promise<void> {
         const gameState = entity.get(GameStateComp);
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
         const localData = entity.get(LocalDataComp);
-
-        // 再次检查自动下注是否仍然启用
-        if (!betting.autoCashOutEnabled) {
-            console.log("CrashGameSystem: Auto betting disabled, not resetting for next round");
-            return;
-        }
 
         console.log("CrashGameSystem: Resetting for next round");
 
@@ -261,56 +253,51 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         // 重置倍数
         multiplier.reset();
 
-        // 从服务器生成新的崩盘倍数
-        localData.currentCrashMultiplier = await localData.generateCrashMultiplierAsync();
-
+        // PIG模式使用/api/game/countdown返回的倍率
+        localData.currentCrashMultiplier = betting.serverCrashMultiplier;
         // 重置下注状态但保持自动下注设置
         betting.betAmount = 0;
         betting.isHolding = false;
 
+        // 再次检查PIG模式是否仍然启用
+        if (betting.gameMode !== "PIG") {
+            console.log("CrashGameSystem: PIG mode disabled, not resetting for next round");
+            return;
+        }else{
+            betting.startPigBettingCountdown().then(()=>{
+                betting.setPigCashOut(0,-1);
+            });
+            
+        }
+
         console.log(`CrashGameSystem: Game reset complete for auto betting. Target crash: ${localData.currentCrashMultiplier.toFixed(2)}x`);
     }
 
-    private handleAutoRestartTimer(entity: CrashGame): void {
+
+
+    private handlePigCountdown(entity: CrashGame): void {
         const betting = entity.get(BettingComp);
-
-        // 如果自动重启计时器正在运行
-        if (this.autoRestartTimer > 0) {
-            // 检查自动下注是否被禁用，如果是则取消计时器
-            if (!betting.autoCashOutEnabled) {
-                console.log("CrashGameSystem: Auto betting disabled, cancelling restart timer");
-                this.autoRestartTimer = 0;
-                this.autoRestartStartTime = 0;
-                return;
-            }
-
-            // 检查是否到时间了
-            const currentTime = Date.now();
-            if (currentTime - this.autoRestartStartTime >= this.autoRestartDelay || betting.goNextRound) {
-                console.log("CrashGameSystem: Auto restart timer expired, resetting game");
-                this.autoRestartTimer = 0;
-                this.autoRestartStartTime = 0;
-                betting.goNextRound = false;
-                this.resetForNextRound(entity); // 异步调用，不等待
-            }
+        
+        // 调用BettingComp的统一倒计时更新方法
+        betting.updatePigCountdown();
+        
+        // 监听游戏重置事件
+        if (!this.gameResetListenerAdded) {
+            oops.message.on("PIG_GAME_RESET_NEEDED", () => {
+                this.resetForNextRound(entity);
+            }, this);
+            this.gameResetListenerAdded = true;
         }
     }
+    
+    private gameResetListenerAdded: boolean = false;
+    
+    /**
+     * 获取当前倒计时阶段的总时间
+     */
 
-    private startAutoRestartTimer(): void {
-        if (this.autoRestartTimer === 0) {
-            console.log("CrashGameSystem: Starting auto restart timer (4 seconds)");
-            this.autoRestartTimer = 1; // 标记计时器正在运行
-            this.autoRestartStartTime = Date.now();
-        }
-    }
 
-    public cancelAutoRestartTimer(): void {
-        if (this.autoRestartTimer > 0) {
-            console.log("CrashGameSystem: Cancelling auto restart timer");
-            this.autoRestartTimer = 0;
-            this.autoRestartStartTime = 0;
-        }
-    }
+
 
     /**
      * 验证并消耗能源

@@ -31,6 +31,7 @@ import { GoldPopupUI } from './GoldPopupUI';
 import { MoneyPopupUI } from './MoneyPopupUI';
 import { EnergyBuyUI } from './EnergyBuyUI';
 import { SDKMgr } from '../common/SDKMgr';
+import { TimerCDShow } from './TimerCDShow';
 
 const { ccclass, property } = _decorator;
 
@@ -76,11 +77,26 @@ export class MainGameUI extends CCComp {
     @property(Button)
     holdButton: Button = null!;
 
+    @property(Sprite)
+    holdTextSprite: Sprite = null!; //"HOLD"
+
+    @property(Label)
+    holdButtonLabel: Label = null!;
+
+    @property(Label)
+    holdButtonGameStateLabel: Label = null!;
+
+    @property(TimerCDShow)
+    holdButtonGameStateCD: TimerCDShow = null!;
+
     @property(Node)
     hold_unpressed_node:Node = null!;
 
     @property(Node)
     hold_pressed_node:Node = null!;
+
+    @property(Node)
+    hold_waiting_node:Node = null!;
 
     @property(Button)
     historyButton: Button = null!;
@@ -92,7 +108,10 @@ export class MainGameUI extends CCComp {
     betButton: Button = null!;
 
     @property(Button)
-    autoBetButton: Button = null!;
+    PIGBetButton: Button = null!;
+
+    @property(Button)
+    pigsettingBetButton: Button = null!;
 
     @property(Button)
     energyButton: Button = null!;
@@ -410,8 +429,11 @@ export class MainGameUI extends CCComp {
         }
 
         // 自动下注按钮事件
-        if (this.autoBetButton) {
-            this.autoBetButton.node.on(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
+        if (this.PIGBetButton) {
+            this.PIGBetButton.node.on(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
+        }
+        if (this.pigsettingBetButton) {
+            this.pigsettingBetButton.node.on(Button.EventType.CLICK, this.onPigSettingBetButtonClick, this);
         }
 
         // 能源按钮事件
@@ -446,7 +468,11 @@ export class MainGameUI extends CCComp {
         oops.message.on("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
         //race 发奖励
         oops.message.on("PRIZE_CLAIMED",this.onRaceClaimed,this);
-
+        
+        // 监听PIG倒计时事件
+        oops.message.on("PIG_COUNTDOWN_UPDATE", this.onPigCountdownUpdate, this);
+        oops.message.on("PIG_COUNTDOWN_FINISHED", this.onPigCountdownFinished, this);
+        oops.message.on("GAME_MODE_CHANGED",this.onGameModeChanged,this);
 
         // 监听下注ScrollView滚动事件
         if (this.betScrollView) {
@@ -464,7 +490,25 @@ export class MainGameUI extends CCComp {
     private onHoldButtonTouchStart(_event: EventTouch): void {
         const energycomp = smc.crashGame.get(EnergyComp);
         const betting = smc.crashGame.get(BettingComp);
-        if(energycomp && energycomp.currentEnergy <= 0 && !betting.autoCashOutEnabled) {
+
+        if(betting.gameMode == "PIG"){
+            if(betting.serverPhase == "betting"){
+                this.showAutoCashOutUI();
+                return;
+            }
+            else if( betting.serverPhase == "waiting" ){
+                return;
+            }
+            else if(betting.serverPhase == "gaming"){
+                if(!betting.goNextRound){
+                    this.holdButton.node.on(Node.EventType.TOUCH_END, this.onHoldButtonTouchEnd, this);
+                    this.holdButton.node.on(Node.EventType.TOUCH_CANCEL, this.onHoldButtonTouchEnd, this);
+                }
+                return;
+            }
+        }
+
+        if(energycomp && energycomp.currentEnergy <= 0 && betting.gameMode !== "PIG") {
             oops.gui.toast("Energy not enough!");
             return;
         }
@@ -493,7 +537,7 @@ export class MainGameUI extends CCComp {
         
         // 完成新手引导（如果正在引导中）
         this.onTutorialHoldButtonClicked();
-
+        
         // 开始3秒倒计时
         this.startCountdown(()=>{
             this.playGameStartUIAnimation();
@@ -509,12 +553,12 @@ export class MainGameUI extends CCComp {
             }
 
             if (gameState.state === GameState.WAITING) {
-                // 用户手动按下HOLD按钮 - 禁用自动下注，切换到手动模式
-                if (betting.autoCashOutEnabled) {
-                    console.log("MainGameUI: User pressed HOLD, disabling auto betting");
-                    betting.setAutoCashOut(false);
-                    this.updateAutoBetButtonState();
-                }
+                // // 用户手动按下HOLD按钮 - 如果是PIG模式，切换到SPG模式
+                // if (betting.gameMode === "PIG") {
+                //     console.log("MainGameUI: User pressed HOLD, switching to SPG mode");
+                //     betting.setGameMode("SPG");
+                //     this.updateAutoBetButtonState();
+                // }
                 // 检查并消耗能源（每局游戏都消耗1个能源）
                 if (!this.consumeEnergy(1)) {
                     console.warn("Not enough energy to start game");
@@ -575,12 +619,12 @@ export class MainGameUI extends CCComp {
         const gameState = smc.crashGame.get(GameStateComp);
         const multiplier = smc.crashGame.get(MultiplierComp);
         if ((gameState.state === GameState.FLYING ||gameState.state === GameState.WAITING)) {
-            // 用户手动提现 - 如果当前是自动模式，切换到手动模式
-            if (betting.autoCashOutEnabled) {
-                console.log("MainGameUI: User manually cashed out, disabling auto betting");
-                betting.setAutoCashOut(false);
-                this.updateAutoBetButtonState();
-            }
+            // 用户手动提现 - 如果当前是PIG模式，切换到SPG模式
+            // if (betting.gameMode === "PIG") {
+                // console.log("MainGameUI: User manually cashed out, switching to SPG mode");
+                // betting.setGameMode("SPG");
+                // this.updateAutoBetButtonState();
+            // }
 
             // 提现 - 松开按钮时提现
             betting.isHolding = false;
@@ -854,16 +898,16 @@ export class MainGameUI extends CCComp {
                 }, 0.1);
                 
                 // 并行播放金币飞行动画（目标位置已经保存，不会受UI动画影响）
-                // if (profit > 0) {
-                //     this.scheduleOnce(() => {
-                //         this.playCoinFlyAnimation(profit, () => {
-                //             console.log("Coin fly animation completed!");
-                //         });
-                //         this.playMoneyFlyAnimation(profit/10, () => {
-                //             console.log("money fly animation completed!");
-                //         });
-                //     }, 0.2); // 稍微延迟播放金币动画
-                // }
+                if (profit > 0) {
+                    this.scheduleOnce(() => {
+                        this.playCoinFlyAnimation(profit, () => {
+                            console.log("Coin fly animation completed!");
+                        });
+                        this.playMoneyFlyAnimation(profit/10, () => {
+                            console.log("money fly animation completed!");
+                        });
+                    }, 0.2); // 稍微延迟播放金币动画
+                }
             });
         }, 0.2);
     }
@@ -902,11 +946,11 @@ export class MainGameUI extends CCComp {
             }
         }
 
-        // Check if this is auto-betting mode (not triggered by manual HOLD button)
+        // Check if this is PIG mode (not triggered by manual HOLD button)
         if (smc.crashGame) {
             const betting = smc.crashGame.get(BettingComp);
-            if (betting && betting.autoCashOutEnabled) {
-                // For auto-betting, play UI animation and update button state
+            if (betting && betting.gameMode === "PIG") {
+                // For PIG mode, play UI animation and update button state
                 this.playGameStartUIAnimation();
                 this.updateHoldButtonState();
             }
@@ -945,13 +989,13 @@ export class MainGameUI extends CCComp {
         console.log("MainGameUI: Auto cashout ended event received", data);
         
         // 显示通知告知用户自动下注已结束
-        if (data && data.reason) {
-            let message = "Auto cashout ended";
-            if (data.reason === "limit_reached") {
-                message = 'Auto cashout completed';
-            }
-            oops.gui.toast(message);
-        }
+        // if (data && data.reason) {
+        //     let message = "Auto cashout ended";
+        //     if (data.reason === "limit_reached") {
+        //         message = 'Auto cashout completed';
+        //     }
+        //     oops.gui.toast(message);
+        // }
         
         // 更新AutoBet按钮状态
         this.updateAutoBetButtonState();
@@ -1074,6 +1118,19 @@ export class MainGameUI extends CCComp {
         }
     }
 
+    private onPigSettingBetButtonClick():void{
+        const betting  = smc.crashGame.get(BettingComp);
+        if(betting && betting.gameMode == 'PIG'){
+            this.showAutoCashOutUI();
+        }
+    }
+
+    private onGameModeChanged():void{
+        // 更新按钮状态
+        this.updateAutoBetButtonState();
+        this.updateHoldButtonState();
+    }
+
     private onAutoBetButtonClick(): void {
         if (!smc.crashGame) return;
 
@@ -1087,24 +1144,50 @@ export class MainGameUI extends CCComp {
         CrashGameAudio.playButtonClick();
 
         if (betting) {
-            const status = betting.getAutoCashOutStatus();
+            const currentMode = betting.gameMode;
 
-            if (status.enabled) {
-                // 当前已启用，关闭自动下注（允许在任何状态下关闭）
-                betting.setAutoCashOut(false);
-                console.log("MainGameUI: Auto bet disabled by user (via AUTO button)");
-
-                // 更新按钮状态
-                this.updateAutoBetButtonState();
-            } else {
-                // 当前未启用，只有在等待状态下才能启用新的自动下注
+            if (currentMode === "SPG") {
+                // 从SPG切换到PIG模式
+                // 只有在等待状态下才能切换到PIG模式
                 if (gameState.state !== GameState.WAITING) {
-                    console.log("Cannot start auto bet during game - please wait for current game to finish");
+                    console.log("Cannot switch to PIG mode during game - please wait for current game to finish");
                     return;
                 }
 
-                // 显示设置界面
-                this.showAutoCashOutUI();
+                // 获取服务器状态
+                betting.fetchServerCountdown().then(() => {
+                    if (betting.serverPhase === "betting") {
+                        // 如果是下注阶段，显示AutoCashOutUI设置界面
+                        // this.showAutoCashOutUI();
+                        betting.setGameMode("PIG");
+                        betting.setPigCashOut(0, -1);
+                        this.updateAutoBetButtonState();
+                        this.updateHoldButtonState();
+                    } else if (betting.serverPhase === "waiting") {
+                        // 如果是等待游戏开始阶段，直接切换到PIG模式并启动等待倒计时
+                        betting.setGameMode("PIG");
+                        betting.setPigCashOut(0, -1);
+                        this.updateAutoBetButtonState();
+                        this.updateHoldButtonState();
+                    } else if (betting.serverPhase === "gaming") {
+                        // 如果是游戏阶段，直接切换到PIG模式并启动游戏倒计时
+                        betting.setGameMode("PIG");
+                        betting.setPigCashOut(0, -1);
+                        this.updateAutoBetButtonState();
+                        this.updateHoldButtonState();
+                    }
+                }).catch((error) => {
+                    console.error("Failed to fetch server countdown:", error);
+                    oops.gui.toast("Failed to connect to server");
+                });
+            } else {
+                // 从PIG切换到SPG模式（允许在任何状态下切换）
+                betting.setGameMode("SPG");
+                console.log("MainGameUI: Switched to SPG mode");
+
+                // 更新按钮状态
+                this.updateAutoBetButtonState();
+                this.updateHoldButtonState();
             }
         }
     }
@@ -1647,35 +1730,46 @@ export class MainGameUI extends CCComp {
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
-        const buttonLabel = this.holdButton.getComponentInChildren(Label);
+        const buttonLabel = this.holdButtonLabel;
 
         switch (gameState.state) {
             case GameState.INIT:
             case GameState.WAITING:
                 if (buttonLabel) {
-                    if (betting.autoCashOutEnabled) {
-                        // 自动下注模式：显示剩余下注数量
-                        const remaining = betting.autoCashOutTotalBets === -1 ? "∞" : 
-                            Math.max(0, betting.autoCashOutTotalBets - betting.autoCashOutCurrentBets).toString();
-                        buttonLabel.string = `AUTO (${remaining})`;
-                    } else {
-                        // 手动模式：不显示文本
+                    if (betting.gameMode === "SPG") {
+                        // SPG模式：不显示文本
                         buttonLabel.string = "";
+                        this.holdTextSprite.node.active = true;
+                        this.holdButtonGameStateCD.node.active = false;
+                        this.holdButtonGameStateLabel.node.active = false;
+                        this.hold_waiting_node.active = false;
+                    }
+                    else{
+                        buttonLabel.string = "";
+                        this.holdTextSprite.node.active = false;
                     }
                 }
                 this.holdButton.interactable = true;
                 this.removeButtonPressedEffect();
+                
                 break;
             case GameState.FLYING:
                 if (betting.isHolding) {
                     if (buttonLabel) {
-                        if (betting.autoCashOutEnabled) {
-                            // 自动下注模式：显示剩余下注数量
-                            const remaining = betting.autoCashOutTotalBets === -1 ? "∞" : 
-                                Math.max(0, betting.autoCashOutTotalBets - betting.autoCashOutCurrentBets).toString();
-                            buttonLabel.string = `AUTO (${remaining})`;
+                        if (betting.gameMode === "PIG") {
+                            // PIG模式：显示剩余下注数量或STOP
+                            if (betting.serverPhase === "gaming") {
+                                if(!betting.goNextRound){
+                                    const remaining = betting.pigTotalBets === -1 ? "∞" : 
+                                    Math.max(0, betting.pigTotalBets - betting.pigCurrentBets).toString();
+                                    buttonLabel.string = `PIG (${remaining})`;
+                                }else{
+                                    buttonLabel.string = '';
+                                }
+                                
+                            }
                         } else {
-                            // 手动模式：不显示文本
+                            // SPG模式：不显示文本
                             buttonLabel.string = "";
                         }
                     }
@@ -1729,6 +1823,8 @@ export class MainGameUI extends CCComp {
                 }
                 this.updateRaceCountdownDisplay(this.localRaceRemainingTime);
             }
+            
+            // PIG模式倒计时显示通过事件系统更新，无需在update中直接调用
         }
     }
 
@@ -1745,6 +1841,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
         oops.message.off("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
          oops.message.off("PRIZE_CLAIMED",this.onRaceClaimed,this);
+         oops.message.off("GAME_MODE_CHANGED",this.onGameModeChanged,this);
 
         // 清理余额标签点击事件
         if (this.balanceLabel) {
@@ -1791,8 +1888,11 @@ export class MainGameUI extends CCComp {
             this.closeBetPanelButton.node.off(Button.EventType.CLICK, this.onCloseBetPanelButtonClick, this);
         }
 
-        if (this.autoBetButton) {
-            this.autoBetButton.node.off(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
+        if (this.PIGBetButton) {
+            this.PIGBetButton.node.off(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
+        }
+        if (this.pigsettingBetButton) {
+            this.pigsettingBetButton.node.off(Button.EventType.CLICK, this.onPigSettingBetButtonClick, this);
         }
 
         // 清理下注面板中的按钮事件
@@ -1970,7 +2070,7 @@ export class MainGameUI extends CCComp {
                 
                 maingameui_this.resetGame();
                 const betting = smc.crashGame.get(BettingComp);
-                if (betting && betting.autoCashOutEnabled) {
+                if (betting && betting.gameMode === "PIG") {
                     betting.goNextRound = true;
                 }
                 console.log("game result callback inn ...4");
@@ -1989,10 +2089,10 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         if (!betting) return;
 
-        const status = betting.getAutoCashOutStatus();
+        const status = betting.getGameModeStatus();
         const params: AutoCashOutParams = {
-            multiplier: status.multiplier,
-            totalBets: status.totalBets
+            multiplier: status.pigMultiplier,
+            totalBets: status.pigTotalBets
         };
 
         console.log("Showing auto cashout UI with params:", params);
@@ -2106,7 +2206,7 @@ export class MainGameUI extends CCComp {
     }
 
     /**
-     * 开始自动提现
+     * 开始PIG模式自动提现
      * @param multiplier 自动提现倍数
      * @param totalBets 总下注次数
      */
@@ -2115,52 +2215,41 @@ export class MainGameUI extends CCComp {
 
         const betting = smc.crashGame.get(BettingComp);
         if (betting) {
-            betting.setAutoCashOut(true, multiplier, totalBets);
-            console.log(`MainGameUI: Started auto cashout: ${multiplier}x, ${totalBets === -1 ? 'infinite' : totalBets} bets`);
-
+            betting.setPigCashOut(multiplier, totalBets);
+            console.log(`MainGameUI: Started PIG mode cashout: ${multiplier}x, ${totalBets === -1 ? 'infinite' : totalBets} bets`);
             // 验证设置是否正确
-            const status = betting.getAutoCashOutStatus();
-            console.log(`MainGameUI: Auto cashout status after setting:`, status);
-
+            const status = betting.getGameModeStatus();
+            console.log(`MainGameUI: PIG mode status after setting:`, status);
             // 更新按钮状态
             this.updateAutoBetButtonState();
+            this.updateHoldButtonState();
         }
     }
 
     /**
-     * 更新AutoBet按钮状态
+     * 更新模式切换按钮状态
      */
     private updateAutoBetButtonState(): void {
-        if (!this.autoBetButton || !smc.crashGame) return;
+        if (!this.PIGBetButton || !smc.crashGame) return;
 
         const betting = smc.crashGame.get(BettingComp);
         if (!betting) return;
 
-        const status = betting.getAutoCashOutStatus();
-        const buttonLabel = this.autoBetButton.getComponentInChildren(Label);
+        const status = betting.getGameModeStatus();
+        const buttonLabel = this.PIGBetButton.getComponentInChildren(Label);
 
         if (buttonLabel) {
-            if (status.enabled) {
-                // 启用状态：显示"AUTO ON"和设置信息
-                buttonLabel.string = `AUTO\n${status.multiplier.toFixed(2)}x`;
+            if (status.mode === "PIG") {
+                // PIG模式：显示"PIG"和设置信息
+                buttonLabel.string = `PIG\n${status.pigMultiplier.toFixed(2)}x`;
                 buttonLabel.color = new Color(2,253, 247, 255); // 亮色
-                // // 设置按钮颜色为激活状态
-                // const sprite = this.autoBetButton.node.getComponent(Sprite);
-                // if (sprite) {
-                //     sprite.color = new Color(2,253, 247, 255); // 亮色
-                // }
             } else {
-                // 禁用状态：显示"AUTO"
-                buttonLabel.string = "AUTO";
-                buttonLabel.color = new Color(2,68, 66, 255); // 默认颜色
-                // // 设置按钮颜色为默认状态
-                // const sprite = this.autoBetButton.node.getComponent(Sprite);
-                // if (sprite) {
-                //     sprite.color = new Color(2,68, 66, 255); // 白色
-                // }
+                // SPG模式：显示"SPG"
+                buttonLabel.string = "SPG";
+                buttonLabel.color = new Color(2,253, 247, 255);//new Color(2,68, 66, 255); // 默认颜色
             }
         }
-        // console.log(`Updated auto bet button state: ${status.enabled ? 'ON' : 'OFF'}`);
+        // console.log(`Updated mode button state: ${status.mode}`);
     }
 
     /**
@@ -2935,5 +3024,85 @@ export class MainGameUI extends CCComp {
             this.countdownNode.active = false;
         }
         callback?.();
+    }
+
+    /**
+     * 更新PIG模式倒计时显示
+     */
+    /**
+     * 处理PIG倒计时更新事件
+     */
+    /**
+     * 处理PIG倒计时更新事件 - 只负责UI更新
+     */
+    private onPigCountdownUpdate(event: string, data: any): void {
+        this.updatePigCountdownDisplay(data);
+    }
+    
+    /**
+     * 处理PIG倒计时结束事件 - 只负责UI更新
+     */
+    private onPigCountdownFinished(event: string, data: any): void {
+        console.log("MainGameUI: PIG countdown finished, phase:", data.phase);
+        // 倒计时结束时的UI处理
+        this.updatePigCountdownDisplay(data);
+    }
+
+    /**
+     * 更新PIG倒计时显示 - 纯UI逻辑，不包含倒计时计算
+     */
+    private updatePigCountdownDisplay(eventData?: any): void {
+        if (!smc.crashGame) return;
+        
+        const betting = smc.crashGame.get(BettingComp);
+        if (!betting || betting.gameMode !== "PIG") {
+            // 隐藏倒计时相关UI
+            this.holdButtonGameStateCD.node.active = false;
+            this.hold_waiting_node.active = false;
+            return;
+        }
+        
+        // 使用事件数据或从BettingComp获取状态
+        const phase = eventData?.phase || betting.serverPhase;
+        const remainingTime = eventData?.remainingTime || betting.getPigCountdownRemainingTime();
+        const seconds = Math.ceil(remainingTime / 1000);
+        
+        let message = "";
+        
+        if (phase === "betting") {
+            message = `BETTING TIME`;
+            this.holdButtonGameStateCD.node.active = true;
+            this.holdButtonGameStateCD.setTime(seconds);
+            this.hold_waiting_node.active = false;
+            this.holdTextSprite.node.active = false;
+            this.updateAutoBetButtonState();
+        } else if (phase === "waiting") {
+            message = `STARTING IN`;
+            this.holdButtonGameStateCD.node.active = true;
+            this.hold_waiting_node.active = false;
+            this.holdButtonGameStateCD.setTime(seconds);
+        } else if (phase === "gaming") {
+            if( betting.goNextRound ){
+                message = `WAITING \n FOR \n PLAYER`;
+            }else{
+                message = '';
+            }
+            this.holdButtonGameStateCD.node.active = false;
+            this.hold_waiting_node.active = true;
+        } else {
+            // idle状态，隐藏倒计时UI
+            this.holdButtonGameStateCD.node.active = false;
+            this.hold_waiting_node.active = false;
+        }
+        
+        if (message) {
+            console.log(`MainGameUI: PIG countdown display - ${message}`);
+            this.holdButtonGameStateLabel.string = message;
+            this.holdButtonGameStateLabel.node.active = true;
+        }
+        else{
+            this.holdButtonGameStateLabel.string = '';
+            this.holdButtonGameStateLabel.node.active = false;
+        }
     }
 }
