@@ -114,6 +114,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                         console.error("CrashGameSystem: Invalid server crash multiplier for PIG mode:", remote_multiplier);
                         // 如果服务器倍率无效，切换到SPG模式
                         // betting.setGameMode("SPG");
+                        betting.goNextRound = true;
                         oops.message.dispatchEvent("SERVER_CANCEL_AUTOGAME");
                     }
                 } else {
@@ -121,6 +122,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                     console.log(`CrashGameSystem: PIG mode bet validation failed (insufficient balance or energy)`);
                     // 如果验证失败，切换到SPG模式
                     // betting.setGameMode("SPG");
+                    betting.goNextRound = true;
                     oops.message.dispatchEvent("AUTO_CANCEL_AUTOGAME");
                 }
             }

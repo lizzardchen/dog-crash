@@ -175,7 +175,13 @@ export class CrashGame extends ecs.Entity {
         // 更新用户数据（服务器数据为准）
         userDataComp.username = serverData.userId; //|| userDataComp.userId;
         userDataComp.balance = serverData.balance;// || userDataComp.balance;
-        userDataComp.money = serverData.money;// || userDataComp.money;
+        if(userDataComp.balance == undefined){
+            userDataComp.balance = 100;
+        }
+        userDataComp.money = serverData.money;
+        if( userDataComp.money == undefined ){
+            userDataComp.money = 100;
+        }
         userDataComp.totalFlights = Math.max(userDataComp.totalFlights, serverData.totalFlights || 0);
         userDataComp.flightsWon = Math.max(userDataComp.flightsWon, serverData.flightsWon || 0);
         

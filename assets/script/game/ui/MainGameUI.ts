@@ -1351,6 +1351,12 @@ export class MainGameUI extends CCComp {
             const targetIndex = this.applyBoundaryRestrictions(clickedIndex);
             const targetBetItem = betting.betAmountData[targetIndex];
 
+            // 验证余额是否足够
+            if (!this.validateBetAmount(targetBetItem.value)) {
+                console.warn(`Insufficient balance for bet amount: ${targetBetItem.value}`);
+                return;
+            }
+
             // 滚动到目标item并选中
             this.snapToItem(targetIndex);
             
@@ -1419,13 +1425,32 @@ export class MainGameUI extends CCComp {
             return;
         }
 
-        // 计算当前应该选中的item索引
+        const betting = smc.crashGame.get(BettingComp);
+        if (!betting) return;
+
+        // 记录当前选中的索引作为原始位置（滚动前的位置）
+        const originalIndex = betting.betAmountData.indexOf(betting.currentBetItem);
+        
+        // 计算滚动后应该选中的item索引
         const rawSelectedIndex = this.calculateSelectedItemIndex();
         
         // 应用边界限制逻辑
         const finalSelectedIndex = this.applyBoundaryRestrictions(rawSelectedIndex);
         
-        // 始终执行snap对齐，确保item居中
+        // 验证新选择的下注金额
+        const selectedBetItem = betting.betAmountData[finalSelectedIndex];
+        if (selectedBetItem && !this.validateBetAmount(selectedBetItem.value)) {
+            // 验证失败，恢复到原始选择
+            const restoreIndex = originalIndex >= 0 ? originalIndex : 0;
+            console.log(`Balance validation failed, restoring to index: ${restoreIndex}`);
+            
+            this.isScrollSnapping = true;
+            this.snapToItem(restoreIndex);
+            this.selectItemByIndex(restoreIndex);
+            return;
+        }
+        
+        // 验证通过，执行正常的snap对齐
         this.isScrollSnapping = true;
         this.snapToItem(finalSelectedIndex);
         
@@ -1570,6 +1595,12 @@ export class MainGameUI extends CCComp {
         if (!betting || index < 0 || index >= betting.betAmountData.length) return;
 
         const selectedBetItem = betting.betAmountData[index];
+        
+        // 验证余额是否足够
+        if (!this.validateBetAmount(selectedBetItem.value)) {
+            console.warn(`Insufficient balance for bet amount: ${selectedBetItem.value}`);
+            return;
+        }
         
         // 设置当前选中的下注项
         betting.setCurrentBetItem(selectedBetItem);
@@ -2088,6 +2119,9 @@ export class MainGameUI extends CCComp {
                 if (autoCashOutUI) {
                     autoCashOutUI.onOpen(params,
                         (multiplier: number, totalBets: number) => {
+                            if(!this.validateBetAmount(betting.currentBetItem.value)){
+                                return;
+                            }
                             // 开始自动提现回调
                             this.startAutoCashOut(multiplier, totalBets);
                         },

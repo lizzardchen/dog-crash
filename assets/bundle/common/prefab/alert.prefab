@@ -366,11 +366,14 @@
     "_lineHeight": 80,
     "_overflow": 3,
     "_enableWrapText": true,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 1,
@@ -469,8 +472,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 13.155500000000004,
-      "y": -103.7,
+      "x": 0,
+      "y": -86.01199999999989,
       "z": 0
     },
     "_lrot": {
@@ -608,11 +611,14 @@
     "_lineHeight": 50,
     "_overflow": 1,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 1,
@@ -674,6 +680,8 @@
       "__id__": 0
     },
     "fileId": "79ujcxm8RNi7nnpjL7+jNw",
+    "instance": null,
+    "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
   },
   {
@@ -690,8 +698,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 126.311,
-      "height": 47.4
+      "width": 290,
+      "height": 91
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -730,7 +738,7 @@
       "__uuid__": "df40c818-1526-4278-a319-631c99b8166f@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
-    "_type": 1,
+    "_type": 0,
     "_fillType": 0,
     "_sizeMode": 0,
     "_fillCenter": {
@@ -838,10 +846,10 @@
     },
     "_alignFlags": 12,
     "_target": null,
-    "_left": 189,
+    "_left": 94,
     "_right": 0,
     "_top": 0,
-    "_bottom": 32.599999999999994,
+    "_bottom": 28.488000000000113,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,
