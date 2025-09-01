@@ -128,7 +128,7 @@ export class UserDataComp extends ecs.Comp {
     }
     
     /**
-     * 保存用户数据到本地存储
+     * 保存用户数据到本地存储并同步到服务器
      */
     saveToLocal(): void {
         const userData = {
@@ -145,6 +145,24 @@ export class UserDataComp extends ecs.Comp {
         };
         
         UserIdManager.saveUserData(userData);
+        
+        // 同步用户设置到服务器
+        const settingsData = {
+            balance: this.balance,
+            money: this.money,
+            settings: this.settings,
+            lastSyncTime: new Date().getTime()
+        };
+        
+        oops.http.post(`user/${this.getUserId()}/settings`, (ret) => {
+            if (ret.isSucc) {
+                console.log("User settings synced to server successfully");
+                // 更新本地同步时间
+                this.lastSyncTime = new Date();
+            } else {
+                console.error("Failed to sync user settings to server:", ret.err);
+            }
+        }, settingsData);
     }
     
     /**

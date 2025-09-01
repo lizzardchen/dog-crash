@@ -682,7 +682,7 @@ export class MainGameUI extends CCComp {
      * 显示金币不足对话框
      */
     private showInsufficientCoinsDialog(neededAmount: number): void {
-        const rewardAmount = Math.max(100, Math.ceil(neededAmount / 100) * 100); // 向上取整到100的倍数
+        const rewardAmount = 1000;//Math.max(100, Math.ceil(neededAmount / 100) * 100); // 向上取整到100的倍数
         
         tips.confirm(
             `Insufficient coins!`,
@@ -713,7 +713,7 @@ export class MainGameUI extends CCComp {
                     
                     if (userData) {
                         userData.balance += coinAmount;
-                        userData.saveToLocal();
+                        userData.saveToLocal(); // 现在saveToLocal函数会自动同步到服务器
                     }
                     
                     oops.gui.toast(`Congratulations! Got ${coinAmount} coins!`);
