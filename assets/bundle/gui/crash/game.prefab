@@ -1310,7 +1310,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 158.4810874135912,
+      "width": 141.2545249135912,
       "height": 108.8
     },
     "_anchorPoint": {
@@ -1355,11 +1355,14 @@
     "_lineHeight": 80,
     "_overflow": 0,
     "_enableWrapText": true,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": true,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -1639,11 +1642,14 @@
     "_lineHeight": 100,
     "_overflow": 0,
     "_enableWrapText": true,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": true,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -2096,11 +2102,14 @@
     "_lineHeight": 80,
     "_overflow": 2,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -2112,7 +2121,7 @@
       "b": 0,
       "a": 255
     },
-    "_outlineWidth": 5,
+    "_outlineWidth": 4,
     "_enableShadow": false,
     "_shadowColor": {
       "__type__": "cc.Color",
@@ -2640,11 +2649,14 @@
     "_lineHeight": 80,
     "_overflow": 2,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -4076,7 +4088,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 60,
+      "y": 55.374,
       "z": 0
     },
     "_lrot": {
@@ -4116,8 +4128,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 198,
-      "height": 91
+      "width": 250,
+      "height": 120
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -4158,7 +4170,7 @@
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -4339,7 +4351,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 396.837015625,
-      "height": 136
+      "height": 123.4
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -4377,14 +4389,17 @@
     "_string": "",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 72,
-    "_fontSize": 72,
+    "_actualFontSize": 68,
+    "_fontSize": 68,
     "_fontFamily": "IMPACT",
-    "_lineHeight": 100,
+    "_lineHeight": 90,
     "_overflow": 3,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
     "_isBold": true,
@@ -4828,7 +4843,7 @@
     "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -5130,7 +5145,7 @@
     "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -5432,7 +5447,7 @@
     "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -5734,7 +5749,7 @@
     "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -8645,17 +8660,20 @@
     "_string": "5/10",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 50,
-    "_fontSize": 50,
+    "_actualFontSize": 45,
+    "_fontSize": 45,
     "_fontFamily": "Arial",
     "_lineHeight": 80,
     "_overflow": 1,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -10144,11 +10162,14 @@
     "_lineHeight": 80,
     "_overflow": 1,
     "_enableWrapText": true,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -11288,11 +11309,14 @@
     "_lineHeight": 66,
     "_overflow": 2,
     "_enableWrapText": true,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -12947,8 +12971,8 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 46,
-      "y": -79.99999999999977,
+      "x": 44,
+      "y": -64.49999999999977,
       "z": 0
     },
     "_lrot": {
@@ -12998,7 +13022,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 1.924,
-      "y": 0.983,
+      "y": -0.6495000000000006,
       "z": 0
     },
     "_lrot": {
@@ -13039,7 +13063,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 168.353609375,
-      "height": 79.6
+      "height": 96.859
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -13070,17 +13094,17 @@
     "_color": {
       "__type__": "cc.Color",
       "r": 2,
-      "g": 68,
-      "b": 66,
+      "g": 253,
+      "b": 247,
       "a": 255
     },
-    "_string": "PIG",
+    "_string": "SPG",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 51,
-    "_fontSize": 50,
+    "_actualFontSize": 89,
+    "_fontSize": 92,
     "_fontFamily": "IMPACT",
-    "_lineHeight": 60,
+    "_lineHeight": 100,
     "_overflow": 2,
     "_enableWrapText": true,
     "_font": {
@@ -13090,7 +13114,7 @@
     "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,
@@ -13150,8 +13174,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 208,
-      "height": 98
+      "width": 212,
+      "height": 129
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -13555,8 +13579,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 208,
-      "height": 98
+      "width": 212,
+      "height": 129
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -13893,11 +13917,14 @@
     "_lineHeight": 80,
     "_overflow": 1,
     "_enableWrapText": false,
-    "_font": null,
-    "_isSystemFontUsed": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
+    },
+    "_isSystemFontUsed": false,
     "_spacingX": 0,
     "_isItalic": false,
-    "_isBold": true,
+    "_isBold": false,
     "_isUnderline": false,
     "_underlineHeight": 2,
     "_cacheMode": 0,

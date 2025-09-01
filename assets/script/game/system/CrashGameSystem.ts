@@ -113,14 +113,14 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                         betting.isHolding = false;
                         console.error("CrashGameSystem: Invalid server crash multiplier for PIG mode:", remote_multiplier);
                         // 如果服务器倍率无效，切换到SPG模式
-                        betting.setGameMode("SPG");
+                        // betting.setGameMode("SPG");
                         oops.message.dispatchEvent("SERVER_CANCEL_AUTOGAME");
                     }
                 } else {
                     betting.isHolding = false;
                     console.log(`CrashGameSystem: PIG mode bet validation failed (insufficient balance or energy)`);
                     // 如果验证失败，切换到SPG模式
-                    betting.setGameMode("SPG");
+                    // betting.setGameMode("SPG");
                     oops.message.dispatchEvent("AUTO_CANCEL_AUTOGAME");
                 }
             }
@@ -167,16 +167,15 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         
         console.log(`CrashGameSystem: handleCrashedState - gameMode: ${betting.gameMode}`);
         
-        if (betting.gameMode === "PIG") {
+        // if (betting.gameMode === "PIG") {
             // 增加PIG模式下注计数
-            betting.incrementPigBets();
-            console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
-            
+            // betting.incrementPigBets();
+            // console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
             // // 如果仍在PIG模式，启动下注倒计时
             // if (betting.gameMode === "PIG") {
             //     betting.startPigBettingCountdown();
             // }
-        }
+        // }
     }
 
     private handleCashedOutState(entity: CrashGame): void {
@@ -203,16 +202,16 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         
         console.log(`CrashGameSystem: handleCashedOutState - gameMode: ${betting.gameMode}`);
         
-        if (betting.gameMode === "PIG") {
-            // 增加PIG模式下注计数
-            betting.incrementPigBets();
-            console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
+        // if (betting.gameMode === "PIG") {
+        //     // 增加PIG模式下注计数
+        //     betting.incrementPigBets();
+        //     console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
             
-            // // 如果仍在PIG模式，启动下注倒计时
-            // if (betting.gameMode === "PIG") {
-            //     betting.startPigBettingCountdown();
-            // }
-        }
+        //     // // 如果仍在PIG模式，启动下注倒计时
+        //     // if (betting.gameMode === "PIG") {
+        //     //     betting.startPigBettingCountdown();
+        //     // }
+        // }
     }
 
     private validateBetAmount(amount: number, isFreeMode: boolean): boolean {

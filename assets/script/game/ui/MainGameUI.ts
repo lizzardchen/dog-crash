@@ -1756,22 +1756,7 @@ export class MainGameUI extends CCComp {
             case GameState.FLYING:
                 if (betting.isHolding) {
                     if (buttonLabel) {
-                        if (betting.gameMode === "PIG") {
-                            // PIG模式：显示剩余下注数量或STOP
-                            if (betting.serverPhase === "gaming") {
-                                if(!betting.goNextRound){
-                                    const remaining = betting.pigTotalBets === -1 ? "∞" : 
-                                    Math.max(0, betting.pigTotalBets - betting.pigCurrentBets).toString();
-                                    buttonLabel.string = `PIG (${remaining})`;
-                                }else{
-                                    buttonLabel.string = '';
-                                }
-                                
-                            }
-                        } else {
-                            // SPG模式：不显示文本
-                            buttonLabel.string = "";
-                        }
+                        buttonLabel.string = '';
                     }
                     this.holdButton.interactable = true;
                     this.addButtonPressedEffect();
@@ -2241,7 +2226,7 @@ export class MainGameUI extends CCComp {
         if (buttonLabel) {
             if (status.mode === "PIG") {
                 // PIG模式：显示"PIG"和设置信息
-                buttonLabel.string = `PIG\n${status.pigMultiplier.toFixed(2)}x`;
+                buttonLabel.string = 'PIG';
                 buttonLabel.color = new Color(2,253, 247, 255); // 亮色
             } else {
                 // SPG模式：显示"SPG"

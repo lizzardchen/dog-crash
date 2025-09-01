@@ -252,8 +252,7 @@ export class BettingComp extends ecs.Comp {
                     totalBets: this.pigTotalBets,
                     completedBets: this.pigCurrentBets
                 });
-                // this.gameMode = "SPG";
-                this.setGameMode("SPG");
+                // this.setGameMode("SPG");
                 console.log(`BettingComp: PIG mode disabled: reached total bets limit (${this.pigTotalBets})`);
             } else {
                 console.log(`BettingComp: PIG mode still enabled, continuing...`);

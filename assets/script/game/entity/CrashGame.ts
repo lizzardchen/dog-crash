@@ -47,9 +47,9 @@ export class CrashGame extends ecs.Entity {
     }
     // 服务器配置
     public static serverConfig = {
-        baseURL: "https://dog-crash-api.bulletnews.vip/api/",
+        // baseURL: "https://dog-crash-api.bulletnews.vip/api/",
         // baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
-        // baseURL: "http://localhost:3000/api/",
+        baseURL: "http://localhost:3000/api/",
         timeout: 10000,
         retryAttempts: 3
     };
@@ -173,8 +173,9 @@ export class CrashGame extends ecs.Entity {
         if (!userDataComp || !serverData) return;
 
         // 更新用户数据（服务器数据为准）
-        userDataComp.username = serverData.userId || userDataComp.userId;
-        userDataComp.balance = serverData.balance || userDataComp.balance;
+        userDataComp.username = serverData.userId; //|| userDataComp.userId;
+        userDataComp.balance = serverData.balance;// || userDataComp.balance;
+        userDataComp.money = serverData.money;// || userDataComp.money;
         userDataComp.totalFlights = Math.max(userDataComp.totalFlights, serverData.totalFlights || 0);
         userDataComp.flightsWon = Math.max(userDataComp.flightsWon, serverData.flightsWon || 0);
         
@@ -241,6 +242,7 @@ export class CrashGame extends ecs.Entity {
                     multiplier: Number(gameResult.crashMultiplier),
                     winAmount: Number(gameResult.winAmount),
                     isWin: Boolean(gameResult.isWin),
+                    money: Number(userDataComp.money),
                     sessionId: `${userDataComp.getUserId()}_${Date.now()}`,
                     gameDuration: Number(gameResult.duration || 0),
                     isFreeMode: Boolean(gameResult.isFreeMode || false)
@@ -258,6 +260,7 @@ export class CrashGame extends ecs.Entity {
                             userDataComp.totalFlights = serverData.totalFlights;
                             userDataComp.flightsWon = serverData.flightsWon;
                             userDataComp.highestMultiplier = serverData.highestMultiplier;
+                            userDataComp.money = serverData.money;
                         }
                         resolve(true);
                     } else {

@@ -167,13 +167,13 @@ export class GameResultUI extends CCComp {
         }
 
         // 设置关闭按钮文本
-        // if (this.close_button) {
-        //     const buttonLabel = this.close_button.node.getComponentInChildren(Label);
-        //     // if (buttonLabel) {
-        //     //     const buttonTextKey = params.isWin ? "continue" : "try_again";
-        //     //     buttonLabel.string = CrashGameLanguage.getText(buttonTextKey);
-        //     // }
-        // }
+        if (this.close_button) {
+            const buttonLabel = this.close_button.node.getComponentInChildren(Label);
+            if (buttonLabel) {
+                const buttonTextKey = params.isWin ? "continue" : "try_again";
+                buttonLabel.string = CrashGameLanguage.getText(buttonTextKey);
+            }
+        }
 
         // 计算coin和dollar奖励数量
         const rewardAmount = params.profit; // 取绝对值作为奖励数量
