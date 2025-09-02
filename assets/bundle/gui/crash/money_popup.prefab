@@ -527,7 +527,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "mycoin",
+    "_name": "mypoint",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -589,8 +589,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 364,
-      "height": 75
+      "width": 413.328125,
+      "height": 134
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -601,10 +601,10 @@
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "b3xGxM7P1Jm6z+2k/ILkVU"
+    "fileId": "e6yuvqc9pCe5P9AftMHjWJ"
   },
   {
-    "__type__": "cc.Sprite",
+    "__type__": "cc.Label",
     "_name": "",
     "_objFlags": 0,
     "__editorExtras__": {},
@@ -625,31 +625,54 @@
       "b": 255,
       "a": 255
     },
-    "_spriteFrame": {
-      "__uuid__": "cbde70d2-635a-4c5f-819e-94e54646198d@f9941",
-      "__expectedType__": "cc.SpriteFrame"
+    "_string": "MY POINTS",
+    "_horizontalAlign": 1,
+    "_verticalAlign": 1,
+    "_actualFontSize": 96,
+    "_fontSize": 96,
+    "_fontFamily": "Arial",
+    "_lineHeight": 100,
+    "_overflow": 0,
+    "_enableWrapText": true,
+    "_font": {
+      "__uuid__": "b861a484-202e-4c23-9da8-db23e7b3e76d",
+      "__expectedType__": "cc.TTFFont"
     },
-    "_type": 0,
-    "_fillType": 0,
-    "_sizeMode": 1,
-    "_fillCenter": {
+    "_isSystemFontUsed": false,
+    "_spacingX": 0,
+    "_isItalic": false,
+    "_isBold": false,
+    "_isUnderline": false,
+    "_underlineHeight": 2,
+    "_cacheMode": 0,
+    "_enableOutline": true,
+    "_outlineColor": {
+      "__type__": "cc.Color",
+      "r": 169,
+      "g": 104,
+      "b": 18,
+      "a": 255
+    },
+    "_outlineWidth": 4,
+    "_enableShadow": false,
+    "_shadowColor": {
+      "__type__": "cc.Color",
+      "r": 0,
+      "g": 0,
+      "b": 0,
+      "a": 255
+    },
+    "_shadowOffset": {
       "__type__": "cc.Vec2",
-      "x": 0,
-      "y": 0
+      "x": 2,
+      "y": 2
     },
-    "_fillStart": 0,
-    "_fillRange": 0,
-    "_isTrimmedMode": true,
-    "_useGrayscale": false,
-    "_atlas": {
-      "__uuid__": "853434dd-6b7a-4533-96f9-f99289a86f55",
-      "__expectedType__": "cc.SpriteAtlas"
-    },
+    "_shadowBlur": 2,
     "_id": ""
   },
   {
     "__type__": "cc.CompPrefabInfo",
-    "fileId": "d3IvfcW0xDoKPjH0Mo/8jI"
+    "fileId": "03tVRRPBlIl5wojyAWfVTK"
   },
   {
     "__type__": "cc.PrefabInfo",
@@ -659,7 +682,7 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "a6vlI5mRdGHpKjVUlTlX1u",
+    "fileId": "2fhn+DaltJC7JJt+oQbDB8",
     "instance": null,
     "targetOverrides": null,
     "nestedPrefabInstanceRoots": null
