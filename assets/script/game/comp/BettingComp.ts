@@ -61,6 +61,7 @@ export class BettingComp extends ecs.Comp {
     pigCountdownActive: boolean = false; // 倒计时是否激活
     pigGameEndByUIThisTurn: boolean = false; // 游戏手是否结束当前回合
     private lastUpdateTime: number = 0; // 上次更新时间，用于计算时间差
+    private isTransitioning: boolean = false; // 是否正在进行阶段转换，防止重复执行
     
     public get gameMode(){
         return this._gameMode;
@@ -440,8 +441,11 @@ export class BettingComp extends ecs.Comp {
         });
         
         // 检查倒计时是否结束
-        if (remainingTime <= 0) {
+        if (remainingTime <= 0 && !this.isTransitioning) {
             console.log(`BettingComp: Countdown finished for phase: ${this.serverPhase}`);
+            
+            // 设置转换标志，防止重复执行
+            this.isTransitioning = true;
             
             // 分发倒计时结束事件
             oops.message.dispatchEvent("PIG_COUNTDOWN_FINISHED", {
@@ -456,15 +460,15 @@ export class BettingComp extends ecs.Comp {
     /**
      * 处理倒计时阶段转换
      */
-    private handleCountdownPhaseTransition(): void {
+    private async handleCountdownPhaseTransition(): Promise<void> {
         if (this.serverPhase === "betting") {
             // 下注倒计时结束，开始等待游戏开始倒计时
             console.log("BettingComp: Betting countdown finished, starting waiting countdown");
-            this.startPigWaitingCountdown();
+            await this.startPigWaitingCountdown();
         } else if (this.serverPhase === "waiting") {
             // 等待倒计时结束，开始游戏倒计时
             console.log("BettingComp: Waiting countdown finished, starting game countdown");
-            this.startPigGameCountdown();
+            await this.startPigGameCountdown();
         } else if (this.serverPhase === "gaming") {
             // 游戏倒计时结束，停止倒计时并准备新游戏
             console.log("BettingComp: Game countdown finished, stopping countdown");
@@ -472,6 +476,9 @@ export class BettingComp extends ecs.Comp {
             // 通知系统重置游戏
             oops.message.dispatchEvent("PIG_GAME_RESET_NEEDED");
         }
+        
+        // 转换完成，重置标志
+        this.isTransitioning = false;
     }
     
     /**

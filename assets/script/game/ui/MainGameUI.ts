@@ -32,8 +32,16 @@ import { MoneyPopupUI } from './MoneyPopupUI';
 import { EnergyBuyUI } from './EnergyBuyUI';
 import { SDKMgr } from '../common/SDKMgr';
 import { TimerCDShow } from './TimerCDShow';
+import { MultiplierConfig } from '../config/MultiplierConfig';
 
 const { ccclass, property } = _decorator;
+
+enum ButtonState{
+    Unpressed = 0,
+    Pressed_Waiting_CountDown = 1,
+    Pressed_Waiting_Release = 2,
+    UnPressed_Waiting_Result = 3
+}
 
 // /**
 //  * 下注金额项接口
@@ -155,6 +163,9 @@ export class MainGameUI extends CCComp {
     @property(Node)
     frontScene: Node = null!;
 
+    @property(Node)
+    pig_change_node:Node = null!;
+
     // 可扩展的场景配置数组
     @property({ type: [SceneData], tooltip: "场景配置数组，根据rocket状态自动排序 (ground->sky->atmosphere->space)" })
     sceneConfigs: SceneData[] = [];
@@ -192,7 +203,8 @@ export class MainGameUI extends CCComp {
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
     private isHistoryPopupOpen: boolean = false; // 记录history弹窗状态
 
-    private isButtonHolding:boolean = false;
+    // private isButtonHolding:boolean = false;
+    private buttonState:ButtonState = ButtonState.Unpressed;
     private needHoldUp:boolean = false;
 
     // 存储Widget组件的原始值
@@ -513,8 +525,7 @@ export class MainGameUI extends CCComp {
             return;
         }
         const userData = smc.crashGame.get(UserDataComp);
-        if(userData.balance < betting.currentBetItem.value) {
-            oops.gui.toast("Insufficient balance!");
+        if(!this.validateBetAmount(betting.currentBetItem.value)) {
             return;
         }
         
@@ -524,82 +535,110 @@ export class MainGameUI extends CCComp {
         if( betting.isHolding ) return;
 
         CrashGameAudio.playButtonClick();
-        if (!smc.crashGame) return;
-
-        this.isButtonHolding = true;
-
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
         this.onCloseBetPanelButtonClick();
 
+        if(this.buttonState >= ButtonState.Pressed_Waiting_CountDown){
+            return;
+        }
+
+        this.buttonState = ButtonState.Pressed_Waiting_CountDown;
         this.hold_unpressed_node.active = false;
         this.hold_pressed_node.active = true;
         
         // 完成新手引导（如果正在引导中）
         this.onTutorialHoldButtonClicked();
-        
+        let wait_server_multiplier:boolean = true;
+        const localData = smc.crashGame.get(LocalDataComp);
+        localData.generateCrashMultiplierAsync().then((remote_mulitplier: number) => {
+            localData.currentCrashMultiplier = remote_mulitplier;
+            wait_server_multiplier = false;
+        }).catch((error) => {
+            console.error("Failed to generate crash multiplier", error);
+            wait_server_multiplier = false;
+            localData.currentCrashMultiplier = MultiplierConfig.generateCrashMultiplier();
+            // 播放游戏开始UI动画
+            // this.playGameEndUIAnimation();
+        });
+        const thisvalue = this;
         // 开始3秒倒计时
         this.startCountdown(()=>{
             this.playGameStartUIAnimation();
             const gameState = smc.crashGame.get(GameStateComp);
             
             const multiplier = smc.crashGame.get(MultiplierComp);
-
-            this.isButtonHolding = false;
-            if(this.needHoldUp){
-                this.onHoldButtonTouchEnd(null);
-                this.needHoldUp = false; // 重置需要松开状态
+            if( this.buttonState <= ButtonState.Pressed_Waiting_CountDown ){
+                this.buttonState = ButtonState.Pressed_Waiting_Release;
+                if(this.needHoldUp){
+                    this.onHoldButtonTouchEnd(null);
+                    this.needHoldUp = false; // 重置需要松开状态
+                    return;
+                }
+            }else{
                 return;
             }
-
             if (gameState.state === GameState.WAITING) {
-                // // 用户手动按下HOLD按钮 - 如果是PIG模式，切换到SPG模式
-                // if (betting.gameMode === "PIG") {
-                //     console.log("MainGameUI: User pressed HOLD, switching to SPG mode");
-                //     betting.setGameMode("SPG");
-                //     this.updateAutoBetButtonState();
-                // }
                 // 检查并消耗能源（每局游戏都消耗1个能源）
                 if (!this.consumeEnergy(1)) {
                     console.warn("Not enough energy to start game");
                     // TODO: 显示能源不足提示
                     oops.gui.toast("Energy not enough!");
-                    this.isButtonHolding = false;
                     if(this.needHoldUp){
                         this.onHoldButtonTouchEnd(null);
                         this.needHoldUp = false; // 重置需要松开状态
                     }
                     return;
                 }
-
                 // 开始游戏 - 按下按钮时开始
                 const betAmount = betting.currentBetItem.value;
                 const isFreeMode = betting.currentBetItem.isFree;
-
-                const localData = smc.crashGame.get(LocalDataComp);
-                localData.generateCrashMultiplierAsync().then((remote_mulitplier: number) => {
-                    localData.currentCrashMultiplier = remote_mulitplier;
-                    if (this.validateBetAmount(betAmount, isFreeMode)) {
+                let callback = ()=>{
+                    if(wait_server_multiplier){
+                        localData.currentCrashMultiplier = MultiplierConfig.generateCrashMultiplier();
+                    }
+                    if (thisvalue.validateBetAmount(betAmount, isFreeMode)) {
                         betting.betAmount = betAmount;
                         betting.isHolding = true;
                         gameState.state = GameState.FLYING;
                         gameState.startTime = Date.now();
                         multiplier.startTime = Date.now();
 
-                        this.updateHoldButtonState();
-                        this.addButtonPressedEffect();
+                        thisvalue.updateHoldButtonState();
+                        thisvalue.addButtonPressedEffect();
 
                         console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
-                        
-                        
                         oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
                     }
+                };
+                if( wait_server_multiplier ){
+                    this.scheduleOnce(callback,1);
+                }else{
+                    callback();
+                }
+                // localData.generateCrashMultiplierAsync().then((remote_mulitplier: number) => {
+                //     localData.currentCrashMultiplier = remote_mulitplier;
+                //     if (this.validateBetAmount(betAmount, isFreeMode)) {
+                //         betting.betAmount = betAmount;
+                //         betting.isHolding = true;
+                //         gameState.state = GameState.FLYING;
+                //         gameState.startTime = Date.now();
+                //         multiplier.startTime = Date.now();
 
-                }).catch((error) => {
-                    console.error("Failed to generate crash multiplier", error);
-                    // 播放游戏开始UI动画
-                    this.playGameEndUIAnimation();
-                });
+                //         this.updateHoldButtonState();
+                //         this.addButtonPressedEffect();
+
+                //         console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
+                        
+                        
+                //         oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
+                //     }
+
+                // }).catch((error) => {
+                //     console.error("Failed to generate crash multiplier", error);
+                //     // 播放游戏开始UI动画
+                //     this.playGameEndUIAnimation();
+                // });
             }
         });
     }
@@ -610,10 +649,17 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         if (!smc.crashGame) return;
         const userData = smc.crashGame.get(UserDataComp);
-        if(this.isButtonHolding) {
+        if(this.buttonState == ButtonState.Pressed_Waiting_CountDown) {
             this.needHoldUp = true; // 标记为需要松开状态
             return; // 如果已经在按住状态，则不处理松开事件
         }
+        if(this.buttonState >= ButtonState.UnPressed_Waiting_Result){
+            return;
+        }
+        if(this.buttonState == ButtonState.Pressed_Waiting_Release){
+            this.buttonState = ButtonState.UnPressed_Waiting_Result;
+        }
+        
         this.hold_unpressed_node.active = true;
         this.hold_pressed_node.active = false;
         const gameState = smc.crashGame.get(GameStateComp);
@@ -625,7 +671,6 @@ export class MainGameUI extends CCComp {
                 // betting.setGameMode("SPG");
                 // this.updateAutoBetButtonState();
             // }
-
             // 提现 - 松开按钮时提现
             betting.isHolding = false;
             gameState.state = GameState.CASHED_OUT;
@@ -787,11 +832,15 @@ export class MainGameUI extends CCComp {
                     this.scheduleOnce(() => {
                         this.playCoinFlyAnimation(profit, () => {
                             console.log("Coin fly animation completed!");
+                            this.buttonState = ButtonState.Unpressed;
                         });
                         this.playMoneyFlyAnimation(profit/10, () => {
                             console.log("money fly animation completed!");
                         });
                     }, 0.2); // 稍微延迟播放金币动画
+                }
+                else{
+                    this.buttonState = ButtonState.Unpressed;
                 }
             });
         }, 0.2);
@@ -838,6 +887,7 @@ export class MainGameUI extends CCComp {
                 isWin: false,
                 profit: -loss
             },()=>{
+                this.buttonState = ButtonState.Unpressed;
                 console.log("GameResultUI closed, game failed!!");
                 // 游戏失败后也要播放UI恢复动画
                 this.scheduleOnce(() => {
@@ -890,6 +940,7 @@ export class MainGameUI extends CCComp {
                 isWin: true,
                 profit: profit
             },()=>{
+                this.buttonState = ButtonState.Unpressed;
                 console.log("GameResultUI closed, game won!!");
                 // 先播放UI恢复动画，然后播放金币飞行动画
                 this.scheduleOnce(() => {
@@ -1153,7 +1204,11 @@ export class MainGameUI extends CCComp {
                     console.log("Cannot switch to PIG mode during game - please wait for current game to finish");
                     return;
                 }
-
+                if(this.pig_change_node){
+                    this.pig_change_node.active = true;
+                }
+                let can_disable_change_node:boolean = false;
+                let wait_change_node_timeend:boolean = false;
                 // 获取服务器状态
                 betting.fetchServerCountdown().then(() => {
                     if (betting.serverPhase === "betting") {
@@ -1176,10 +1231,30 @@ export class MainGameUI extends CCComp {
                         this.updateAutoBetButtonState();
                         this.updateHoldButtonState();
                     }
+                    can_disable_change_node = true;
+                    if(wait_change_node_timeend){
+                        if(this.pig_change_node){
+                            this.pig_change_node.active = false;
+                        }
+                    }
                 }).catch((error) => {
                     console.error("Failed to fetch server countdown:", error);
                     oops.gui.toast("Failed to connect to server");
+                    can_disable_change_node = true;
+                    if(wait_change_node_timeend){
+                        if(this.pig_change_node){
+                            this.pig_change_node.active = false;
+                        }
+                    }
                 });
+                this.scheduleOnce(()=>{
+                    wait_change_node_timeend = true;
+                    if(can_disable_change_node){
+                        if(this.pig_change_node){
+                            this.pig_change_node.active = false;
+                        }
+                    }
+                },1.2);
             } else {
                 // 从PIG切换到SPG模式（允许在任何状态下切换）
                 betting.setGameMode("SPG");
@@ -2107,7 +2182,7 @@ export class MainGameUI extends CCComp {
 
         const status = betting.getGameModeStatus();
         const params: AutoCashOutParams = {
-            multiplier: status.pigMultiplier,
+            multiplier: 2.01,
             totalBets: status.pigTotalBets
         };
 
@@ -3065,6 +3140,10 @@ export class MainGameUI extends CCComp {
         console.log("MainGameUI: PIG countdown finished, phase:", data.phase);
         // 倒计时结束时的UI处理
         this.updatePigCountdownDisplay(data);
+        const betting = smc.crashGame.get(BettingComp);
+        if( data.phase === "waiting" &&betting.goNextRound && betting.pigCashOutMultiplier <=0){
+            tips.alert("Sorry, your bet was not successful. Please wait for the next round!");
+        }
     }
 
     /**

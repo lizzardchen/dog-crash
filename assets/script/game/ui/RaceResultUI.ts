@@ -178,7 +178,7 @@ export class RaceResultUI extends CCComp {
                 
                 labelSet.username.string = raceComp ? raceComp.formatUserId(player.userId) : player.userId;
                 labelSet.prize.string = raceComp ? raceComp.formatPrizeNumber(player.prizeAmount) : player.rank.toString();
-                labelSet.score.string = raceComp.formatPrizeNumber(player.userNetProfit);
+                labelSet.score.string = raceComp.formatPrizeNumber(player.score);
                 labelSet.node.active = true;
             } else {
                 labelSet.node.active = false;

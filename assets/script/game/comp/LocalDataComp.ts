@@ -10,13 +10,20 @@ export class LocalDataComp extends ecs.Comp {
     private static readonly ENERGY_STORAGE_KEY = "crash_game_energy";
 
     /** 当前游戏会话的崩盘倍数（本地随机生成） */
-    currentCrashMultiplier: number = 0;
+    _currentCrashMultiplier: number = 0;
     
     /** 缓存的能源数据 */
     private cachedEnergyData: { currentEnergy: number; lastUpdateTime: number } | null = null;
 
     reset() {
-        this.currentCrashMultiplier = 0;
+        this._currentCrashMultiplier = 0;
+    }
+
+    public get currentCrashMultiplier():number{
+        return this._currentCrashMultiplier;
+    }
+    public set currentCrashMultiplier(multiplier:number){
+        this._currentCrashMultiplier = multiplier;
     }
 
     /** 生成本局游戏的崩盘倍数（从服务器获取） */

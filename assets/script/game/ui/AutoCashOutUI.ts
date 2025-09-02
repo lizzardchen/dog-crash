@@ -96,7 +96,7 @@ export class AutoCashOutUI extends CCComp {
 
         // 设置初始值
         if (this.multiplier_input) {
-            this.multiplier_input.string = params.multiplier.toString();
+            this.multiplier_input.string = "2.01x";//params.multiplier.toString();
         }
 
         if (this.total_bets_input) {
@@ -234,8 +234,8 @@ export class AutoCashOutUI extends CCComp {
 
         // 验证输入
         if (multiplier < 1.01) {
-            console.warn("Multiplier must be at least 1.01");
             // TODO: 显示错误提示
+            oops.gui.toast("Multiplier must be at least 1.01");
             return;
         }
 

@@ -46,7 +46,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 0,
+      "y": -31.7695,
       "z": 0
     },
     "_lrot": {
@@ -281,7 +281,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": 36.892,
+      "y": 62.354,
       "z": 0
     },
     "_lrot": {
@@ -321,8 +321,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 420,
-      "height": 104.8
+      "width": 493.703,
+      "height": 169
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -357,13 +357,13 @@
       "b": 255,
       "a": 255
     },
-    "_string": "Alert",
+    "_string": "Sorry, your bet was not successful. Please wait for the next round!",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
-    "_actualFontSize": 60,
-    "_fontSize": 60,
+    "_actualFontSize": 36,
+    "_fontSize": 36,
     "_fontFamily": "Arial",
-    "_lineHeight": 80,
+    "_lineHeight": 50,
     "_overflow": 3,
     "_enableWrapText": true,
     "_font": {
@@ -385,7 +385,7 @@
       "b": 0,
       "a": 255
     },
-    "_outlineWidth": 2,
+    "_outlineWidth": 3,
     "_enableShadow": false,
     "_shadowColor": {
       "__type__": "cc.Color",
@@ -473,7 +473,7 @@
     "_lpos": {
       "__type__": "cc.Vec3",
       "x": 0,
-      "y": -86.01199999999989,
+      "y": -119.596,
       "z": 0
     },
     "_lrot": {
@@ -846,10 +846,10 @@
     },
     "_alignFlags": 12,
     "_target": null,
-    "_left": 94,
+    "_left": 157.53950000000003,
     "_right": 0,
     "_top": 0,
-    "_bottom": 28.488000000000113,
+    "_bottom": 41.196500000000015,
     "_horizontalCenter": 0,
     "_verticalCenter": 0,
     "_isAbsLeft": true,
@@ -895,8 +895,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 478,
-      "height": 320
+      "width": 605.0790000000001,
+      "height": 412.58500000000004
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
