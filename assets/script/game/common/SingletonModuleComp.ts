@@ -9,6 +9,7 @@ import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ec
 import { Account } from "../account/Account";
 import { Initialize } from "../initialize/Initialize";
 import { CrashGame } from "../entity/CrashGame";
+import { Guide } from "../guide/Guide";
 
 /** 游戏单例业务模块 */
 @ecs.register('SingletonModule')
@@ -19,6 +20,8 @@ export class SingletonModuleComp extends ecs.Comp {
     account: Account = null!;
     /** 崩盘游戏实体 */
     crashGame: CrashGame = null!;
+    /** 游戏初始化模块 */
+    guide: Guide = null!;
 
     reset() { }
 }

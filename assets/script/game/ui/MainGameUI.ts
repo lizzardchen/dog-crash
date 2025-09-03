@@ -119,7 +119,19 @@ export class MainGameUI extends CCComp {
     PIGBetButton: Button = null!;
 
     @property(Button)
-    pigsettingBetButton: Button = null!;
+    SPGBetButton: Button = null!;
+
+    @property(Button)
+    PIGModeSelButton: Button = null!;
+
+    @property(Button)
+    ModelSelCloseButton: Button = null!;
+
+    @property(Label)
+    currentModeLabel:Label = null!;
+
+    @property(Node)
+    modelSelNode: Node = null!;
 
     @property(Button)
     energyButton: Button = null!;
@@ -444,8 +456,16 @@ export class MainGameUI extends CCComp {
         if (this.PIGBetButton) {
             this.PIGBetButton.node.on(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
         }
-        if (this.pigsettingBetButton) {
-            this.pigsettingBetButton.node.on(Button.EventType.CLICK, this.onPigSettingBetButtonClick, this);
+        if (this.SPGBetButton) {
+            this.SPGBetButton.node.on(Button.EventType.CLICK, this.onSPGBetButtonClick, this);
+        }
+
+        if(this.PIGModeSelButton){
+            this.PIGModeSelButton.node.on(Button.EventType.CLICK,this.onPIGModeSelOpen,this);
+        }
+
+        if(this.ModelSelCloseButton){
+            this.ModelSelCloseButton.node.on(Button.EventType.CLICK,this.onCloseModeSelPanel,this);
         }
 
         // 能源按钮事件
@@ -1169,11 +1189,52 @@ export class MainGameUI extends CCComp {
         }
     }
 
-    private onPigSettingBetButtonClick():void{
-        const betting  = smc.crashGame.get(BettingComp);
-        if(betting && betting.gameMode == 'PIG'){
-            this.showAutoCashOutUI();
+    private onPIGModeSelOpen():void{
+        if(this.modelSelNode){
+            // 设置初始位置
+            this.modelSelNode.setPosition(this.modelSelNode.position.x, 0, this.modelSelNode.position.z);
+            // 显示节点
+            this.modelSelNode.active = true;
+            
+            // 创建向上滑动的tween动画
+            tween(this.modelSelNode)
+                .to(0.1, { position: new Vec3(this.modelSelNode.position.x, 292, this.modelSelNode.position.z) }, {
+                    easing: 'cubicOut'
+                })
+                .start();
         }
+    }
+
+    private onCloseModeSelPanel():void{
+        if(this.modelSelNode){
+            // 创建向上滑动的tween动画
+            tween(this.modelSelNode)
+                .to(0.1, { position: new Vec3(this.modelSelNode.position.x, 0, this.modelSelNode.position.z) }, {
+                    easing: 'cubicOut'
+                })
+                .start();
+        }
+    }
+
+    private onSPGBetButtonClick():void{
+        if (!smc.crashGame) return;
+        // 关闭history弹窗（如果打开的话）
+        this.closeHistoryPopup();
+        this.onCloseBetPanelButtonClick();
+
+        const gameState = smc.crashGame.get(GameStateComp);
+        const betting = smc.crashGame.get(BettingComp);
+
+        CrashGameAudio.playButtonClick();
+        if (betting) {
+            // 从PIG切换到SPG模式（允许在任何状态下切换）
+            betting.setGameMode("SPG");
+            console.log("MainGameUI: Switched to SPG mode");
+            // 更新按钮状态
+            this.updateAutoBetButtonState();
+            this.updateHoldButtonState();
+        }
+        this.onCloseModeSelPanel();
     }
 
     private onGameModeChanged():void{
@@ -1184,16 +1245,13 @@ export class MainGameUI extends CCComp {
 
     private onAutoBetButtonClick(): void {
         if (!smc.crashGame) return;
-
         // 关闭history弹窗（如果打开的话）
         this.closeHistoryPopup();
         this.onCloseBetPanelButtonClick();
 
         const gameState = smc.crashGame.get(GameStateComp);
         const betting = smc.crashGame.get(BettingComp);
-
         CrashGameAudio.playButtonClick();
-
         if (betting) {
             const currentMode = betting.gameMode;
 
@@ -1237,6 +1295,7 @@ export class MainGameUI extends CCComp {
                             this.pig_change_node.active = false;
                         }
                     }
+                    this.onCloseModeSelPanel();
                 }).catch((error) => {
                     console.error("Failed to fetch server countdown:", error);
                     oops.gui.toast("Failed to connect to server");
@@ -1246,6 +1305,7 @@ export class MainGameUI extends CCComp {
                             this.pig_change_node.active = false;
                         }
                     }
+                    this.onCloseModeSelPanel();
                 });
                 this.scheduleOnce(()=>{
                     wait_change_node_timeend = true;
@@ -1255,14 +1315,9 @@ export class MainGameUI extends CCComp {
                         }
                     }
                 },1.2);
-            } else {
-                // 从PIG切换到SPG模式（允许在任何状态下切换）
-                betting.setGameMode("SPG");
-                console.log("MainGameUI: Switched to SPG mode");
-
-                // 更新按钮状态
-                this.updateAutoBetButtonState();
-                this.updateHoldButtonState();
+            }
+            else{
+                this.onCloseModeSelPanel();
             }
         }
     }
@@ -1982,8 +2037,17 @@ export class MainGameUI extends CCComp {
         if (this.PIGBetButton) {
             this.PIGBetButton.node.off(Button.EventType.CLICK, this.onAutoBetButtonClick, this);
         }
-        if (this.pigsettingBetButton) {
-            this.pigsettingBetButton.node.off(Button.EventType.CLICK, this.onPigSettingBetButtonClick, this);
+        
+        if (this.SPGBetButton) {
+            this.SPGBetButton.node.off(Button.EventType.CLICK, this.onSPGBetButtonClick, this);
+        }
+
+        if(this.PIGModeSelButton){
+            this.PIGModeSelButton.node.off(Button.EventType.CLICK,this.onPIGModeSelOpen,this);
+        }
+
+        if(this.ModelSelCloseButton){
+            this.ModelSelCloseButton.node.off(Button.EventType.CLICK,this.onCloseModeSelPanel,this);
         }
 
         // 清理下注面板中的按钮事件
@@ -2330,19 +2394,42 @@ export class MainGameUI extends CCComp {
         if (!betting) return;
 
         const status = betting.getGameModeStatus();
-        const buttonLabel = this.PIGBetButton.getComponentInChildren(Label);
-
-        if (buttonLabel) {
-            if (status.mode === "PIG") {
-                // PIG模式：显示"PIG"和设置信息
-                buttonLabel.string = 'PIG';
-                buttonLabel.color = new Color(2,253, 247, 255); // 亮色
-            } else {
-                // SPG模式：显示"SPG"
-                buttonLabel.string = "SPG";
-                buttonLabel.color = new Color(2,253, 247, 255);//new Color(2,68, 66, 255); // 默认颜色
+        const pigbuttonLabel = this.PIGBetButton.getComponentInChildren(Label);
+        const spgbuttonLabel = this.SPGBetButton.getComponentInChildren(Label);
+        if( status.mode === "PIG" ){
+            if(pigbuttonLabel){
+                pigbuttonLabel.color = new Color(1,144,255,255);
+            }
+            if(spgbuttonLabel){
+                spgbuttonLabel.color = new Color(7,53,131,255);
+            }
+            if(this.currentModeLabel){
+                this.currentModeLabel.string = "ONLINE";
+            }
+        }else{
+            if(pigbuttonLabel){
+                pigbuttonLabel.color = new Color(7,53,131,255);
+            }
+            if(spgbuttonLabel){
+                spgbuttonLabel.color = new Color(1,144,255,255);
+            }
+            if(this.currentModeLabel){
+                this.currentModeLabel.string = "SINGLE";
             }
         }
+        // const buttonLabel = this.PIGBetButton.getComponentInChildren(Label);
+
+        // if (buttonLabel) {
+            // if (status.mode === "PIG") {
+            //     // PIG模式：显示"PIG"和设置信息
+            //     buttonLabel.string = 'PIG';
+            //     buttonLabel.color = new Color(2,253, 247, 255); // 亮色
+            // } else {
+            //     // SPG模式：显示"SPG"
+            //     buttonLabel.string = "SPG";
+            //     buttonLabel.color = new Color(2,253, 247, 255);//new Color(2,68, 66, 255); // 默认颜色
+            // }
+        // }
         // console.log(`Updated mode button state: ${status.mode}`);
     }
 

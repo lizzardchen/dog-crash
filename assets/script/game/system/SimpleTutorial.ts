@@ -23,7 +23,8 @@ export class SimpleTutorial {
      */
     shouldShowTutorial(): boolean {
         const completed = oops.storage.get("tutorial_completed");
-        return completed !== "true";
+        // return completed !== "true";
+        return true;
     }
 
     /**

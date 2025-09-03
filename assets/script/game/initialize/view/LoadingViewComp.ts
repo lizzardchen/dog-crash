@@ -100,6 +100,8 @@ export class LoadingViewComp extends CCVMParentComp {
             console.error("Failed to initialize CrashGame");
             return;
         }
+        //初始化tutorial
+        
         await ModuleUtil.addViewUiAsync(smc.crashGame, MainGameUI, UIID.CrashGame);
         ModuleUtil.removeViewUi(this.ent, LoadingViewComp, UIID.Loading);
     }
