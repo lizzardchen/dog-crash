@@ -517,6 +517,14 @@ export class MainGameUI extends CCComp {
         
         // 添加全局点击监听（用于关闭history弹窗）
         this.node.on(Node.EventType.TOUCH_END, this.onGlobalTouch, this);
+
+        //guide
+        oops.message.on("GUIDE_SHOW_BETPANEL",this.onGuideEvent,this);
+        oops.message.on("GUIDE_SHOW_HOLD",this.onGuideEvent,this);
+        oops.message.on("GUIDE_ON_HOLDED",this.onGuideEvent,this);
+        oops.message.on("GUIDE_SHOW_MODE",this.onGuideEvent,this);
+        oops.message.on("GUIDE_SHOW_MODE_ONLINE",this.onGuideEvent,this);
+        oops.message.on("GUIDE_AFTER_CLICK_ONLINE",this.onGuideEvent,this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
@@ -2069,6 +2077,13 @@ export class MainGameUI extends CCComp {
         // 清理history弹窗相关事件
         oops.message.off("OPEN_HISTORY_POPUP", this.onHistoryPopupOpened, this);
         this.node.off(Node.EventType.TOUCH_END, this.onGlobalTouch, this);
+        //guide
+        oops.message.off("GUIDE_SHOW_BETPANEL",this.onGuideEvent,this);
+        oops.message.off("GUIDE_SHOW_HOLD",this.onGuideEvent,this);
+        oops.message.off("GUIDE_ON_HOLDED",this.onGuideEvent,this);
+        oops.message.off("GUIDE_SHOW_MODE",this.onGuideEvent,this);
+        oops.message.off("GUIDE_SHOW_MODE_ONLINE",this.onGuideEvent,this);
+        oops.message.off("GUIDE_AFTER_CLICK_ONLINE",this.onGuideEvent,this);
     }
 
     /** 重置到地面场景 */
@@ -2229,6 +2244,10 @@ export class MainGameUI extends CCComp {
                     betting.goNextRound = true;
                 }
                 console.log("game result callback inn ...4");
+                // 增加引导步骤
+                maingameui_this.scheduleOnce(()=>{
+                    SimpleTutorial.getInstance().IncrStep();
+                },0.6);
             },
         };
 
@@ -3205,6 +3224,32 @@ export class MainGameUI extends CCComp {
             this.countdownNode.active = false;
         }
         callback?.();
+    }
+
+    private onGuideEvent(event:string,data:any){
+        if(event == "GUIDE_SHOW_BETPANEL"){
+            this.node.off(Node.EventType.TOUCH_END, this.onGlobalTouch, this);
+            this.showBetPanel();
+            this.snapToItem(6);
+        }else if(event == "GUIDE_SHOW_HOLD"){
+            this.hideBetPanel();
+        }
+        else if(event == "GUIDE_ON_HOLDED"){
+              this.scheduleOnce(()=>{
+                this.onHoldButtonTouchEnd(null as any);
+            },5);
+            this.onHoldButtonTouchStart(null as any);
+        }else if(event == "GUIDE_SHOW_MODE"){
+            
+        }else if(event == "GUIDE_SHOW_MODE_ONLINE"){
+            this.onPIGModeSelOpen();
+        }
+        else if(event == "GUIDE_AFTER_CLICK_ONLINE"){
+            this.onAutoBetButtonClick();
+            this.node.on(Node.EventType.TOUCH_END, this.onGlobalTouch, this);
+            SimpleTutorial.getInstance().endGuide();
+        }
+        
     }
 
     /**

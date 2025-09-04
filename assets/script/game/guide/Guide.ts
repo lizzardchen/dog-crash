@@ -44,7 +44,7 @@ export class Guide extends ecs.Entity {
     /** 检查指定引导是否触发 */
     check(step: number) {
         if (this.GuideModel) {
-            this.GuideModel.step = step;
+            this.GuideModel.setStep(step);
             this.GuideView.check();
         }
     }

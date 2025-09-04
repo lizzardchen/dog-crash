@@ -15,6 +15,8 @@ import { UIID } from "../../common/config/GameUIConfig";
 import { MainGameUI } from "../../ui/MainGameUI";
 import { CrashGame } from "../../entity/CrashGame";
 import { tips } from "../../common/tips/TipsManager";
+import { Guide } from "../../guide/Guide";
+import { SimpleTutorial } from "../../system/SimpleTutorial";
 
 const { ccclass, property } = _decorator;
 
@@ -101,7 +103,8 @@ export class LoadingViewComp extends CCVMParentComp {
             return;
         }
         //初始化tutorial
-        
+        smc.guide = ecs.getEntity<Guide>(Guide);
+        await SimpleTutorial.getInstance().checkGuideLoading();
         await ModuleUtil.addViewUiAsync(smc.crashGame, MainGameUI, UIID.CrashGame);
         ModuleUtil.removeViewUi(this.ent, LoadingViewComp, UIID.Loading);
     }

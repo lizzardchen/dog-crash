@@ -45,20 +45,53 @@ export class PolygonMask extends Component {
 			return;
 		}
 
+		if (!this.polygon.points || this.polygon.points.length === 0) {
+			return;
+		}
+
+		// 根据多边形点计算包围圆
+		const circle = this.calculateBoundingCircle(this.polygon.points);
+		
 		var g:any = this.mask.subComp;
 		g.clear();
-		g.moveTo(
-			this.polygon.points[0].x,
-			this.polygon.points[0].y
-		);
-		for (let k_n = 1; k_n < this.polygon.points.length; ++k_n) {
-			g.lineTo(
-				this.polygon.points[k_n].x,
-				this.polygon.points[k_n].y
-			);
-		}
-		g.close();
+		// 绘制圆形
+		g.circle(circle.centerX, circle.centerY, circle.radius);
 		g.stroke();
 		g.fill();
+	}
+
+	/** 根据多边形点计算包围圆 */
+	private calculateBoundingCircle(points: cc.Vec2[]): { centerX: number, centerY: number, radius: number } {
+		if (points.length === 0) {
+			return { centerX: 0, centerY: 0, radius: 0 };
+		}
+
+		// 计算多边形的中心点（重心）
+		let centerX = 0;
+		let centerY = 0;
+		for (const point of points) {
+			centerX += point.x;
+			centerY += point.y;
+		}
+		centerX /= points.length;
+		centerY /= points.length;
+
+		// 计算从中心点到所有顶点的最大距离作为半径
+		let maxDistance = 0;
+		for (const point of points) {
+			const distance = Math.sqrt(
+				(point.x - centerX) * (point.x - centerX) + 
+				(point.y - centerY) * (point.y - centerY)
+			);
+			if (distance > maxDistance) {
+				maxDistance = distance;
+			}
+		}
+
+		return {
+			centerX: centerX,
+			centerY: centerY,
+			radius: maxDistance
+		};
 	}
 }

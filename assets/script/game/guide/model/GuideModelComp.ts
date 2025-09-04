@@ -7,12 +7,13 @@
 import { Node } from "cc";
 import { GuideViewItem } from "../view/GuideViewItem";
 import { ecs } from "db://oops-framework/libs/ecs/ECS";
+import { oops } from "db://oops-framework/core/Oops";
 
 /** 引导数据 */
 @ecs.register('GuideModel')
 export class GuideModelComp extends ecs.Comp {
     /** 当前引导步骤 */
-    step: number = 1;
+    private step: number = 1;
     /** 最后一步索引 */
     last: number = Number.MAX_VALUE;
     /** 引导的节点 */
@@ -48,5 +49,33 @@ export class GuideModelComp extends ecs.Comp {
         5: "提示词5",
         6: "提示词6",
         8: "提示词8",
+    }
+    canNext(): boolean {
+        if (this.current) {
+            oops.log.logView("canNext 0");
+            return this.current.getComponent(GuideViewItem)!.canNext();
+        }
+        oops.log.logView("canNext 1");
+        return true;
+    }
+    incStep() {
+        this.step++;
+        oops.message.dispatchEvent("GUIDE_STEP_CHANGE",this.step);
+        // GamePlayerData.saveTutorialStep(this.step);
+        this.refreshCurrent();
+    }
+    setStep(step: number) {
+        this.step = step;
+        oops.message.dispatchEvent("GUIDE_STEP_CHANGE",this.step);
+        // GamePlayerData.saveTutorialStep(this.step);
+        this.refreshCurrent();
+    }
+    getStep() {
+        return this.step;
+    }
+    private refreshCurrent() {
+        if (this.current) {
+            this.current.getComponent(GuideViewItem)!.refresh();
+        }
     }
 }
