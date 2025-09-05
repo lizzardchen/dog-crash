@@ -8,7 +8,7 @@ export class EnergyComp extends ecs.Comp {
     
     // 能源配置
     readonly maxEnergy: number = 10;          // 最大能源数量
-    readonly initialEnergy: number = 5;       // 初始能源数量
+    readonly initialEnergy: number = 10;       // 初始能源数量
     readonly autoRecoveryInterval: number = 10 * 60 * 1000; // 10分钟自动恢复间隔（毫秒）
     readonly energyPerRecovery: number = 1;   // 每次恢复的能源数量
     
