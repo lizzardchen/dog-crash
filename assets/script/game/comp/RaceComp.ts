@@ -517,16 +517,16 @@ export class RaceComp extends ecs.Comp {
     /**
      * 格式化奖励数字显示
      */
-    public formatPrizeNumber(value: number): string {
+    public formatPrizeNumber(value: number,fixnum:number = 2): string {
         const absValue = Math.abs(value);
         if (absValue >= 1000000) {
-            const formatted = `${(absValue / 1000000).toFixed(2)}M`;
+            const formatted = `${(absValue / 1000000).toFixed(fixnum)}M`;
             return value < 0 ? `-${formatted}` : formatted;
         } else if (absValue >= 1000) {
-            const formatted = `${(absValue / 1000).toFixed(2)}K`;
+            const formatted = `${(absValue / 1000).toFixed(fixnum)}K`;
             return value < 0 ? `-${formatted}` : formatted;
         } else {
-            return value.toFixed(2);
+            return value.toFixed(fixnum);
         }
     }
 

@@ -33,7 +33,7 @@ export class UserDataComp extends ecs.Comp {
 
     public set balance(value: number) {
         this._balance = value;
-        if(this._balance <= 0) this.balance = 0;
+        if(this._balance <= 0) this._balance = 0;
     }
 
     public get money(): number {
@@ -42,7 +42,7 @@ export class UserDataComp extends ecs.Comp {
 
     public set money(value: number) {
         this._money = value;
-        if(this._money <= 0) this.money = 0;
+        if(this._money <= 0) this._money = 0;
     }
 
     reset() {

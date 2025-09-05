@@ -177,7 +177,7 @@ export class RaceResultUI extends CCComp {
                 const raceComp = smc.crashGame?.get(RaceComp);
                 
                 labelSet.username.string = raceComp ? raceComp.formatUserId(player.userId) : player.userId;
-                labelSet.prize.string = raceComp ? raceComp.formatPrizeNumber(player.prizeAmount) : player.rank.toString();
+                labelSet.prize.string = raceComp ? raceComp.formatPrizeNumber(player.prizeAmount,1) : player.rank.toString();
                 labelSet.score.string = raceComp.formatPrizeNumber(player.score);
                 labelSet.node.active = true;
             } else {

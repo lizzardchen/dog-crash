@@ -439,7 +439,9 @@ export class BettingComp extends ecs.Comp {
             phase: this.serverPhase,
             remainingTime: remainingTime
         });
-        
+        if( remainingTime <= 0 && this.serverPhase === "gaming" && !this.goNextRound){
+            return;
+        }
         // 检查倒计时是否结束
         if (remainingTime <= 0 && !this.isTransitioning) {
             console.log(`BettingComp: Countdown finished for phase: ${this.serverPhase}`);

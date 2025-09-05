@@ -177,9 +177,9 @@ export class AutoCashOutUI extends CCComp {
     private setMultiplier(multiplier: number): void {
         CrashGameAudio.playButtonClick();
         if( multiplier < 1.01 ){
-            this._params.multiplier = 1.00; 
+            this._params.multiplier = 1.01; 
             if (this.multiplier_input) {
-                this.multiplier_input.string = "DISABLE";
+                this.multiplier_input.string = "1.01";
             }
             this.start_button.interactable = false;
             const sprite = this.start_button.getComponent(Sprite);
