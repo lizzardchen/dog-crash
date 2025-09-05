@@ -167,11 +167,11 @@ export class GameRulesUI extends CCComp {
 This is a crash game where players need to cash out before the rocket crashes to earn profits.
 
 <color=#00FF00><size=20><b>How to Play</b></size></color>
-1. <b>Choose Bet Amount</b>: Click the BET button to select your bet amount
+1. <b>Choose Bid Amount</b>: Click the BID button to select your bid amount
 2. <b>Start Game</b>: Hold the HOLD button to start the game and launch the rocket
 3. <b>Live Multiplier</b>: The multiplier increases continuously as the rocket flies
-4. <b>Cash Out</b>: Release the HOLD button to cash out and earn Bet Amount × Current Multiplier
-5. <b>Crash Risk</b>: If you don't cash out in time, the rocket may crash and you lose your bet amount
+4. <b>Cash Out</b>: Release the HOLD button to cash out and earn Bid Amount × Current Multiplier
+5. <b>Crash Risk</b>: If you don't cash out in time, the rocket may crash and you lose your bid amount
 
 <color=#00FF00><size=20><b>Multiplier System</b></size></color>
 • Multiplier starts at 1.00x and increases over time
@@ -185,7 +185,7 @@ This is a crash game where players need to cash out before the rocket crashes to
 • Auto mode can be disabled at any time
 
 <color=#00FF00><size=20><b>Free Mode</b></size></color>
-• Some bet options are in free mode (displayed as "free")
+• Some bid options are in free mode (displayed as "free")
 • Free mode doesn't consume your balance but you can earn real profits
 • Perfect for beginners to practice and learn the game
 
@@ -197,7 +197,7 @@ This is a crash game where players need to cash out before the rocket crashes to
 
 <color=#FF6B6B><size=20><b>Risk Warning</b></size></color>
 • This game involves risks, please play responsibly
-• Don't bet more than you can afford to lose
+• Don't bid more than you can afford to lose
 • Game results are random, past performance doesn't guarantee future results
 • If you have gambling addiction tendencies, please seek help immediately
 

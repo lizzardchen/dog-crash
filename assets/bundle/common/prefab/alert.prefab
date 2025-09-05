@@ -357,7 +357,7 @@
       "b": 255,
       "a": 255
     },
-    "_string": "Sorry, your bet was not successful. Please wait for the next round!",
+    "_string": "Sorry, your bid was not successful. Please wait for the next round!",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 36,

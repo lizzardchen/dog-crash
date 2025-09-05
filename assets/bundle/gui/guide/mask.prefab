@@ -583,7 +583,7 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 482.076171875,
+      "width": 415.50390625,
       "height": 75.6
     },
     "_anchorPoint": {
@@ -619,7 +619,7 @@
       "b": 68,
       "a": 255
     },
-    "_string": "CLICK THE BUTTON BELOW TO SELECT",
+    "_string": "CLICK \"BID\" TO SELECT AMOUNT",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 34,
@@ -722,7 +722,7 @@
       "__id__": 29
     },
     "_lineHeight": 72,
-    "_string": "INTRODUCTION TO BET\n\n\nTHE <color=#FF0000>HIGHER</color> THE BET BASE SOCRE,THE HIGHER THE REWARD  YOU WILL RECEIVE.",
+    "_string": "HOW BIDS WORK\n\n\n THE <color=#FF0000>HIGHER</color> YOU BID,THE <color=#FF0000>MORE COINS</color> YOU WILL GET IF YOU WIN.",
     "_horizontalAlign": 0,
     "_verticalAlign": 0,
     "_fontSize": 58,

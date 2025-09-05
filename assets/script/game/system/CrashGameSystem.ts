@@ -92,7 +92,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                 const isFreeMode = betting.currentBetItem.isFree;
                 const localData = entity.get(LocalDataComp);
                 
-                console.log(`CrashGameSystem: Starting PIG mode bet with amount: ${betAmount}, free: ${isFreeMode}`);
+                console.log(`CrashGameSystem: Starting PIG mode bid with amount: ${betAmount}, free: ${isFreeMode}`);
                 betting.isHolding = true;
                 
                 // 验证下注金额和能源
@@ -107,7 +107,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                         gameState.startTime = Date.now();
                         multiplier.startTime = Date.now();
                         
-                        console.log(`CrashGameSystem: PIG mode bet started: ${betAmount} (free: ${isFreeMode}), target crash: ${remote_multiplier.toFixed(2)}x`);
+                        console.log(`CrashGameSystem: PIG mode bid started: ${betAmount} (free: ${isFreeMode}), target crash: ${remote_multiplier.toFixed(2)}x`);
                         oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
                     } else {
                         betting.isHolding = false;
@@ -119,7 +119,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                     }
                 } else {
                     betting.isHolding = false;
-                    console.log(`CrashGameSystem: PIG mode bet validation failed (insufficient balance or energy)`);
+                    console.log(`CrashGameSystem: PIG mode bid validation failed (insufficient balance or energy)`);
                     // 如果验证失败，切换到SPG模式
                     // betting.setGameMode("SPG");
                     betting.goNextRound = true;
@@ -172,7 +172,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         // if (betting.gameMode === "PIG") {
             // 增加PIG模式下注计数
             // betting.incrementPigBets();
-            // console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
+            // console.log(`CrashGameSystem: PIG mode - incremented bid count, still in PIG mode: ${betting.gameMode === "PIG"}`);
             // // 如果仍在PIG模式，启动下注倒计时
             // if (betting.gameMode === "PIG") {
             //     betting.startPigBettingCountdown();
@@ -207,7 +207,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         // if (betting.gameMode === "PIG") {
         //     // 增加PIG模式下注计数
         //     betting.incrementPigBets();
-        //     console.log(`CrashGameSystem: PIG mode - incremented bet count, still in PIG mode: ${betting.gameMode === "PIG"}`);
+        //     console.log(`CrashGameSystem: PIG mode - incremented bid count, still in PIG mode: ${betting.gameMode === "PIG"}`);
             
         //     // // 如果仍在PIG模式，启动下注倒计时
         //     // if (betting.gameMode === "PIG") {
@@ -218,7 +218,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
 
     private validateBetAmount(amount: number, isFreeMode: boolean): boolean {
         if (amount <= 0) {
-            console.warn("Invalid bet amount:", amount);
+            console.warn("Invalid bid amount:", amount);
             return false;
         }
 

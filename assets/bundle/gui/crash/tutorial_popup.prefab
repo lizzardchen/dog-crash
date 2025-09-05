@@ -597,7 +597,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "BET",
+    "_name": "BID",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -695,7 +695,7 @@
       "b": 68,
       "a": 255
     },
-    "_string": "SIMULATED  BET:  1000 GOLD",
+    "_string": "SIMULATED  BID:  1000 GOLD",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 42,

@@ -103,7 +103,7 @@ export class BettingComp extends ecs.Comp {
         this.currentBetItem = betItem;
         this.betAmount = betItem.value;
         this.saveBetSelection();
-        console.log(`Set current bet: ${betItem.display} (value: ${betItem.value}, free: ${betItem.isFree})`);
+        console.log(`Set current bid: ${betItem.display} (value: ${betItem.value}, free: ${betItem.isFree})`);
     }
 
     /**
@@ -141,9 +141,9 @@ export class BettingComp extends ecs.Comp {
                 isFree: this.currentBetItem.isFree
             });
             oops.storage.set(BettingComp.SELECTED_BET_KEY, betData);
-            console.log(`Saved selected bet: ${this.currentBetItem.display} (${this.currentBetItem.value}) to local storage`);
+            console.log(`Saved selected bid: ${this.currentBetItem.display} (${this.currentBetItem.value}) to local storage`);
         } catch (error) {
-            console.error("Failed to save selected bet:", error);
+            console.error("Failed to save selected bid:", error);
         }
     }
 
@@ -166,13 +166,13 @@ export class BettingComp extends ecs.Comp {
                 if (matchedItem) {
                     this.currentBetItem = matchedItem;
                     this.betAmount = matchedItem.value;
-                    console.log(`Loaded selected bet: ${matchedItem.display} (${matchedItem.value}) from local storage`);
+                    console.log(`Loaded selected bid: ${matchedItem.display} (${matchedItem.value}) from local storage`);
                 } else {
-                    console.warn("Saved bet item not found in current data, using default");
+                    console.warn("Saved bid item not found in current data, using default");
                 }
             }
         } catch (error) {
-            console.error("Failed to load selected bet:", error);
+            console.error("Failed to load selected bid:", error);
         }
     }
 
@@ -181,7 +181,7 @@ export class BettingComp extends ecs.Comp {
      */
     clearSavedBetSelection(): void {
         oops.storage.remove(BettingComp.SELECTED_BET_KEY);
-        console.log("Cleared saved bet selection from local storage");
+        console.log("Cleared saved bid selection from local storage");
     }
 
     /**

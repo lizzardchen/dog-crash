@@ -8976,7 +8976,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "bet",
+    "_name": "bid",
     "_objFlags": 0,
     "__editorExtras__": {},
     "_parent": {
@@ -9505,7 +9505,7 @@
       "b": 6,
       "a": 255
     },
-    "_string": "BET",
+    "_string": "BID",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 40,
@@ -10855,7 +10855,7 @@
       "b": 6,
       "a": 255
     },
-    "_string": "BET",
+    "_string": "BID",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 40,

@@ -635,7 +635,7 @@ export class MainGameUI extends CCComp {
                         thisvalue.updateHoldButtonState();
                         thisvalue.addButtonPressedEffect();
 
-                        console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
+                        console.log(`Game started with bid: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
                         oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
                     }
                 };
@@ -656,7 +656,7 @@ export class MainGameUI extends CCComp {
                 //         this.updateHoldButtonState();
                 //         this.addButtonPressedEffect();
 
-                //         console.log(`Game started with bet: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
+                //         console.log(`Game started with bid: ${betAmount} (free: ${isFreeMode}) - HOLD button pressed (manual mode)`);
                         
                         
                 //         oops.message.dispatchEvent("GAME_STARTED", { betAmount, isFreeMode });
@@ -736,7 +736,7 @@ export class MainGameUI extends CCComp {
         const userData = smc.crashGame.get(UserDataComp);
 
         if (amount <= 0) {
-            console.warn("Invalid bet amount:", amount);
+            console.warn("Invalid bid amount:", amount);
             return false;
         }
 
@@ -1011,7 +1011,7 @@ export class MainGameUI extends CCComp {
     }
 
     private onGameStarted(data: any): void {
-        console.log(`Game started with bet: ${data.betAmount}`);
+        console.log(`Game started with bid: ${data.betAmount}`);
         console.log("=== Game Started - Debug Info ===");
 
         if (smc.crashGame) {
@@ -1177,16 +1177,16 @@ export class MainGameUI extends CCComp {
 
         // 只有在等待状态下才能修改下注金额
         if (gameState.state !== GameState.WAITING) {
-            console.log("Cannot change bet amount during game");
+            console.log("Cannot change bid amount during game");
             return;
         }
 
         CrashGameAudio.playButtonClick();
-        console.log("Bet button clicked - showing bet panel");
+        console.log("Bid button clicked - showing bid panel");
 
         // 检查下注面板是否存在
         if (!this.betPanel) {
-            console.warn("Bet panel not found - cannot show/hide");
+            console.warn("Bid panel not found - cannot show/hide");
             return;
         }
 
@@ -1335,7 +1335,7 @@ export class MainGameUI extends CCComp {
      */
     private initBetPanel(): void {
         if (!this.betPanel) {
-            console.warn("BetPanel node not found - skipping bet panel initialization");
+            console.warn("BetPanel node not found - skipping bid panel initialization");
             return;
         }
 
@@ -1346,7 +1346,7 @@ export class MainGameUI extends CCComp {
         // 初始化下注选项
         this.fillBetScrollView();
 
-        console.log("Bet panel initialized");
+        console.log("Bid panel initialized");
     }
 
     /**
@@ -1377,7 +1377,7 @@ export class MainGameUI extends CCComp {
             })
             .start();
 
-        console.log("Bet panel shown");
+        console.log("Bid panel shown");
     }
 
     /**
@@ -1398,7 +1398,7 @@ export class MainGameUI extends CCComp {
             })
             .start();
 
-        console.log("Bet panel hidden");
+        console.log("Bid panel hidden");
     }
 
     /**
@@ -1406,12 +1406,12 @@ export class MainGameUI extends CCComp {
      */
     private fillBetScrollView(): void {
         if (!this.betItemContainer) {
-            console.warn("BetItemContainer not found - skipping bet scroll view fill");
+            console.warn("BetItemContainer not found - skipping bid scroll view fill");
             return;
         }
 
         if (!this.betItemPrefab) {
-            console.warn("BetItemPrefab not found - skipping bet scroll view fill");
+            console.warn("BetItemPrefab not found - skipping bid scroll view fill");
             return;
         }
 
@@ -1420,13 +1420,13 @@ export class MainGameUI extends CCComp {
 
         // 获取BettingComp
         if (!smc.crashGame) {
-            console.warn("CrashGame not found - skipping bet scroll view fill");
+            console.warn("CrashGame not found - skipping bid scroll view fill");
             return;
         }
 
         const betting = smc.crashGame.get(BettingComp);
         if (!betting) {
-            console.warn("BettingComp not found - skipping bet scroll view fill");
+            console.warn("BettingComp not found - skipping bid scroll view fill");
             return;
         }
 
@@ -1441,7 +1441,7 @@ export class MainGameUI extends CCComp {
                 if (label) {
                     label.string = betItem.display;
                 } else {
-                    console.warn(`No Label found in bet item prefab for ${betItem.display}`);
+                    console.warn(`No Label found in bid item prefab for ${betItem.display}`);
                 }
 
                 // 设置按钮事件
@@ -1451,19 +1451,19 @@ export class MainGameUI extends CCComp {
                         this.onBetItemClick(betItem);
                     }, this);
                 } else {
-                    console.warn(`No Button found in bet item prefab for ${betItem.display}`);
+                    console.warn(`No Button found in bid item prefab for ${betItem.display}`);
                 }
 
                 // 添加到容器
                 this.betItemContainer.addChild(itemNode);
 
-                console.log(`Created bet item: ${betItem.display} (${betItem.value})`);
+                console.log(`Created bid item: ${betItem.display} (${betItem.value})`);
             } catch (error) {
-                console.error(`Error creating bet item ${betItem.display}:`, error);
+                console.error(`Error creating bid item ${betItem.display}:`, error);
             }
         });
 
-        console.log(`Filled bet scroll view with ${betting.betAmountData.length} items`);
+        console.log(`Filled bid scroll view with ${betting.betAmountData.length} items`);
         
         // 初始化完成后滚动到当前选中项
         this.scheduleOnce(() => {
@@ -1491,7 +1491,7 @@ export class MainGameUI extends CCComp {
 
             // 验证余额是否足够
             if (!this.validateBetAmount(targetBetItem.value)) {
-                console.warn(`Insufficient balance for bet amount: ${targetBetItem.value}`);
+                console.warn(`Insufficient balance for bid amount: ${targetBetItem.value}`);
                 return;
             }
 
@@ -1505,7 +1505,7 @@ export class MainGameUI extends CCComp {
             // 更新UI显示
             this.updateBetAmount(targetBetItem.value, targetBetItem.display);
 
-            console.log(`Clicked bet: ${betItem.display} (index: ${clickedIndex}), scrolled to: ${targetBetItem.display} (index: ${targetIndex})`);
+            console.log(`Clicked bid: ${betItem.display} (index: ${clickedIndex}), scrolled to: ${targetBetItem.display} (index: ${targetIndex})`);
         }
     }
 
@@ -1736,7 +1736,7 @@ export class MainGameUI extends CCComp {
         
         // 验证余额是否足够
         if (!this.validateBetAmount(selectedBetItem.value)) {
-            console.warn(`Insufficient balance for bet amount: ${selectedBetItem.value}`);
+            console.warn(`Insufficient balance for bid amount: ${selectedBetItem.value}`);
             return;
         }
         
@@ -1749,7 +1749,7 @@ export class MainGameUI extends CCComp {
         // 更新UI显示
         this.updateBetAmount(selectedBetItem.value, selectedBetItem.display);
         
-        console.log(`Auto selected bet: ${selectedBetItem.display} (index: ${index})`);
+        console.log(`Auto selected bid: ${selectedBetItem.display} (index: ${index})`);
     }
 
     /**
@@ -1767,7 +1767,7 @@ export class MainGameUI extends CCComp {
         // 使用新的snapToItem方法
         this.snapToItem(selectedIndex);
 
-        console.log(`Scrolled to bet item: ${betting.currentBetItem.display}`);
+        console.log(`Scrolled to bid item: ${betting.currentBetItem.display}`);
     }
 
     /**
@@ -1806,7 +1806,7 @@ export class MainGameUI extends CCComp {
             }
         });
 
-        console.log(`Set bet items interactable: ${interactable}`);
+        console.log(`Set bid items interactable: ${interactable}`);
     }
 
     private updateUI(): void {
@@ -2210,7 +2210,7 @@ export class MainGameUI extends CCComp {
         // 更新潜在收益
         this.updatePotentialWin();
 
-        console.log(`Bet amount updated to: ${amount} (${display}) -> button shows: ${shortText}`);
+        console.log(`Bid amount updated to: ${amount} (${display}) -> button shows: ${shortText}`);
     }
 
     /**
@@ -3274,7 +3274,7 @@ export class MainGameUI extends CCComp {
         this.updatePigCountdownDisplay(data);
         const betting = smc.crashGame.get(BettingComp);
         if( data.phase === "waiting" &&betting.goNextRound && betting.pigCashOutMultiplier <=0){
-            tips.alert("Sorry, your bet was not successful. Please wait for the next round!");
+            tips.alert("Sorry, your bid was not successful. Please wait for the next round!");
         }
     }
 
@@ -3300,7 +3300,7 @@ export class MainGameUI extends CCComp {
         let message = "";
         
         if (phase === "betting") {
-            message = `BETTING TIME`;
+            message = `BIDDING TIME`;
             this.holdButtonGameStateCD.node.active = true;
             this.holdButtonGameStateCD.setTime(seconds);
             this.hold_waiting_node.active = false;

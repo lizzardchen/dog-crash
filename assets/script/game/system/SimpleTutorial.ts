@@ -22,11 +22,12 @@ export class SimpleTutorial {
     private isShowing: boolean = false;
     private onCompleteCallback: Function | null = null;
     private currentStep: GuideStep = GuideStep.Click_Bet_step1;
-    private guideText1: string = 'INTRODUCTION TO BET\n\n\n THE <color=#FF0000>HIGHER</color> THE BET BASE SOCRE,THE HIGHER THE REWARD  YOU WILL RECEIVE.';
-    private guideTipTxt1:string = "CLICK THE BUTTON BELOW TO SELECT";
-    private guideText2:string = 'GAME PLAY INTRODUCTION\n\n\n <color=#FF0000>PRESS AND HOLD</color> THE RED HOLD BUTTON WHEN YOU ARE READY TO LAUNCH.';
-    private guideText3: string = 'GAME MODE INTRODUCTION\n\n\n SWITING TO <color=#FF0000>ONLINE GAMING MODE</color> ALLOWS YOU TO OBTAIN MORE ACCURATE <color=#FF0000>\"EXPLOSION POINT\"</color> INFORMATION AND ACHIEVE HIGHER PROFITS.';
-    private guideTipTxt3:string = "CLICK THE BUTTON BELOW TO SWITCH";
+    private guideText1: string = 'HOW BIDS WORK\n\n\n THE <color=#FF0000>HIGHER</color> YOU BID,THE <color=#FF0000>MORE COINS</color> YOU WILL GET IF YOU WIN.';
+    private guideTipTxt1:string = "CLICK \"BID\" TO SELECT AMOUNT";
+    private guideText2:string = 'HOW TO PLAY\n\n\n <color=#FF0000>PRESS AND HOLD</color> THE RED HOLD BUTTON WHEN YOU ARE READY TO LAUNCH.';
+    private guideTipTxt2:string = "HOLD THE BUTTON TO START";
+    private guideText3: string = 'PLAY IN ONLINE MODE\n\n\n SWITCH TO <color=#FF0000>ONLINE MODE</color>  TO PLAY LIVE WITH OTHERS,GET A MORE ACCURATE <color=#FF0000>\"EXPLOSION POINT\"</color> TO TIME YOUR ENTRY.';
+    private guideTipTxt3:string = "CLICK \"MODE\" TO SWITCH MODES";
     private constructor() {}
 
     public static getInstance(): SimpleTutorial {
@@ -66,11 +67,14 @@ export class SimpleTutorial {
             this.completeTutorial();
         }
         else if(step == GuideStep.Click_Bet_step2){
-            smc.guide.GuideView.hideHelpText();
+            if(smc.guide.GuideView){
+                smc.guide.GuideView.hideHelpText();
+            }
+            
             oops.message.dispatchEvent("GUIDE_SHOW_BETPANEL");
         }
         else if(step == GuideStep.Press_Hold_step3){
-            smc.guide.GuideView.showHelpText(this.guideText2,this.guideTipTxt1);
+            smc.guide.GuideView.showHelpText(this.guideText2,this.guideTipTxt2);
             oops.message.dispatchEvent("GUIDE_SHOW_HOLD");
         }
         else if(step == GuideStep.Press_Hold_End_step4){
@@ -86,7 +90,9 @@ export class SimpleTutorial {
             oops.message.dispatchEvent("GUIDE_SHOW_MODE_ONLINE");
         }
         else if(step == GuideStep.Press_Mode_Onlie_step7){
-            smc.guide.GuideView.hideHelpText();
+            if(smc.guide.GuideView){
+                smc.guide.GuideView.hideHelpText();
+            }
             oops.message.dispatchEvent("GUIDE_AFTER_CLICK_ONLINE");
         }
     }
