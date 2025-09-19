@@ -8,6 +8,10 @@ export class UserDataComp extends ecs.Comp {
     joinDate: Date = new Date();
     private _balance: number = 1000;
     private _money:number = 100;
+    private _completedLevelId:number = -1;
+    private _currentPlayLevelId:number = 0;
+    private _completeTaskId:number = -1;
+    private _stars:number = 0;
     totalFlights: number = 0;
     flightsWon: number = 0;
     highestMultiplier: number = 1.0;
@@ -26,6 +30,43 @@ export class UserDataComp extends ecs.Comp {
             totalBets: -1
         }
     };
+
+    public get currentPlayLevelId(): number {
+        return this._currentPlayLevelId;
+    }
+
+    public set currentPlayLevelId(value: number) {
+        this._currentPlayLevelId = value;
+    }
+
+    public get completedLevelId(): number {
+        return this._completedLevelId;
+    }
+
+    public set completedLevelId(value: number) {
+        this._completedLevelId = value;
+    }
+
+    public get completeTaskId():number{
+        return this._completeTaskId;
+    }
+    public set completeTaskId(value:number){
+        this._completeTaskId = value;
+    }
+
+    public get stars():number{
+        return this._stars;
+    }
+
+    public set stars(s:number){
+        if(s >= 0){
+            this._stars = s;
+        }
+        else{
+            this._stars = 0;
+        }
+        
+    }
 
     public get balance(): number {
     return this._balance;
@@ -50,6 +91,7 @@ export class UserDataComp extends ecs.Comp {
         this.username = "";
         this.balance = 1000;
         this.money = 100;
+        this.stars = 0;
         this.totalFlights = 0;
         this.flightsWon = 0;
         this.highestMultiplier = 1.0;
@@ -92,6 +134,30 @@ export class UserDataComp extends ecs.Comp {
      */
     getNetProfit(): number {
         return this.balance - 1000; // 假设初始余额为1000
+    }
+
+    /**
+     * 完成关卡
+     */
+    updateCompletedLevel(levelid:number){
+        if(levelid > this.completedLevelId){
+            
+            oops.http.post(`user/${this.getUserId()}/completelevel`, (ret) => {
+            if (ret.isSucc) {
+                console.log("User completed level synced to server successfully");
+                // 更新本地同步时间
+                this.lastSyncTime = new Date();
+                this.completedLevelId = ret.res.data.completedLevelId;
+                // 通知任务组件更新任务进度
+                oops.message.dispatchEvent("TASK_COMPLETED_LEVEL", { levelId: this.completedLevelId });
+            } else {
+                console.error("Failed to sync user completed level to server:", ret.err);
+            }
+        }, {levelId:levelid});
+        }else{
+            // 通知任务组件更新任务进度
+                oops.message.dispatchEvent("TASK_COMPLETED_LEVEL", { levelId: levelid });
+        }
     }
     
     /**

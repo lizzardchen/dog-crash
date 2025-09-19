@@ -13,6 +13,7 @@ import { RaceComp } from "../comp/RaceComp";
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { MultiplierConfig } from "../config/MultiplierConfig";
 import { SDKMgr } from "../common/SDKMgr";
+import { TaskComp } from "../comp/TaskComp";
 
 @ecs.register('CrashGame')
 export class CrashGame extends ecs.Entity {
@@ -33,6 +34,7 @@ export class CrashGame extends ecs.Entity {
         this.add(SceneBackgroundComp);
         this.add(EnergyComp);
         this.add(RaceComp);
+        this.add(TaskComp);
         
         // 初始化用户数据
         const userDataComp = this.get(UserDataComp);
@@ -44,12 +46,14 @@ export class CrashGame extends ecs.Entity {
         CrashGameAudio.init();
 
         SDKMgr.instance.init(false,true);
+        const taskcomp = this.get(TaskComp);
+        taskcomp.init();
     }
     // 服务器配置
     public static serverConfig = {
-        baseURL: "https://dog-crash-api.bulletnews.vip/api/",
+        // baseURL: "https://dog-crash-api.bulletnews.vip/api/",
         // baseURL: "https://crash.realfunplay.cn/api/",//"http://localhost:3000/api/"
-        // baseURL: "http://localhost:3000/api/",
+        baseURL: "http://localhost:3000/api/",
         timeout: 10000,
         retryAttempts: 3
     };
@@ -182,6 +186,12 @@ export class CrashGame extends ecs.Entity {
         if( userDataComp.money == undefined ){
             userDataComp.money = 100;
         }
+        userDataComp.stars = serverData.stars;
+        if(!userDataComp.stars){
+            userDataComp.stars = 0;
+        }
+        userDataComp.completedLevelId = serverData.completedLevelId;
+        userDataComp.completeTaskId = serverData.completedTaskId;
         userDataComp.totalFlights = Math.max(userDataComp.totalFlights, serverData.totalFlights || 0);
         userDataComp.flightsWon = Math.max(userDataComp.flightsWon, serverData.flightsWon || 0);
         
@@ -251,7 +261,8 @@ export class CrashGame extends ecs.Entity {
                     money: Number(userDataComp.money),
                     sessionId: `${userDataComp.getUserId()}_${Date.now()}`,
                     gameDuration: Number(gameResult.duration || 0),
-                    isFreeMode: Boolean(gameResult.isFreeMode || false)
+                    isFreeMode: Boolean(gameResult.isFreeMode || false),
+                    stars:Number(userDataComp.stars)
                 };
 
                 console.log("Uploading game record:", recordData);
@@ -263,6 +274,7 @@ export class CrashGame extends ecs.Entity {
                         if (ret.res && ret.res.data) {
                             const serverData = ret.res.data;
                             userDataComp.balance = serverData.balance;
+                            userDataComp.stars = serverData.stars;
                             userDataComp.totalFlights = serverData.totalFlights;
                             userDataComp.flightsWon = serverData.flightsWon;
                             userDataComp.highestMultiplier = serverData.highestMultiplier;

@@ -1,0 +1,104 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "type": "pass_level",
+      "name": "通关任务",
+      "description": "完成第一个关卡",
+      "target": 1,
+      "reward": 1000,
+      "unlockCondition": "游戏开始即解锁",
+      "order": 1
+    },
+    {
+      "id": 2,
+      "type": "collect_coins",
+      "name": "收集金币",
+      "description": "收集100个金币",
+      "target": 100,
+      "reward": 500,
+      "unlockCondition": "完成第一个关卡后解锁",
+      "order": 2
+    },
+    {
+      "id": 3,
+      "type": "single_flight",
+      "name": "单机飞行",
+      "description": "完成1次单机飞行",
+      "target": 1,
+      "reward": 300,
+      "unlockCondition": "收集100金币后解锁",
+      "order": 3
+    },
+    {
+      "id": 4,
+      "type": "online_flight",
+      "name": "联网飞行",
+      "description": "完成1次联网模式飞行",
+      "target": 1,
+      "reward": 800,
+      "unlockCondition": "完成单机飞行后解锁",
+      "order": 4
+    },
+    {
+      "id": 5,
+      "type": "crash_count",
+      "name": "撞击挑战",
+      "description": "撞击1次障碍物（原烦可以不变）",
+      "target": 1,
+      "reward": 200,
+      "unlockCondition": "完成联网飞行后解锁",
+      "order": 5
+    },
+    {
+      "id": 6,
+      "type": "pass_level",
+      "name": "通关达人",
+      "description": "通过5个关卡",
+      "target": 5,
+      "reward": 2000,
+      "unlockCondition": "完成撞击挑战后解锁",
+      "order": 6
+    },
+    {
+      "id": 7,
+      "type": "collect_coins",
+      "name": "金币大师",
+      "description": "收集500个金币",
+      "target": 500,
+      "reward": 1500,
+      "unlockCondition": "成为通关达人后解锁",
+      "order": 7
+    },
+    {
+      "id": 8,
+      "type": "single_flight",
+      "name": "飞行专家",
+      "description": "完成10次单机飞行",
+      "target": 10,
+      "reward": 1000,
+      "unlockCondition": "成为金币大师后解锁",
+      "order": 8
+    },
+    {
+      "id": 9,
+      "type": "online_flight",
+      "name": "联网高手",
+      "description": "完成5次联网模式飞行",
+      "target": 5,
+      "reward": 2500,
+      "unlockCondition": "成为飞行专家后解锁",
+      "order": 9
+    },
+    {
+      "id": 10,
+      "type": "crash_count",
+      "name": "撞击大师",
+      "description": "撞击10次障碍物",
+      "target": 10,
+      "reward": 800,
+      "unlockCondition": "成为联网高手后解锁",
+      "order": 10
+    }
+  ]
+}

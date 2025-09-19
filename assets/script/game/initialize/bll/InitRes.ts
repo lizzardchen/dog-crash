@@ -48,6 +48,10 @@ export class InitResSystem extends ecs.ComblockSystem implements ecs.IEntityEnte
             // 加载多语言对应字体
             oops.res.loadDir("common/font", next);
         });
+        queue.push(async (next: NextFunction, params: any, args: any) => {
+            // 加载config配置
+            oops.res.loadDir("config", next);
+        });
     }
 
     /** 加载化语言包（可选） */

@@ -33,6 +33,7 @@ import { EnergyBuyUI } from './EnergyBuyUI';
 import { SDKMgr } from '../common/SDKMgr';
 import { TimerCDShow } from './TimerCDShow';
 import { MultiplierConfig } from '../config/MultiplierConfig';
+import { LevelSelUI } from './LevelSelUI';
 
 const { ccclass, property } = _decorator;
 
@@ -151,6 +152,9 @@ export class MainGameUI extends CCComp {
     @property(Button)
     settingsButton: Button = null!;
 
+    @property(Button)
+    taskButton: Button = null!;
+
     @property(Node)
     betPanel: Node = null!;
 
@@ -207,6 +211,9 @@ export class MainGameUI extends CCComp {
 
     @property(SpriteFrame)
     countdownGoSpriteFrame: SpriteFrame = null!;
+
+    @property(Node)
+    levelNode: Node = null!;
 
     private isBetPanelVisible: boolean = false;
     private isCountdownActive: boolean = false; // 倒计时是否激活
@@ -483,6 +490,11 @@ export class MainGameUI extends CCComp {
             this.settingsButton.node.on(Button.EventType.CLICK, this.onSettingsButtonClick, this);
         }
 
+        // 任务按钮事件
+        if (this.taskButton) {
+            this.taskButton.node.on(Button.EventType.CLICK, this.onTaskButtonClick, this);
+        }
+
         // 监听游戏事件
         oops.message.on("GAME_CRASHED", this.onGameCrashed, this);
         oops.message.on("GAME_CASHED_OUT", this.onGameCashedOut, this);
@@ -525,6 +537,8 @@ export class MainGameUI extends CCComp {
         oops.message.on("GUIDE_SHOW_MODE",this.onGuideEvent,this);
         oops.message.on("GUIDE_SHOW_MODE_ONLINE",this.onGuideEvent,this);
         oops.message.on("GUIDE_AFTER_CLICK_ONLINE",this.onGuideEvent,this);
+        //level
+        oops.message.on("TASK_COMPLETED_LEVEL",this.onLevelComplete,this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
@@ -861,6 +875,7 @@ export class MainGameUI extends CCComp {
                         this.playCoinFlyAnimation(profit, () => {
                             console.log("Coin fly animation completed!");
                             this.buttonState = ButtonState.Unpressed;
+                            this.completedNowLevel();
                         });
                         this.playMoneyFlyAnimation(profit/10, () => {
                             console.log("money fly animation completed!");
@@ -869,6 +884,7 @@ export class MainGameUI extends CCComp {
                 }
                 else{
                     this.buttonState = ButtonState.Unpressed;
+                    this.completedNowLevel();
                 }
             });
         }, 0.2);
@@ -1996,6 +2012,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
          oops.message.off("PRIZE_CLAIMED",this.onRaceClaimed,this);
          oops.message.off("GAME_MODE_CHANGED",this.onGameModeChanged,this);
+         oops.message.off("TASK_COMPLETED_LEVEL",this.onLevelComplete,this);
 
         // 清理余额标签点击事件
         if (this.balanceLabel) {
@@ -2557,6 +2574,41 @@ export class MainGameUI extends CCComp {
         console.log("Settings button clicked - opening settings UI");
         
         this.showSettingsUI();
+    }
+
+    /**
+     * 任务按钮点击事件
+     */
+    private onTaskButtonClick(): void {
+        // 关闭history弹窗（如果打开的话）
+        this.closeHistoryPopup();
+        this.onCloseBetPanelButtonClick();
+        
+        CrashGameAudio.playButtonClick();
+        console.log("Task button clicked - opening task UI");
+        
+        this.showTaskUI();
+    }
+
+    /**
+     * 显示任务界面
+     */
+    private showTaskUI(): void {
+        console.log("Showing task UI");
+
+        const callbacks: UICallbacks = {
+            onAdded: (node: Node | null, params: any) => {
+                if (!node) {
+                    console.error("TaskUI node is null");
+                    return;
+                }
+            },
+            onRemoved: (node: Node | null, params: any) => {
+                console.log("TaskUI closed");
+            }
+        };
+
+        oops.gui.open(UIID.TaskUI, null, callbacks);
     }
     
     
@@ -3333,6 +3385,39 @@ export class MainGameUI extends CCComp {
         else{
             this.holdButtonGameStateLabel.string = '';
             this.holdButtonGameStateLabel.node.active = false;
+        }
+    }
+
+    public showLevelPanel(nextLevelid:number){
+        const levelselui = this.levelNode.getComponent(LevelSelUI);
+        if(levelselui){
+            levelselui.openLevel(nextLevelid);
+            this.levelNode.active = true;
+        }
+        else{
+            this.levelNode.active = false;
+        }
+    }
+
+    public onLevelComplete(event:string,data:any){
+        if(data && data.levelId >= 0){
+            const userdatacomp = smc.crashGame.get(UserDataComp);
+            if(userdatacomp){
+                if( userdatacomp.completedLevelId > data.levelId){
+                    this.showLevelPanel(userdatacomp.completedLevelId+1);
+                }else{
+                    this.showLevelPanel(data.levelId+1);
+                }
+            }
+            
+        }
+    }
+
+    public completedNowLevel(){
+        const userdatacomp = smc.crashGame.get(UserDataComp);
+        if(userdatacomp){
+            const currentLevelId = userdatacomp.currentPlayLevelId;
+            userdatacomp.updateCompletedLevel(currentLevelId); 
         }
     }
 }

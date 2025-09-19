@@ -1,9 +1,19 @@
 import { _decorator, Component, Node, Sprite, Vec3, input, Input, EventTouch, UITransform, Prefab, instantiate } from 'cc';
-import { LevelNodeCell } from './LevelNodeCell';
+import { LevelNodeCell, LevelState } from './LevelNodeCell';
+import { UserDataComp } from '../comp/UserDataComp';
+import { smc } from '../common/SingletonModuleComp';
+import { oops } from 'db://oops-framework/core/Oops';
+import { tips } from '../common/tips/TipsManager';
 const { ccclass, property } = _decorator;
 
 @ccclass('LevelSelUI')
 export class LevelSelUI extends Component {
+
+    @property(Node)
+    loadingNode:Node = null!;
+
+    @property([Node])
+    needHideNodes:Node[] = [];
 
     @property([Sprite])
     bgNodes:Sprite[] = [];//3张背景图，需要123123123这样形式的进行拼接
@@ -48,6 +58,27 @@ export class LevelSelUI extends Component {
         this.initLevels();
         this.initBgNodes();
         this.setupTouchEvents();
+        const userdata = smc.crashGame.get(UserDataComp);
+        if(userdata){
+            this.openLevel(userdata.completedLevelId+1);
+        }
+        
+
+    }
+
+    protected onEnable(): void {
+        this.needHideNodes.forEach(hidenode => {
+            if(hidenode){
+                hidenode.active = false;
+            }
+        });
+    }
+    protected onDisable(): void {
+        this.needHideNodes.forEach(hidenode => {
+            if(hidenode){
+                hidenode.active = true;
+            }
+        });
     }
 
     private initBgNodes() {
@@ -73,14 +104,44 @@ export class LevelSelUI extends Component {
         this.baseCenters[2] = this.baseCenters[1] + this.bgHeights[1] / 2 + this.bgHeights[2] / 2; // 第三张图中心
 
         // 计算关卡总高度并设置背景滚动高度
-        const levelTotalHeight = this.levelCount * this.levelHeight + this.startOffset;
-        this.totalScrollHeight = levelTotalHeight;
+        const levelTotalHeight = this.levelCount * this.levelHeight+this.startOffset;
+        this.totalScrollHeight = levelTotalHeight - this.bgHeights[2]/2-this.bgHeights[0]/2;
 
         // 初始化scrollY为0（第一张图在中心）
         this.scrollY = 0;
 
         // 更新初始位置
         this.updateBgPositionsByScroll();
+    }
+
+    public onOpenLevel(lvid:number){
+        const userdatacomp = smc.crashGame.get(UserDataComp);
+        if(userdatacomp){
+            userdatacomp.currentPlayLevelId = lvid;
+            this.node.active = false;
+            this.needHideNodes.forEach(hidenode => {
+                if(hidenode){
+                    hidenode.active = true;
+                }
+            });
+        }
+    }
+
+    public openLevel(levelIndex:number){
+        if( levelIndex < 0 || levelIndex >= this.levelCount ){
+            console.error('openLevel: levelIndex out of range');
+            return;
+        }
+        this.scrollY = this.levelPositions[levelIndex];
+        this.updateBgPositionsByScroll();
+         if( this.levelCells[levelIndex] ){
+            this.levelCells[levelIndex].setState(LevelState.Unlock);
+        }
+        for( let i = 0; i < levelIndex; i++){
+            if(i < this.levelCells.length){
+                this.levelCells[i].setState(LevelState.Clear);
+            }
+        }
     }
 
     private initLevels() {
@@ -166,8 +227,28 @@ export class LevelSelUI extends Component {
             const levelCell = levelNode.getComponent(LevelNodeCell);
             if (levelCell) {
                 // 设置关卡数据 - 使用通用的初始化方法
-                // levelCell.setLevelData(levelIndex + 1); // 关卡编号从1开始
+                levelCell.setIndex(levelIndex);
                 this.levelCells[levelIndex] = levelCell;
+                levelCell.setCallBack((lvid:number)=>{
+                    const userdatacomp = smc.crashGame.get(UserDataComp);
+                    if(userdatacomp && userdatacomp.completedLevelId < lvid ){
+                        const need_star = lvid+1;
+                        tips.alert(`To pass the level, you need\n to accumulate  ${need_star}  stars.`,()=>{
+                            this.loadingNode.active = true;
+                            this.scheduleOnce(()=>{
+                                this.loadingNode.active = false;
+                                this.onOpenLevel(lvid);        
+                            },0.5);           
+                        },"","GO");
+                    }else{
+                        this.loadingNode.active = true;
+                        this.scheduleOnce(()=>{
+                            this.loadingNode.active = false;
+                            this.onOpenLevel(lvid);        
+                        },0.5);
+                    }
+                    
+                });
             }
             
             // 设置父节点
