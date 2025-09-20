@@ -34,6 +34,7 @@ import { SDKMgr } from '../common/SDKMgr';
 import { TimerCDShow } from './TimerCDShow';
 import { MultiplierConfig } from '../config/MultiplierConfig';
 import { LevelSelUI } from './LevelSelUI';
+import { DialogsUI } from './DialogsUI';
 
 const { ccclass, property } = _decorator;
 
@@ -224,6 +225,9 @@ export class MainGameUI extends CCComp {
     @property(Node)
     levelNode: Node = null!;
 
+    @property(DialogsUI)
+    dialogsUI: DialogsUI = null!;
+
     private isBetPanelVisible: boolean = false;
     private isCountdownActive: boolean = false; // 倒计时是否激活
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
@@ -295,6 +299,15 @@ export class MainGameUI extends CCComp {
         this.showRaceResultAfterTutorial();
         // 检查是否需要显示新手引导
         this.checkAndShowTutorial();
+        
+        // 检查是否是第1关，如果是则显示开场对话
+        const userdatacomp = smc.crashGame.get(UserDataComp);
+        if(userdatacomp && userdatacomp.currentPlayLevelId === 0 && userdatacomp.completedLevelId===-1) {
+            this.scheduleOnce(() => {
+                this.showStoryDialog(0); // 显示第1关对话
+            }, 0.5);
+        }
+        
         this.scheduleOnce(() => {
             // 保存balance标签的原始世界坐标
             this.saveOriginalBalanceLabelWorldPos();
@@ -3424,10 +3437,18 @@ export class MainGameUI extends CCComp {
         if(data && data.levelId >= 0){
             const userdatacomp = smc.crashGame.get(UserDataComp);
             if(userdatacomp){
+                
+                
                 if( userdatacomp.completedLevelId > data.levelId){
                     this.showLevelPanel(userdatacomp.completedLevelId+1);
                 }else{
                     if(data.completed!=undefined && data.completed){
+                        // 检查是否完成了特定关卡，需要在进入下一关时显示对话
+                // 完成第4关（id=3）后进入第5关（id=4）时显示对话
+                // 完成第9关（id=8）后进入第10关（id=9）时显示对话
+                if(data.levelId === 3 || data.levelId === 8) {
+                    this.showStoryDialog(data.levelId + 1);
+                }
                         this.showLevelPanel(data.levelId+1);
                     }else{
                         this.showLevelPanel(userdatacomp.completedLevelId+1);
@@ -3466,6 +3487,12 @@ export class MainGameUI extends CCComp {
         const userdatacomp = smc.crashGame.get(UserDataComp);
         if(userdatacomp&&this.starLabel){
             this.starLabel.string = userdatacomp.levelstars.toString();
+        }
+    }
+
+    private showStoryDialog(levelId: number): void {
+        if (this.dialogsUI) {
+            this.dialogsUI.showStoryDialog(levelId);
         }
     }
 }
