@@ -422,4 +422,5 @@ export interface GameResultData {
     isWin: boolean;
     duration?: number;
     isFreeMode?: boolean;
+    stars?:number;
 }

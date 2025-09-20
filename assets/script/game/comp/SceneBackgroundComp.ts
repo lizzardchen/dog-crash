@@ -2,6 +2,8 @@ import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ec
 import { Node, instantiate, Prefab, Vec3, tween } from "cc";
 import { SceneData } from "../scene/SceneData";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
+import { smc } from "../common/SingletonModuleComp";
+import { UserDataComp } from "./UserDataComp";
 
 /** 场景层级类型 */
 export enum SceneLayer {
@@ -51,6 +53,10 @@ export class SceneBackgroundComp extends ecs.Comp {
         this.currentSpeedMultiplier = 1.0;
         // 清理所有星星实例
         this.clearAllStars();
+        const userdata = smc.crashGame.get(UserDataComp);
+        if(userdata){
+            userdata.levelstars = 0;
+        }
     }
 
     /** 设置场景配置数组 */
@@ -130,6 +136,10 @@ export class SceneBackgroundComp extends ecs.Comp {
             console.error("Invalid star node for collection");
             return;
         }
+        const userdata = smc.crashGame.get(UserDataComp);
+        if(userdata){
+            userdata.levelstars++;
+        }
         // 播放收集动画：星星移动到目标位置
         tween(starNode)
             .to(duration, { worldPosition: targetPosition }, {
@@ -138,6 +148,7 @@ export class SceneBackgroundComp extends ecs.Comp {
             .call(() => {
                 // 动画结束后移除星星
                 this.removeStar(starNode);
+                
                 // 发送收集星星的消息
                 oops.message.dispatchEvent("STAR_COLLECTED", { position: targetPosition });
                 console.log("Star collected and removed");

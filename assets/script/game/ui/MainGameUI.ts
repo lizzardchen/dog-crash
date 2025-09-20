@@ -81,6 +81,9 @@ export class MainGameUI extends CCComp {
     potentialWinLabel: Label = null!;
 
     @property(Label)
+    starLabel: Label = null!;
+
+    @property(Label)
     betAmountInput: Label = null!;
 
     @property(Button)
@@ -551,6 +554,7 @@ export class MainGameUI extends CCComp {
         oops.message.on("GUIDE_AFTER_CLICK_ONLINE",this.onGuideEvent,this);
         //level
         oops.message.on("TASK_COMPLETED_LEVEL",this.onLevelComplete,this);
+        oops.message.on("STAR_COLLECTED",this.onStarsChanged,this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
@@ -851,6 +855,7 @@ export class MainGameUI extends CCComp {
         let profit: number = winAmount - betting.betAmount;
         userData.balance += profit; // 正常模式加净收益
         userData.money += profit/10; // 正常模式加money
+        const levelstars:number = userData.levelstars;
 
         // 记录服务器预设的崩盘倍数（不是玩家提现的倍数）
         if (gameHistory && localData) {
@@ -887,7 +892,7 @@ export class MainGameUI extends CCComp {
                         this.playCoinFlyAnimation(profit, () => {
                             console.log("Coin fly animation completed!");
                             this.buttonState = ButtonState.Unpressed;
-                            this.completedNowLevel();
+                            this.completedNowLevel(levelstars);
                         });
                         this.playMoneyFlyAnimation(profit/10, () => {
                             console.log("money fly animation completed!");
@@ -896,7 +901,7 @@ export class MainGameUI extends CCComp {
                 }
                 else{
                     this.buttonState = ButtonState.Unpressed;
-                    this.completedNowLevel();
+                    this.completedNowLevel(levelstars);
                 }
             });
         }, 0.2);
@@ -1854,6 +1859,10 @@ export class MainGameUI extends CCComp {
         // 安全更新倍数显示
         if (this.multiplierLabel) {
             this.multiplierLabel.string = `${multiplier.currentMultiplier.toFixed(2)}x`;
+        }
+
+        if(this.starLabel){
+            this.starLabel.string = userData.levelstars.toString();
         }
 
         // 更新潜在收益
@@ -3418,18 +3427,30 @@ export class MainGameUI extends CCComp {
                 if( userdatacomp.completedLevelId > data.levelId){
                     this.showLevelPanel(userdatacomp.completedLevelId+1);
                 }else{
-                    this.showLevelPanel(data.levelId+1);
+                    if(data.completed!=undefined && data.completed){
+                        this.showLevelPanel(data.levelId+1);
+                    }else{
+                        this.showLevelPanel(userdatacomp.completedLevelId+1);
+                    }
                 }
             }
-            
         }
     }
 
-    public completedNowLevel(){
+    public completedNowLevel(levelstars:number){
         const userdatacomp = smc.crashGame.get(UserDataComp);
         if(userdatacomp){
             const currentLevelId = userdatacomp.currentPlayLevelId;
-            userdatacomp.updateCompletedLevel(currentLevelId); 
+            if(currentLevelId>userdatacomp.completedLevelId){
+                if( levelstars >= currentLevelId+1 ){
+                    userdatacomp.updateCompletedLevel(currentLevelId,true);  
+                }else{
+                    userdatacomp.updateCompletedLevel(currentLevelId,false);
+                }
+            }else{
+                userdatacomp.updateCompletedLevel(currentLevelId,true);
+            }
+            
         }
     }
 
@@ -3438,6 +3459,13 @@ export class MainGameUI extends CCComp {
         if(userdatacomp){
             const currentLevelId = userdatacomp.completedLevelId+1;
             this.showLevelPanel(currentLevelId);
+        }
+    }
+
+    public onStarsChanged(event:string,data:any){
+        const userdatacomp = smc.crashGame.get(UserDataComp);
+        if(userdatacomp&&this.starLabel){
+            this.starLabel.string = userdatacomp.levelstars.toString();
         }
     }
 }

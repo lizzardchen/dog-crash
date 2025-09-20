@@ -12,6 +12,7 @@ export class UserDataComp extends ecs.Comp {
     private _currentPlayLevelId:number = 0;
     private _completeTaskId:number = -1;
     private _stars:number = 0;
+    private _levelstars:number = 0;
     totalFlights: number = 0;
     flightsWon: number = 0;
     highestMultiplier: number = 1.0;
@@ -52,6 +53,14 @@ export class UserDataComp extends ecs.Comp {
     }
     public set completeTaskId(value:number){
         this._completeTaskId = value;
+    }
+
+    public get levelstars():number{
+        return this._levelstars;
+    }
+
+    public set levelstars(value:number){
+        this._levelstars = value;
     }
 
     public get stars():number{
@@ -139,24 +148,30 @@ export class UserDataComp extends ecs.Comp {
     /**
      * 完成关卡
      */
-    updateCompletedLevel(levelid:number){
+    updateCompletedLevel(levelid:number,completed:boolean){
         if(levelid > this.completedLevelId){
-            
+            if(!completed){
+                // 通知任务组件更新任务进度
+                oops.message.dispatchEvent("TASK_COMPLETED_LEVEL", { levelId: levelid ,completed:false});
+                return;
+            }
             oops.http.post(`user/${this.getUserId()}/completelevel`, (ret) => {
             if (ret.isSucc) {
                 console.log("User completed level synced to server successfully");
                 // 更新本地同步时间
                 this.lastSyncTime = new Date();
-                this.completedLevelId = ret.res.data.completedLevelId;
+                if(completed){
+                    this.completedLevelId = ret.res.data.completedLevelId;
+                }
                 // 通知任务组件更新任务进度
-                oops.message.dispatchEvent("TASK_COMPLETED_LEVEL", { levelId: this.completedLevelId });
+                oops.message.dispatchEvent("TASK_COMPLETED_LEVEL", { levelId: levelid ,completed:completed});
             } else {
                 console.error("Failed to sync user completed level to server:", ret.err);
             }
         }, {levelId:levelid});
         }else{
             // 通知任务组件更新任务进度
-                oops.message.dispatchEvent("TASK_COMPLETED_LEVEL", { levelId: levelid });
+                oops.message.dispatchEvent("TASK_COMPLETED_LEVEL", { levelId: levelid,completed:completed });
         }
     }
     
