@@ -62,8 +62,6 @@ export class LevelSelUI extends Component {
         if(userdata){
             this.openLevel(userdata.completedLevelId+1);
         }
-        
-
     }
 
     protected onEnable(): void {
@@ -142,6 +140,7 @@ export class LevelSelUI extends Component {
                 this.levelCells[i].setState(LevelState.Clear);
             }
         }
+        this.updateLevelVisble();
     }
 
     private initLevels() {

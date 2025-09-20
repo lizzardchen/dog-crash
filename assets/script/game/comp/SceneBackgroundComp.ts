@@ -130,10 +130,9 @@ export class SceneBackgroundComp extends ecs.Comp {
             console.error("Invalid star node for collection");
             return;
         }
-
         // 播放收集动画：星星移动到目标位置
         tween(starNode)
-            .to(duration, { position: targetPosition }, {
+            .to(duration, { worldPosition: targetPosition }, {
                 easing: 'sineOut'
             })
             .call(() => {

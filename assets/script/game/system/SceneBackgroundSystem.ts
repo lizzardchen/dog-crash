@@ -99,21 +99,16 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             const currentTime = (Date.now() - gameStateComp.startTime) / 1000;
 
             // 更新所有场景的位置
-            this.updateAllScenesPosition(sceneComp, currentTime);
+            const globaloffset = this.updateAllScenesPosition(sceneComp, currentTime);
 
             // 更新场景可见性
             this.updateSceneVisibility(sceneComp, currentTime);
 
-            // 星星系统更新
-            if (this.global_offset_calculator) {
-                const globalScrollOffset = this.global_offset_calculator.calculateGlobalScrollOffset(currentTime);
-                
-                // 更新星星场景位置
-                this.updateStarScenePosition(sceneComp, globalScrollOffset);
-                
-                // 检测并收集星星
-                this.checkAndCollectStars(entity, sceneComp, globalScrollOffset);
-            }
+            // 更新星星场景位置
+            this.updateStarScenePosition(sceneComp, globaloffset);
+            
+            // 检测并收集星星
+            this.checkAndCollectStars(entity, sceneComp, globaloffset);
 
             // 调试信息（每2秒输出一次）
             if (Math.floor(currentTime * 2) !== Math.floor((currentTime - 1 / 60) * 2)) {
@@ -307,7 +302,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     }
 
     /** 更新所有场景的位置 */
-    private updateAllScenesPosition(sceneComp: SceneBackgroundComp, currentTime: number): void {
+    private updateAllScenesPosition(sceneComp: SceneBackgroundComp, currentTime: number): number {
         // 基于时间计算全局移动速度和偏移
         // 关键：所有场景都以统一的速度同步向上移动
 
@@ -330,6 +325,8 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             // 更新场景位置
             this.updateScenePosition(sceneInstance, currentY);
         }
+
+        return globalScrollOffset;
     }
 
     /** 计算全局滚动速度 */
@@ -544,7 +541,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         const minOffset = Math.min(startOffset, endOffset);
         
         // 创建200个随机分布的星星
-        const totalStars = 200;
+        const totalStars = 50;
         
         for (let i = 0; i < totalStars; i++) {
             // 在偏移范围内随机分布
@@ -595,8 +592,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
             // 如果星星的世界Y位置小于火箭中心位置的Y坐标（即星星移动到火箭中心位置下面），则收集它
             if (starWorldPos.y < rocketWorldPos.y) {
                 // 调用收集动画，收集到火箭位置
-                const rocketLocalPos = rocketView.rocket_view_parent.position;
-                sceneComp.collectStarToPosition(star, rocketLocalPos, 0.5);
+                sceneComp.collectStarToPosition(star, rocketWorldPos, 0.2);
             }
         }
     }

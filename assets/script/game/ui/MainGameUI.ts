@@ -154,6 +154,9 @@ export class MainGameUI extends CCComp {
 
     @property(Button)
     taskButton: Button = null!;
+    
+    @property(Button)
+    levelBackButton: Button = null!;
 
     @property(Node)
     betPanel: Node = null!;
@@ -341,7 +344,7 @@ export class MainGameUI extends CCComp {
 
             // 设置场景配置
             sceneComp.setSceneConfigs(this.sceneConfigs);
-            
+
             // 初始化场景实例
             this.initSceneInstances(sceneComp);
 
@@ -498,6 +501,10 @@ export class MainGameUI extends CCComp {
         // 任务按钮事件
         if (this.taskButton) {
             this.taskButton.node.on(Button.EventType.CLICK, this.onTaskButtonClick, this);
+        }
+
+        if(this.levelBackButton){
+            this.levelBackButton.node.on(Button.EventType.CLICK,this.onLevelBackClick,this);
         }
 
         // 监听游戏事件
@@ -3423,6 +3430,14 @@ export class MainGameUI extends CCComp {
         if(userdatacomp){
             const currentLevelId = userdatacomp.currentPlayLevelId;
             userdatacomp.updateCompletedLevel(currentLevelId); 
+        }
+    }
+
+    public onLevelBackClick(){
+        const userdatacomp = smc.crashGame.get(UserDataComp);
+        if(userdatacomp){
+            const currentLevelId = userdatacomp.completedLevelId+1;
+            this.showLevelPanel(currentLevelId);
         }
     }
 }
