@@ -47,6 +47,7 @@ export class SceneBackgroundComp extends ecs.Comp {
     /** 星星相关属性 */
     private starPrefab: Prefab | null = null;  // 星星预制体
     private starInstances: Node[] = [];        // 当前存在的星星实例
+    private starOriginalPositions: Vec3[] = []; // 星星的初始位置备份
 
     reset() {
         this.currentSceneIndex = 0;
@@ -126,8 +127,36 @@ export class SceneBackgroundComp extends ecs.Comp {
         this.starScene.addChild(starNode);
         this.starInstances.push(starNode);
         
+        // 备份星星的初始位置
+        this.starOriginalPositions.push(new Vec3(position.x, position.y, position.z));
+        
         console.log(`Star created at position: ${position.x}, ${position.y}, ${position.z}`);
         return starNode;
+    }
+
+    /** 恢复所有星星到初始位置 */
+    restoreAllStarsPosition(): void {
+        let startidx:number = 0;
+        this.starInstances.forEach(starNode => {
+            starNode.setPosition(this.starOriginalPositions[startidx]);
+            startidx++;
+        });
+    }
+
+    checkToCollectStar(targetpos:Vec3){
+        for (let i = this.starInstances.length-1; i >= 0; i--) {
+            const star = this.starInstances[i];
+            if(!star.active) continue;
+            const starWorldPos = star.getWorldPosition();
+            // 如果星星的世界Y位置小于火箭中心位置的Y坐标（即星星移动到火箭中心位置下面），则收集它
+            if (starWorldPos.y < targetpos.y) {
+                this.starInstances.splice(i,1);
+                // 调用收集动画，收集到火箭位置
+                this.collectStarToPosition(star, targetpos, 0.2);
+                //log star world pos
+                console.log(`⭐ Star collected at position: ${starWorldPos.x}, ${starWorldPos.y}, ${starWorldPos.z}`);
+            }
+        }
     }
 
     /** 收集星星到指定位置并播放动画 */
@@ -158,11 +187,10 @@ export class SceneBackgroundComp extends ecs.Comp {
 
     /** 移除指定的星星 */
     private removeStar(starNode: Node): void {
-        const index = this.starInstances.indexOf(starNode);
-        if (index !== -1) {
-            this.starInstances.splice(index, 1);
-        }
-        
+        // const index = this.starInstances.indexOf(starNode);
+        // if (index !== -1) {
+        //     this.starInstances.splice(index, 1);
+        // }
         if (starNode && starNode.isValid) {
             starNode.removeFromParent();
             starNode.destroy();

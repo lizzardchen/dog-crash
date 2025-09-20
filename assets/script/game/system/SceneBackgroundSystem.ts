@@ -37,6 +37,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     
     // 星星系统相关属性
     private totalSceneHeight: number = 0;
+    private _stars_created:boolean = false;
 
     filter(): ecs.IMatcher {
         return ecs.allOf(SceneBackgroundComp, MultiplierComp, GameStateComp, RocketViewComp);
@@ -522,43 +523,70 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         }
     }
 
-    /** 在初始化时一次性创建所有星星（倍率1到1000区间，总共200个） */
+    /** 在初始化时一次性创建所有星星（等差分布：倍率2-3有1个，3-4有2个，以此类推） */
     private createAllStarsAtInit(sceneComp: SceneBackgroundComp): void {
         if (!this.global_offset_calculator) {
             return;
         }
+        // if(this._stars_created){
+        //  sceneComp.restoreAllStarsPosition();
+        //  return;
+        // }
         
-        // 计算倍率1和1000对应的时间
-        const startTime = MultiplierConfig.calculateTimeForMultiplier(2);
-        const endTime = MultiplierConfig.calculateTimeForMultiplier(1000);
+        let totalStarsCreated = 0;
+        let multiplierStart = 1.2;
+        let starsInCurrentRange = 1;
         
-        // 计算对应的全局偏移量
-        const startOffset = this.global_offset_calculator.calculateGlobalScrollOffset(startTime);
-        const endOffset = this.global_offset_calculator.calculateGlobalScrollOffset(endTime);
-        
-        // 计算总的偏移范围
-        const totalOffsetRange = Math.abs(endOffset - startOffset);
-        const minOffset = Math.min(startOffset, endOffset);
-        
-        // 创建200个随机分布的星星
-        const totalStars = 50;
-        
-        for (let i = 0; i < totalStars; i++) {
-            // 在偏移范围内随机分布
-            const randomOffsetRatio = Math.random();
-            const yOffset = minOffset + totalOffsetRange * randomOffsetRatio;
+        // 等差分布：倍率2-3有1个星星，3-4有2个星星，4-5有3个星星，以此类推
+        while (totalStarsCreated < 100) {
+            const multiplierEnd = multiplierStart + 1;
             
-            // 转换为starScene坐标系中的位置
-            const starY = this.totalSceneHeight / 2 - yOffset;
+            // 计算当前倍率区间对应的时间和偏移量
+            const startTime = MultiplierConfig.calculateTimeForMultiplier(multiplierStart);
+            const endTime = MultiplierConfig.calculateTimeForMultiplier(multiplierEnd);
             
-            // 随机X位置（在屏幕宽度范围内）
-            const starX = (Math.random() - 0.5) * 800;
+            const startOffset = this.global_offset_calculator.calculateGlobalScrollOffset(startTime);
+            const endOffset = this.global_offset_calculator.calculateGlobalScrollOffset(endTime);
             
-            // 创建星星
-            sceneComp.createStarAtPosition(new Vec3(starX, starY, 0));
+            // 计算当前区间的偏移范围
+            const rangeOffsetStart = Math.min(startOffset, endOffset);
+            const rangeOffsetEnd = Math.max(startOffset, endOffset);
+            const rangeHeight = rangeOffsetEnd - rangeOffsetStart;
+            
+            // 在当前倍率区间内创建指定数量的星星
+            const starsToCreate = Math.min(starsInCurrentRange, 100 - totalStarsCreated);
+            
+            for (let i = 0; i < starsToCreate; i++) {
+                // 在当前区间内均匀分布
+                const offsetRatio = (i + 0.5) / starsToCreate; // 均匀分布
+                const yOffset = rangeOffsetStart + rangeHeight * offsetRatio;
+                
+                // 转换为starScene坐标系中的位置
+                // yOffset是相对于starScene底边的偏移量，需要转换为相对于starScene中心的坐标
+                // starScene的锚点在中心(0.5, 0.5)，所以底边位置是-totalSceneHeight/2
+                const starY = -this.totalSceneHeight / 2 + yOffset;
+                
+                // 随机X位置（在屏幕宽度范围内）
+                const starX = (Math.random() - 0.5) * 800;
+                
+                // 创建星星
+                sceneComp.createStarAtPosition(new Vec3(starX, starY, 0));
+                totalStarsCreated++;
+            }
+            
+            // 移动到下一个倍率区间
+            multiplierStart = multiplierEnd;
+            starsInCurrentRange++;
+            
+            // 防止无限循环
+            if (multiplierStart > 1000) {
+                break;
+            }
         }
-        console.log(`⭐ Created ${totalStars} stars in multiplier range 1x - 1000x`);
-        console.log(`⭐ Offset range: ${startOffset.toFixed(2)} to ${endOffset.toFixed(2)}`);
+        
+        this._stars_created = true;
+        console.log(`⭐ Created ${totalStarsCreated} stars with arithmetic progression distribution`);
+        console.log(`⭐ Distribution: 2-3x(1 star), 3-4x(2 stars), 4-5x(3 stars), etc.`);
     }
 
 
@@ -566,10 +594,15 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
     /** 更新starScene的位置跟随场景偏移 */
     private updateStarScenePosition(sceneComp: SceneBackgroundComp, globalScrollOffset: number): void {
         if (sceneComp.starScene) {
-            // globalScrollOffset是相对于底边的偏移，需要转换为相对于中心点的偏移
-            // starScene的锚点在中心，所以需要减去总高度的一半
-            const centerOffset = globalScrollOffset - this.totalSceneHeight / 2;
-            sceneComp.starScene.setPosition(0, -centerOffset, 0);
+            const uiTransform = sceneComp.starScene.getComponent(UITransform);
+            if (uiTransform) {
+                const starSceneHeight = uiTransform.height;
+                // starScene的底边要与parent的底边对齐，就像第一个场景一样
+                // 使用与第一个场景相同的位置计算公式：(sceneHeight - screenHeight) / 2
+                // 然后减去globalScrollOffset来跟随滚动
+                const initialY = (starSceneHeight - this.screenHeight) / 2;
+                sceneComp.starScene.setPosition(0, initialY - globalScrollOffset, 0);
+            }
         }
     }
 
@@ -584,17 +617,7 @@ export class SceneBackgroundSystem extends ecs.ComblockSystem implements ecs.ISy
         // 获取火箭的世界位置
         const rocketWorldPos = rocketView.rocket_view_parent.getWorldPosition();
         
-        const children = sceneComp.starScene.children;
-        for (let i = children.length - 1; i >= 0; i--) {
-            const star = children[i];
-            const starWorldPos = star.getWorldPosition();
-            
-            // 如果星星的世界Y位置小于火箭中心位置的Y坐标（即星星移动到火箭中心位置下面），则收集它
-            if (starWorldPos.y < rocketWorldPos.y) {
-                // 调用收集动画，收集到火箭位置
-                sceneComp.collectStarToPosition(star, rocketWorldPos, 0.2);
-            }
-        }
+        sceneComp.checkToCollectStar(rocketWorldPos);
     }
 
     // /** 处理 Rocket 场景状态变化事件 */
