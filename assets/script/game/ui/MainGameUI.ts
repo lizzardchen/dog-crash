@@ -180,6 +180,9 @@ export class MainGameUI extends CCComp {
     frontScene: Node = null!;
 
     @property(Node)
+    starScene:Node = null!;
+
+    @property(Node)
     pig_change_node:Node = null!;
 
     // 可扩展的场景配置数组
@@ -331,12 +334,14 @@ export class MainGameUI extends CCComp {
 
         const sceneComp = smc.crashGame.get(SceneBackgroundComp);
         if (sceneComp) {
+            // 加载星星预制体
+            sceneComp.loadStarPrefab();
             // 设置场景节点引用
-            sceneComp.setSceneNodes(this.backScene, this.frontScene);
+            sceneComp.setSceneNodes(this.backScene, this.frontScene,this.starScene);
 
             // 设置场景配置
             sceneComp.setSceneConfigs(this.sceneConfigs);
-
+            
             // 初始化场景实例
             this.initSceneInstances(sceneComp);
 
