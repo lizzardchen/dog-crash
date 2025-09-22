@@ -302,7 +302,9 @@ export class MainGameUI extends CCComp {
         
         // 检查是否是第1关，如果是则显示开场对话
         const userdatacomp = smc.crashGame.get(UserDataComp);
-        if(userdatacomp && userdatacomp.currentPlayLevelId === 0 && userdatacomp.completedLevelId===-1) {
+        if(userdatacomp && (userdatacomp.completedLevelId===-1)||
+            (userdatacomp.completedLevelId===3)||
+            (userdatacomp.completedLevelId===8)) {
             this.scheduleOnce(() => {
                 this.showStoryDialog(0); // 显示第1关对话
             }, 0.5);

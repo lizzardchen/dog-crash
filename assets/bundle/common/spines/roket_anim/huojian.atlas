@@ -1,286 +1,265 @@
 
 huojian.png
-size: 1413,1539
+size: 2013,1126
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-gx_01
-  rotate: true
-  xy: 1353, 7
-  size: 54, 51
-  orig: 58, 55
-  offset: 2, 2
-  index: -1
-gx_02
-  rotate: false
-  xy: 626, 477
-  size: 26, 21
-  orig: 28, 23
-  offset: 1, 1
-  index: -1
-gx_03
-  rotate: false
-  xy: 544, 476
-  size: 29, 22
-  orig: 31, 25
-  offset: 1, 1
-  index: -1
-gx_04
-  rotate: false
-  xy: 654, 477
-  size: 24, 21
-  orig: 27, 24
-  offset: 2, 1
-  index: -1
-gx_05
-  rotate: false
-  xy: 1135, 544
-  size: 82, 45
-  orig: 84, 48
-  offset: 1, 1
-  index: -1
 hj_01
   rotate: true
-  xy: 898, 57
-  size: 196, 243
-  orig: 198, 245
-  offset: 1, 1
+  xy: 1755, 411
+  size: 104, 231
+  orig: 104, 231
+  offset: 0, 0
   index: -1
 hj_02
   rotate: false
-  xy: 1204, 1294
-  size: 194, 243
-  orig: 196, 245
-  offset: 1, 1
+  xy: 952, 128
+  size: 132, 251
+  orig: 132, 251
+  offset: 0, 0
   index: -1
 hj_03
-  rotate: true
-  xy: 2, 22
-  size: 441, 446
-  orig: 443, 448
-  offset: 1, 1
+  rotate: false
+  xy: 1086, 19
+  size: 517, 534
+  orig: 517, 534
+  offset: 0, 0
   index: -1
 hj_04
   rotate: true
-  xy: 932, 670
-  size: 264, 392
-  orig: 266, 394
+  xy: 947, 555
+  size: 569, 291
+  orig: 570, 292
   offset: 1, 1
   index: -1
 hj_05
-  rotate: false
-  xy: 2, 465
-  size: 492, 1072
-  orig: 492, 1072
+  rotate: true
+  xy: 2, 370
+  size: 754, 416
+  orig: 754, 416
   offset: 0, 0
   index: -1
-hj_06
-  rotate: true
-  xy: 860, 936
-  size: 256, 393
-  orig: 258, 395
-  offset: 1, 1
-  index: -1
 hj_07
-  rotate: true
-  xy: 450, 22
-  size: 441, 446
-  orig: 443, 448
-  offset: 1, 1
+  rotate: false
+  xy: 420, 421
+  size: 525, 703
+  orig: 525, 703
+  offset: 0, 0
   index: -1
 hj_08
   rotate: true
-  xy: 1143, 156
-  size: 97, 263
-  orig: 99, 265
-  offset: 1, 1
+  xy: 1759, 517
+  size: 111, 242
+  orig: 111, 242
+  offset: 0, 0
   index: -1
 houzi_01
   rotate: false
-  xy: 1255, 940
+  xy: 1822, 164
   size: 83, 79
   orig: 83, 79
   offset: 0, 0
   index: -1
 houzi_02
   rotate: true
-  xy: 1004, 8
+  xy: 443, 372
   size: 47, 87
   orig: 47, 87
   offset: 0, 0
   index: -1
 houzi_03
-  rotate: true
-  xy: 1143, 6
+  rotate: false
+  xy: 1605, 380
   size: 148, 208
   orig: 148, 208
   offset: 0, 0
   index: -1
 houzi_04
-  rotate: true
-  xy: 1135, 591
+  rotate: false
+  xy: 1605, 106
   size: 77, 98
   orig: 77, 98
   offset: 0, 0
   index: -1
 houzi_05
   rotate: true
-  xy: 1235, 600
+  xy: 1605, 206
   size: 68, 106
   orig: 68, 106
   offset: 0, 0
   index: -1
 houzi_06
-  rotate: true
-  xy: 1204, 1195
+  rotate: false
+  xy: 952, 10
   size: 97, 116
   orig: 102, 116
   offset: 0, 0
   index: -1
 houzi_07
   rotate: false
-  xy: 1322, 1198
+  xy: 1684, 110
   size: 76, 94
   orig: 76, 94
   offset: 0, 0
   index: -1
 houzi_08
   rotate: false
-  xy: 932, 504
+  xy: 1755, 245
   size: 201, 164
   orig: 201, 164
   offset: 0, 0
   index: -1
 houzi_09
   rotate: true
-  xy: 1093, 14
+  xy: 626, 378
   size: 41, 36
   orig: 41, 36
   offset: 0, 0
   index: -1
 houzi_10
-  rotate: false
-  xy: 575, 477
+  rotate: true
+  xy: 420, 370
   size: 49, 21
   orig: 49, 21
   offset: 0, 0
   index: -1
 houzi_11
-  rotate: false
-  xy: 766, 484
+  rotate: true
+  xy: 610, 374
   size: 45, 14
   orig: 45, 14
   offset: 0, 0
   index: -1
 houzi_12
   rotate: false
-  xy: 1255, 1021
+  xy: 947, 381
   size: 137, 172
   orig: 137, 172
   offset: 0, 0
   index: -1
 houzi_13
   rotate: true
-  xy: 1353, 63
+  xy: 1762, 152
   size: 91, 58
   orig: 91, 58
   offset: 0, 0
   index: -1
 houzi_14
-  rotate: true
-  xy: 744, 483
+  rotate: false
+  xy: 732, 5
   size: 15, 20
   orig: 15, 20
   offset: 0, 0
   index: -1
 houzi_15
-  rotate: true
-  xy: 813, 486
+  rotate: false
+  xy: 749, 7
   size: 12, 18
   orig: 12, 18
   offset: 0, 0
   index: -1
 houzi_16
   rotate: false
-  xy: 833, 488
+  xy: 763, 15
   size: 32, 10
   orig: 32, 10
   offset: 0, 0
   index: -1
 houzi_17
   rotate: true
-  xy: 867, 476
+  xy: 656, 3
   size: 22, 10
   orig: 22, 10
   offset: 0, 0
   index: -1
 houzi_18
   rotate: false
-  xy: 680, 478
+  xy: 668, 5
   size: 62, 20
   orig: 62, 20
   offset: 0, 0
   index: -1
 houzi_19
-  rotate: true
-  xy: 1326, 862
+  rotate: false
+  xy: 532, 372
   size: 76, 47
   orig: 76, 47
   offset: 0, 0
   index: -1
 houzi_20
-  rotate: false
-  xy: 898, 2
+  rotate: true
+  xy: 1958, 305
   size: 104, 53
   orig: 104, 53
   offset: 0, 0
   index: -1
 houzi_21
   rotate: false
-  xy: 496, 475
+  xy: 608, 2
   size: 46, 23
   orig: 46, 23
   offset: 0, 0
   index: -1
 houzi_22
-  rotate: false
-  xy: 1235, 539
+  rotate: true
+  xy: 1700, 15
   size: 93, 59
   orig: 93, 59
   offset: 0, 0
   index: -1
 houzi_23
   rotate: true
-  xy: 1330, 505
+  xy: 1761, 15
   size: 93, 59
   orig: 93, 59
   offset: 0, 0
   index: -1
 hytx_01
-  rotate: false
-  xy: 496, 933
+  rotate: true
+  xy: 2, 6
   size: 362, 604
   orig: 422, 664
   offset: 14, 32
   index: -1
 hytx_02
-  rotate: true
-  xy: 898, 255
+  rotate: false
+  xy: 1759, 630
   size: 243, 494
   orig: 252, 571
   offset: 1, 60
   index: -1
 hytx_03
   rotate: true
-  xy: 860, 1194
+  xy: 608, 27
   size: 343, 342
   orig: 402, 406
   offset: 30, 33
   index: -1
 jingbao
+  rotate: false
+  xy: 1240, 590
+  size: 517, 534
+  orig: 517, 534
+  offset: 0, 0
+  index: -1
+t01
+  rotate: false
+  xy: 1605, 10
+  size: 93, 94
+  orig: 93, 94
+  offset: 0, 0
+  index: -1
+t02
+  rotate: false
+  xy: 1907, 169
+  size: 76, 74
+  orig: 76, 74
+  offset: 0, 0
+  index: -1
+t03
   rotate: true
-  xy: 496, 500
-  size: 431, 434
-  orig: 431, 434
+  xy: 1605, 276
+  size: 102, 107
+  orig: 102, 107
   offset: 0, 0
   index: -1

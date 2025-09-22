@@ -224,8 +224,8 @@ export class RaceUI extends CCComp {
             this.prizePoolLabel.string = `${prizeText}`;
         }
 
-        // 更新前三名奖牌显示
-        this.updatePodium(leaderboard.slice(0, 3));
+        // // 更新前三名奖牌显示
+        // this.updatePodium(leaderboard.slice(0, 3));
         
         // 更新4-11名排行榜
         this.updateLeaderboard(leaderboard, userInfo);
