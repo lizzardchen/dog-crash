@@ -131,10 +131,10 @@ export class TaskCell extends Component {
         const taskData = this._taskData;
 
         // 显示/隐藏相关UI元素
-        if (this.claimButton) {
-            this.claimButton.node.active = taskData.canClaim;
-            this.claimButton.interactable = taskData.canClaim;
-        }
+        // if (this.claimButton) {
+        //     this.claimButton.node.active = taskData.canClaim;
+        //     this.claimButton.interactable = taskData.canClaim;
+        // }
 
         if (this.completedIcon) {
             this.completedIcon.active = taskData.isCompleted && !taskData.canClaim;
@@ -143,31 +143,6 @@ export class TaskCell extends Component {
         if (this.lockedIcon) {
             this.lockedIcon.active = taskData.status === TaskStatus.LOCKED;
         }
-
-        // 根据状态设置背景色调
-        if (this.backgroundSprite) {
-            const color = this.backgroundSprite.color.clone();
-            switch (taskData.status) {
-                case TaskStatus.LOCKED:
-                    color.r *= 0.6;
-                    color.g *= 0.6;
-                    color.b *= 0.6;
-                    break;
-                case TaskStatus.COMPLETED:
-                    color.r *= 0.8;
-                    color.g *= 1.0;
-                    color.b *= 0.8;
-                    break;
-                default:
-                    // 保持原色
-                    break;
-            }
-            this.backgroundSprite.color = color;
-        }
-
-        // 设置整体透明度
-        const alpha = taskData.status === TaskStatus.LOCKED ? 0.5 : 1.0;
-        this.node.opacity = alpha * 255;
     }
 
     /**

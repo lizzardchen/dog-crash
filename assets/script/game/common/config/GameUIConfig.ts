@@ -79,5 +79,5 @@ export var UIConfigData: { [key: number]: UIConfig } = {
     [UIID.GoldPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/gold_popup" },
     [UIID.MoneyPopup]: { layer: LayerType.Dialog, prefab: "gui/crash/money_popup" },
     [UIID.EnergyFree]: { layer: LayerType.Dialog, prefab: "gui/crash/energy_buy" },
-    [UIID.TaskUI]: { layer: LayerType.Dialog, prefab: "gui/crash/task_ui" }
+    [UIID.TaskUI]: { layer: LayerType.Dialog, prefab: "gui/crash/task" }
 }

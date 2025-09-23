@@ -5,6 +5,8 @@ import { oops } from '../../../../extensions/oops-plugin-framework/assets/core/O
 import { ITaskData, ITaskUICallback, TaskType } from '../data/TaskData';
 import { TaskComp } from '../comp/TaskComp';
 import { TaskCell } from './TaskCell';
+import { smc } from '../common/SingletonModuleComp';
+import { UIID } from '../common/config/GameUIConfig';
 const { ccclass, property } = _decorator;
 
 @ccclass('TaskUI')
@@ -96,7 +98,7 @@ export class TaskUI extends CCComp implements ITaskUICallback {
         // 获取任务组件 - 这里需要根据实际的ECS系统API调整
         // 暂时使用简单的方式获取TaskComp实例
         // TODO: 根据实际的ECS实体管理方式调整获取方法
-        
+        this._taskComp = smc.crashGame.get(TaskComp);
         // 创建或获取任务组件实例
         if (!this._taskComp) {
             // 这里应该根据实际的ECS系统来获取TaskComp实例
@@ -201,7 +203,7 @@ export class TaskUI extends CCComp implements ITaskUICallback {
      * 关闭按钮点击事件
      */
     private onCloseButtonClick(): void {
-        this.node.active = false;
+        oops.gui.remove(UIID.TaskUI);
     }
 
     /**
@@ -215,17 +217,9 @@ export class TaskUI extends CCComp implements ITaskUICallback {
      * 显示任务界面
      */
     public show(): void {
-        this.enabled = true;
         if (this._isInitialized) {
             this.refreshTaskList();
         }
-    }
-
-    /**
-     * 隐藏任务界面
-     */
-    public hide(): void {
-        this.enabled = false;
     }
 
     /**

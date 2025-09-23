@@ -3,8 +3,8 @@
     {
       "id": 1,
       "type": "pass_level",
-      "name": "通关任务",
-      "description": "完成第一个关卡",
+      "name": "level task",
+      "description": "complete level 1",
       "target": 1,
       "reward": 1000,
       "unlockCondition": "游戏开始即解锁",
