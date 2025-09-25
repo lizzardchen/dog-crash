@@ -1,82 +1,82 @@
 
 baozha.png
-size: 2033,1165
+size: 1917,1135
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
 01
-  rotate: false
-  xy: 1243, 2
+  rotate: true
+  xy: 1660, 417
   size: 191, 178
   orig: 201, 196
   offset: 4, 8
   index: -1
 02
   rotate: false
-  xy: 2, 32
+  xy: 2, 2
   size: 1239, 1131
   orig: 1291, 1182
   offset: 29, 24
   index: -1
 03
-  rotate: true
-  xy: 1691, 33
-  size: 196, 243
-  orig: 198, 245
-  offset: 1, 1
+  rotate: false
+  xy: 1783, 616
+  size: 132, 251
+  orig: 132, 251
+  offset: 0, 0
   index: -1
 04
-  rotate: false
-  xy: 1691, 231
+  rotate: true
+  xy: 1243, 50
   size: 264, 392
   orig: 266, 394
   offset: 1, 1
   index: -1
 05
-  rotate: false
-  xy: 1768, 770
-  size: 256, 393
-  orig: 258, 395
-  offset: 1, 1
+  rotate: true
+  xy: 1660, 252
+  size: 163, 185
+  orig: 163, 185
+  offset: 0, 0
   index: -1
 06
-  rotate: true
-  xy: 1243, 182
-  size: 441, 446
+  rotate: false
+  xy: 1243, 316
+  size: 415, 292
   orig: 443, 448
-  offset: 1, 1
+  offset: 14, 90
   index: -1
 07
   rotate: true
-  xy: 1768, 671
-  size: 97, 263
-  orig: 99, 265
-  offset: 1, 1
+  xy: 1783, 869
+  size: 264, 132
+  orig: 264, 132
+  offset: 0, 0
   index: -1
 09
-  rotate: true
-  xy: 1243, 625
+  rotate: false
+  xy: 1243, 610
   size: 538, 523
   orig: 559, 545
   offset: 8, 9
   index: -1
 10
-  rotate: true
-  xy: 1243, 625
+  rotate: false
+  xy: 1243, 610
   size: 538, 523
   orig: 559, 545
   offset: 8, 9
   index: -1
 11
-  rotate: true
-  xy: 1243, 625
+  rotate: false
+  xy: 1243, 610
   size: 538, 523
   orig: 559, 545
   offset: 8, 9
   index: -1
 12
-  rotate: true
-  xy: 1243, 625
+  rotate: false
+  xy: 1243, 610
   size: 538, 523
   orig: 559, 545
   offset: 8, 9

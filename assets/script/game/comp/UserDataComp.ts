@@ -214,7 +214,11 @@ export class UserIdManager {
         const timestamp = Date.now();
         const random = Math.floor(Math.random() * 1000);
         // 取时间戳的后5位 + 3位随机数，确保8位数字且具有唯一性
-        const timestampPart = (timestamp % 100000).toString().padStart(5, '0');
+        let timestampPart = (timestamp % 100000).toString().padStart(5, '0');
+        // 确保首位不为0
+        if (timestampPart.charAt(0) === '0') {
+            timestampPart = '1' + timestampPart.substring(1);
+        }
         const randomPart = random.toString().padStart(3, '0');
         return timestampPart + randomPart;
     }

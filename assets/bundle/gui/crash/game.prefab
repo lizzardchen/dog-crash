@@ -626,8 +626,8 @@
       "__expectedType__": "sp.SkeletonData"
     },
     "defaultSkin": "default",
-    "defaultAnimation": "animation",
-    "_premultipliedAlpha": true,
+    "defaultAnimation": "",
+    "_premultipliedAlpha": false,
     "_timeScale": 2,
     "_preCacheMode": 0,
     "_cacheMode": 0,
@@ -775,13 +775,13 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 1991.9200439453125,
-      "height": 2013.06005859375
+      "width": 1524.4300537109375,
+      "height": 1980.43994140625
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
-      "x": 0.43997248650232396,
-      "y": 0.4888825945419401
+      "x": 0.2682248448546864,
+      "y": 0.49693505157003026
     },
     "_id": ""
   },
@@ -817,7 +817,7 @@
     },
     "defaultSkin": "default",
     "defaultAnimation": "daiji",
-    "_premultipliedAlpha": true,
+    "_premultipliedAlpha": false,
     "_timeScale": 1,
     "_preCacheMode": 0,
     "_cacheMode": 0,
