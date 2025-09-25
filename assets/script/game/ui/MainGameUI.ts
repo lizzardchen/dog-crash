@@ -228,6 +228,9 @@ export class MainGameUI extends CCComp {
     @property(DialogsUI)
     dialogsUI: DialogsUI = null!;
 
+    @property(Node)
+    loadingNode:Node = null!;
+
     private isBetPanelVisible: boolean = false;
     private isCountdownActive: boolean = false; // 倒计时是否激活
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
@@ -2383,6 +2386,7 @@ export class MainGameUI extends CCComp {
      */
     private showRaceUI(): void {
         console.log("Showing race UI");
+        const thisui:MainGameUI = this;
 
         const callbacks: UICallbacks = {
             onAdded: (node: Node | null, params: any) => {
@@ -2390,9 +2394,10 @@ export class MainGameUI extends CCComp {
                     console.error("RaceUI node is null");
                     return;
                 }
-                
+                params.joined = false;
                 const raceUI = node.getComponent(RaceUI);
                 if (raceUI) {
+                    raceUI.onShowRaceUI(params);
                     // RaceUI不需要参数，直接初始化
                     console.log("RaceUI component loaded successfully");
                 } else {
@@ -2401,6 +2406,21 @@ export class MainGameUI extends CCComp {
             },
             onRemoved: (node: Node | null, params: any) => {
                 console.log("RaceUI closed");
+                if(params&&params.joined){
+                    const levelselui = this.levelNode.getComponent(LevelSelUI);
+                    if(levelselui){
+                        levelselui.onHideLevelSel();
+                    }
+                    const betting = smc.crashGame.get(BettingComp);
+                    if(betting){
+                        betting.gameMode = "SPG";
+                        thisui.onAutoBetButtonClick();
+                        thisui.loadingNode.active =true;
+                        thisui.scheduleOnce(()=>{
+                            thisui.loadingNode.active =false;
+                        },1.0);
+                    }
+                }
             }
         };
 
@@ -3429,6 +3449,12 @@ export class MainGameUI extends CCComp {
         if(levelselui){
             levelselui.openLevel(nextLevelid);
             this.levelNode.active = true;
+            const betting = smc.crashGame.get(BettingComp);
+            if(betting){
+                betting.setGameMode("SPG");
+                this.updateAutoBetButtonState();
+                this.updateHoldButtonState();
+            }
         }
         else{
             this.levelNode.active = false;

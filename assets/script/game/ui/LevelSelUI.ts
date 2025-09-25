@@ -112,16 +112,20 @@ export class LevelSelUI extends Component {
         this.updateBgPositionsByScroll();
     }
 
-    public onOpenLevel(lvid:number){
-        const userdatacomp = smc.crashGame.get(UserDataComp);
-        if(userdatacomp){
-            userdatacomp.currentPlayLevelId = lvid;
-            this.node.active = false;
+    public onHideLevelSel(){
+         this.node.active = false;
             this.needHideNodes.forEach(hidenode => {
                 if(hidenode){
                     hidenode.active = true;
                 }
             });
+    }
+
+    public onOpenLevel(lvid:number){
+        const userdatacomp = smc.crashGame.get(UserDataComp);
+        if(userdatacomp){
+            userdatacomp.currentPlayLevelId = lvid;
+            this.onHideLevelSel();
         }
     }
 

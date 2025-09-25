@@ -6,6 +6,7 @@ import { smc } from "../common/SingletonModuleComp";
 import { RaceComp, RaceState, RaceInfo, RaceLeaderboardItem, UserRaceInfo } from '../comp/RaceComp';
 import { CrashGameAudio } from "../config/CrashGameAudio";
 import { UIID } from "../common/config/GameUIConfig";
+import { BettingComp } from '../comp/BettingComp';
 
 const { ccclass, property } = _decorator;
 
@@ -55,7 +56,12 @@ export class RaceUI extends CCComp {
     @property(Button)
     closeDetailButton: Button = null!;
 
+    @property(Button)
+    joinRaceButton:Button = null!;
+
     private raceComp: RaceComp | null = null;
+
+    private _params:any = null;
 
     onLoad() {
         console.log("RaceUI loaded");
@@ -93,9 +99,24 @@ export class RaceUI extends CCComp {
         if(this.closeDetailButton){
             this.closeDetailButton.node.on(Button.EventType.CLICK, this.onCloseDetailButtonClick, this);
         }
+        if(this.joinRaceButton){
+            this.joinRaceButton.node.on(Button.EventType.CLICK,this.onJoinRaceButton,this);
+        }
         
         // 监听比赛数据更新事件
         oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
+    }
+
+    public onShowRaceUI(params:any){
+        this._params = params;
+    }
+
+    private onJoinRaceButton():void{
+        if(!this._params){
+            this._params = {};
+        }
+        this._params.joined = true;
+        this.onCloseButtonClick();
     }
 
     private onShowDetailButtonClick(): void {
@@ -115,9 +136,9 @@ export class RaceUI extends CCComp {
     }
 
     private onCloseButtonClick(): void {
+        
         CrashGameAudio.playButtonClick();
         console.log("Race close button clicked");
-        
         // 关闭整个UI界面
         oops.gui.remove(UIID.Race);
     }
