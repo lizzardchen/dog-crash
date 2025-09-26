@@ -511,7 +511,7 @@ export class BetAmountSelector extends CCComp {
         );
     }
 
-    onDestroy() {
+    onRemoveEvents() {
         // 清理事件监听
         if (this.betScrollView) {
             this.betScrollView.node.off('scroll-ended', this.onBetScrollEnd, this);

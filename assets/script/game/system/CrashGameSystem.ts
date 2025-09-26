@@ -85,7 +85,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         const multiplier = entity.get(MultiplierComp);
         
         // PIG模式自动游戏逻辑
-        if (betting.gameMode === "PIG" && !betting.isHolding && !betting.goNextRound) {
+        if (betting.gameMode === "PIG" && !betting.isHolding && !betting.goNextRound && betting.pigCashOutMultiplier > 1) {
             // 检查是否应该开始游戏（在合适的倒计时阶段）
             if (betting.serverPhase === "gaming" && betting.pigCountdownActive) {
                 const betAmount = betting.currentBetItem.value;
@@ -266,7 +266,7 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
             return;
         }else{
             betting.startPigBettingCountdown().then(()=>{
-                betting.setPigCashOut(0,-1);
+                // betting.setPigCashOut(0,-1);
             });
             
         }

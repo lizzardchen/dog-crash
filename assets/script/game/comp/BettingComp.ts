@@ -59,7 +59,7 @@ export class BettingComp extends ecs.Comp {
     serverCrashMultiplier: number = 0; // 服务器返回的爆率值
 
     pigCountdownActive: boolean = false; // 倒计时是否激活
-    pigGameEndByUIThisTurn: boolean = false; // 游戏手是否结束当前回合
+    pigGameEndByUIThisTurn: boolean = true; // 游戏手是否结束当前回合
     private lastUpdateTime: number = 0; // 上次更新时间，用于计算时间差
     private isTransitioning: boolean = false; // 是否正在进行阶段转换，防止重复执行
     
@@ -209,7 +209,7 @@ export class BettingComp extends ecs.Comp {
      * @param multiplier 自动提现倍数
      * @param totalBets 总下注次数 (-1表示无限)
      */
-    setPigCashOut(multiplier: number = 2.0, totalBets: number = -1): void {
+    setPigCashOut(multiplier: number = 2.01, totalBets: number = -1): void {
         this.pigCashOutMultiplier = multiplier;
         this.pigTotalBets = totalBets;
         this.pigCurrentBets = 0; // 重置计数
@@ -220,7 +220,7 @@ export class BettingComp extends ecs.Comp {
             if( this.serverPhase == "betting" || this.serverPhase == "idle" ){
                 this.goNextRound = false;
             }else{
-                this.pigCashOutMultiplier = 0;
+                // this.pigCashOutMultiplier = 0;
                 this.goNextRound = true;
             }
         }
@@ -339,6 +339,9 @@ export class BettingComp extends ecs.Comp {
         if (serverData) {
             this.pigCountdownActive = true;
             this.lastUpdateTime = 0; // 重置更新时间
+            if(serverData.phase === "betting"){
+                oops.message.dispatchEvent("ONLINE_START_BETTING");
+            }
         }
     }
     /**

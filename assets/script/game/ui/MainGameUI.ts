@@ -501,6 +501,7 @@ export class MainGameUI extends CCComp {
         oops.message.on("PIG_COUNTDOWN_UPDATE", this.onPigCountdownUpdate, this);
         oops.message.on("PIG_COUNTDOWN_FINISHED", this.onPigCountdownFinished, this);
         oops.message.on("GAME_MODE_CHANGED",this.onGameModeChanged,this);
+        oops.message.on("ONLINE_START_BETTING",this.onOnlineStartBetting,this);
 
 
 
@@ -538,9 +539,9 @@ export class MainGameUI extends CCComp {
                 }
                 return;
             }
+            return;
         }
-
-        if(energycomp && energycomp.currentEnergy <= 0 && betting.gameMode !== "PIG") {
+        if(energycomp && energycomp.currentEnergy <= 0) {
             oops.gui.toast("Energy not enough!");
             return;
         }
@@ -1166,6 +1167,22 @@ export class MainGameUI extends CCComp {
         this.hideBetPanel();
     }
 
+    private onOnlineBetButtonClick():void{
+        const betting = smc.crashGame.get(BettingComp);
+        if( !betting ) return;
+        if(betting.serverPhase === "betting"){
+            if(!oops.gui.has(UIID.AutoCashOut)){
+                this.showAutoCashOutUI();
+            }
+        }
+        else{
+            if(oops.gui.has(UIID.AutoCashOut)){
+               oops.gui.remove(UIID.AutoCashOut);
+            }
+            tips.alert("Not in bidding phase, please wait for prompt");
+        }
+    }
+
     private onBetButtonClick(): void {
         if (!smc.crashGame) return;
         
@@ -1241,12 +1258,58 @@ export class MainGameUI extends CCComp {
             this.updateHoldButtonState();
         }
         this.onCloseModeSelPanel();
+        if (this.betButton) {
+            this.betButton.node.off(Button.EventType.CLICK, this.onOnlineBetButtonClick, this);
+            this.betButton.node.on(Button.EventType.CLICK, this.onBetButtonClick, this);
+        }
     }
 
     private onGameModeChanged():void{
         // 更新按钮状态
         this.updateAutoBetButtonState();
         this.updateHoldButtonState();
+    }
+
+    private onOnlineStartBetting(){
+        const betting = smc.crashGame.get(BettingComp);
+        if(betting.serverPhase === "betting"){
+            if( !oops.gui.has(UIID.AutoCashOut) ){
+                this.showAutoCashOutUI();
+            }
+        }
+    }
+
+    private staticChangeTOPIGMode(){
+        if (this.betButton) {
+            this.betButton.node.off(Button.EventType.CLICK, this.onBetButtonClick, this);
+            this.betButton.node.on(Button.EventType.CLICK, this.onOnlineBetButtonClick, this);
+        }
+        const betting = smc.crashGame.get(BettingComp);
+        // 获取服务器状态
+        betting.fetchServerCountdown().then(() => {
+            if (betting.serverPhase === "betting") {
+                // 如果是下注阶段，显示AutoCashOutUI设置界面
+                if(!oops.gui.has(UIID.AutoCashOut)){
+                    this.showAutoCashOutUI();
+                }
+                betting.setGameMode("PIG");
+                // betting.setPigCashOut(0, -1);
+                this.updateAutoBetButtonState();
+                this.updateHoldButtonState();
+            } else if (betting.serverPhase === "waiting") {
+                // 如果是等待游戏开始阶段，直接切换到PIG模式并启动等待倒计时
+                betting.setGameMode("PIG");
+                // betting.setPigCashOut(0, -1);
+                this.updateAutoBetButtonState();
+                this.updateHoldButtonState();
+            } else if (betting.serverPhase === "gaming") {
+                // 如果是游戏阶段，直接切换到PIG模式并启动游戏倒计时
+                betting.setGameMode("PIG");
+                // betting.setPigCashOut(0, -1);
+                this.updateAutoBetButtonState();
+                this.updateHoldButtonState();
+            }
+        });
     }
 
     private onAutoBetButtonClick(): void {
@@ -1259,9 +1322,13 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         CrashGameAudio.playButtonClick();
         if (betting) {
-            const currentMode = betting.gameMode;
-
-            if (currentMode === "SPG") {
+            // const currentMode = betting.gameMode;
+            // if (currentMode === "SPG") {
+                // 下注按钮事件
+                if (this.betButton) {
+                    this.betButton.node.off(Button.EventType.CLICK, this.onBetButtonClick, this);
+                    this.betButton.node.on(Button.EventType.CLICK, this.onOnlineBetButtonClick, this);
+                }
                 // 从SPG切换到PIG模式
                 // 只有在等待状态下才能切换到PIG模式
                 if (gameState.state !== GameState.WAITING) {
@@ -1277,21 +1344,23 @@ export class MainGameUI extends CCComp {
                 betting.fetchServerCountdown().then(() => {
                     if (betting.serverPhase === "betting") {
                         // 如果是下注阶段，显示AutoCashOutUI设置界面
-                        // this.showAutoCashOutUI();
+                        if(!oops.gui.has(UIID.AutoCashOut)){
+                            this.showAutoCashOutUI();
+                        }
                         betting.setGameMode("PIG");
-                        betting.setPigCashOut(0, -1);
+                        // betting.setPigCashOut(0, -1);
                         this.updateAutoBetButtonState();
                         this.updateHoldButtonState();
                     } else if (betting.serverPhase === "waiting") {
                         // 如果是等待游戏开始阶段，直接切换到PIG模式并启动等待倒计时
                         betting.setGameMode("PIG");
-                        betting.setPigCashOut(0, -1);
+                        // betting.setPigCashOut(0, -1);
                         this.updateAutoBetButtonState();
                         this.updateHoldButtonState();
                     } else if (betting.serverPhase === "gaming") {
                         // 如果是游戏阶段，直接切换到PIG模式并启动游戏倒计时
                         betting.setGameMode("PIG");
-                        betting.setPigCashOut(0, -1);
+                        // betting.setPigCashOut(0, -1);
                         this.updateAutoBetButtonState();
                         this.updateHoldButtonState();
                     }
@@ -1321,10 +1390,14 @@ export class MainGameUI extends CCComp {
                         }
                     }
                 },1.2);
-            }
-            else{
-                this.onCloseModeSelPanel();
-            }
+            // }
+            // else{
+            //     this.onCloseModeSelPanel();
+            //     if (this.betButton) {
+            //         this.betButton.node.off(Button.EventType.CLICK, this.showAutoCashOutUI, this);
+            //         this.betButton.node.on(Button.EventType.CLICK, this.onBetButtonClick, this);
+            //     }
+            // }
         }
     }
 
@@ -1592,6 +1665,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("GAME_MODE_CHANGED",this.onGameModeChanged,this);
         oops.message.off("SHOW_AD_COINS",this.onShowAdRewardsCoins,this);
         oops.message.off("UPDATE_BET_AMOUNT",this.onUpdateBetAmount,this);
+        oops.message.off("ONLINE_START_BETTING",this.onOnlineStartBetting,this);
 
         // 清理余额标签点击事件
         if (this.balanceLabel) {
@@ -1632,6 +1706,7 @@ export class MainGameUI extends CCComp {
 
         if (this.betButton) {
             this.betButton.node.off(Button.EventType.CLICK, this.onBetButtonClick, this);
+            this.betButton.node.off(Button.EventType.CLICK, this.onOnlineBetButtonClick, this);
         }
 
         if(this.closeBetPanelButton){
@@ -1850,10 +1925,12 @@ export class MainGameUI extends CCComp {
 
         const betting = smc.crashGame.get(BettingComp);
         if (!betting) return;
-
+        let currentMultiplier = 2.01;
+        currentMultiplier = betting.pigCashOutMultiplier>1?betting.pigCashOutMultiplier:2.01;
+        betting.setPigCashOut(currentMultiplier, -1);
         const status = betting.getGameModeStatus();
         const params: AutoCashOutParams = {
-            multiplier: 2.01,
+            multiplier: currentMultiplier,
             totalBets: status.pigTotalBets
         };
 
@@ -2638,8 +2715,8 @@ export class MainGameUI extends CCComp {
      */
     private showRaceResultAfterTutorial(): void {
         const tutorial = SimpleTutorial.getInstance();
-        
         if (!tutorial.shouldShowTutorial()) {
+            this.staticChangeTOPIGMode();
             // 如果需要显示新手教程，则等教程完成后再显示race结果
             // 不需要延迟，直接传入回调函数
             // 没有新手教程，直接显示
@@ -2648,6 +2725,8 @@ export class MainGameUI extends CCComp {
                     this.showRaceResult();
                 });
             }, 0);
+        }else{
+            this.onSPGBetButtonClick();
         }
     }
 
@@ -2863,6 +2942,9 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         if( data.phase === "waiting" &&betting.goNextRound && betting.pigCashOutMultiplier <=0){
             tips.alert("Sorry, your bid was not successful. Please wait for the next round!");
+        }
+        if( oops.gui.has(UIID.AutoCashOut) ){
+            oops.gui.remove(UIID.AutoCashOut);
         }
     }
 

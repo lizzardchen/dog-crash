@@ -100,7 +100,7 @@ export class AutoCashOutUI extends CCComp {
 
         // 设置初始值
         if (this.multiplier_input) {
-            this.multiplier_input.string = "2.01x";//params.multiplier.toString();
+            this.multiplier_input.string = params.multiplier.toString();
         }
 
         if (this.total_bets_input) {
@@ -167,7 +167,7 @@ export class AutoCashOutUI extends CCComp {
      */
     private initializeValues(): void {
         if (this.multiplier_input) {
-            this.multiplier_input.string = "2.00";
+            this.multiplier_input.string = "2.01";
         }
 
         if (this.total_bets_input) {
@@ -305,6 +305,7 @@ export class AutoCashOutUI extends CCComp {
                 button.node.off(Button.EventType.CLICK);
             }
         });
+        this.betAmountSelector.onRemoveEvents();
     }
     
     /**
