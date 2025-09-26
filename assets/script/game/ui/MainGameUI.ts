@@ -485,6 +485,8 @@ export class MainGameUI extends CCComp {
         oops.message.on("SCENE_CHANGED", this.onSceneChanged, this);
         oops.message.on("AUTO_CANCEL_AUTOGAME", this.onAutoCancelAutoGame, this);
         oops.message.on("SERVER_CANCEL_AUTOGAME",this.onServerCancelAutoGame,this);
+        oops.message.on("SHOW_AD_COINS",this.onShowAdRewardsCoins,this);
+        oops.message.on("UPDATE_BET_AMOUNT",this.onUpdateBetAmount,this);
         
         // 监听比赛数据更新事件
         oops.message.on("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
@@ -761,6 +763,12 @@ export class MainGameUI extends CCComp {
             "Insufficient Coins",
             "Watch Ad"
         );
+    }
+
+    private onShowAdRewardsCoins(event:string,data:any){
+        if(data.rewards){
+            this.showAdForCoins(data.rewards);
+        }
     }
 
     /**
@@ -1580,8 +1588,10 @@ export class MainGameUI extends CCComp {
         oops.message.off("RACE_DATA_UPDATED", this.onRaceDataUpdated, this);
         oops.message.off("SHOW_RACE_RESULT", this.onShowRaceResultUI, this);
         oops.message.off("AUTO_CASHOUT_ENDED", this.onAutoCashOutEnded, this);
-         oops.message.off("PRIZE_CLAIMED",this.onRaceClaimed,this);
-         oops.message.off("GAME_MODE_CHANGED",this.onGameModeChanged,this);
+        oops.message.off("PRIZE_CLAIMED",this.onRaceClaimed,this);
+        oops.message.off("GAME_MODE_CHANGED",this.onGameModeChanged,this);
+        oops.message.off("SHOW_AD_COINS",this.onShowAdRewardsCoins,this);
+        oops.message.off("UPDATE_BET_AMOUNT",this.onUpdateBetAmount,this);
 
         // 清理余额标签点击事件
         if (this.balanceLabel) {
@@ -1762,6 +1772,12 @@ export class MainGameUI extends CCComp {
             if (buttonLabel) {
                 buttonLabel.string = display;
             }
+        }
+    }
+
+    private onUpdateBetAmount(event:string,data:any){
+        if(data && data.amount != undefined&&data.display!=undefined){
+            this.updateBetAmount(data.amount,data.display);
         }
     }
 
