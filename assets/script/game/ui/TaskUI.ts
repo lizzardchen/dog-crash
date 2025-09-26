@@ -2,7 +2,7 @@ import { _decorator, Component, Node, ScrollView, Prefab, instantiate, Button } 
 import { ecs } from '../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS';
 import { CCComp } from '../../../../extensions/oops-plugin-framework/assets/module/common/CCComp';
 import { oops } from '../../../../extensions/oops-plugin-framework/assets/core/Oops';
-import { ITaskData, ITaskUICallback, TaskType } from '../data/TaskData';
+import { ITaskData, ITaskUICallback, TaskType, TaskStatus } from '../data/TaskData';
 import { TaskComp } from '../comp/TaskComp';
 import { TaskCell } from './TaskCell';
 import { smc } from '../common/SingletonModuleComp';
@@ -48,7 +48,7 @@ export class TaskUI extends CCComp implements ITaskUICallback {
         this.loadTaskSystem();
     }
 
-    onDestroy() {
+    destroyProcess() {
         this.unbindEvents();
         if (this._taskComp) {
             this._taskComp.unregisterUICallback(this);
@@ -82,7 +82,7 @@ export class TaskUI extends CCComp implements ITaskUICallback {
      * 解绑事件
      */
     private unbindEvents(): void {
-        if (this.closeButton) {
+        if (this.closeButton && this.closeButton.node) {
             this.closeButton.node.off(Button.EventType.CLICK, this.onCloseButtonClick, this);
         }
         
@@ -203,6 +203,7 @@ export class TaskUI extends CCComp implements ITaskUICallback {
      * 关闭按钮点击事件
      */
     private onCloseButtonClick(): void {
+        this.destroyProcess();
         oops.gui.remove(UIID.TaskUI);
     }
 
@@ -240,7 +241,7 @@ export class TaskUI extends CCComp implements ITaskUICallback {
         const taskCell = this._taskCells.get(taskData.id);
         if (taskCell) {
             taskCell.setTaskData(taskData);
-            if (taskData.isCompleted) {
+            if (taskData.status === TaskStatus.COMPLETED) {
                 taskCell.playCompleteAnimation();
             }
         }
@@ -260,10 +261,9 @@ export class TaskUI extends CCComp implements ITaskUICallback {
      * 任务奖励领取回调
      */
     public onTaskRewardClaimed(taskData: ITaskData): void {
-        const taskCell = this._taskCells.get(taskData.id);
-        if (taskCell) {
-            taskCell.setTaskData(taskData);
-        }
+        // 任务奖励被领取后，刷新整个任务列表
+        // 这样可以移除已领取的任务并显示新解锁的任务
+        this.refreshTaskList();
     }
 
     /**

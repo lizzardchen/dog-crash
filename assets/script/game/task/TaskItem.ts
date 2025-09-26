@@ -1,3 +1,6 @@
+import { oops } from "db://oops-framework/core/Oops";
+import { smc } from "../common/SingletonModuleComp";
+import { UserDataComp } from "../comp/UserDataComp";
 import { ITaskConfig, ITaskData, ITaskEvent, TaskStatus, TaskType } from "../data/TaskData";
 
 /**
@@ -14,7 +17,6 @@ export abstract class TaskItem {
             config: config,
             status: TaskStatus.UNLOCKED,
             progress: 0,
-            isCompleted: false,
             canClaim: false
         };
     }
@@ -42,8 +44,7 @@ export abstract class TaskItem {
      * 检查任务是否完成
      */
     public checkCompletion(): void {
-        if (this._data.progress >= this._config.target && !this._data.isCompleted) {
-            this._data.isCompleted = true;
+        if (this._data.progress >= this._config.target && this._data.status !== TaskStatus.COMPLETED && this._data.status !== TaskStatus.CLAIMED) {
             this._data.canClaim = true;
             this._data.status = TaskStatus.COMPLETED;
         }
@@ -55,6 +56,8 @@ export abstract class TaskItem {
     public claimReward(): boolean {
         if (this._data.canClaim) {
             this._data.canClaim = false;
+            this._data.status = TaskStatus.CLAIMED;
+            oops.message.dispatchEvent("coin")
             return true;
         }
         return false;
@@ -65,7 +68,6 @@ export abstract class TaskItem {
      */
     public reset(): void {
         this._data.progress = 0;
-        this._data.isCompleted = false;
         this._data.canClaim = false;
         this._data.status = TaskStatus.UNLOCKED;
     }
@@ -84,7 +86,6 @@ export abstract class TaskItem {
         if (saveData) {
             this._data.progress = saveData.progress || 0;
             this._data.status = saveData.status || TaskStatus.UNLOCKED;
-            this._data.isCompleted = saveData.isCompleted || false;
             this._data.canClaim = saveData.canClaim || false;
         }
     }
@@ -97,7 +98,6 @@ export abstract class TaskItem {
             id: this._data.id,
             progress: this._data.progress,
             status: this._data.status,
-            isCompleted: this._data.isCompleted,
             canClaim: this._data.canClaim
         };
     }
@@ -160,11 +160,11 @@ export class OnlineFlightTask extends TaskItem {
 }
 
 /**
- * 撞击次数任务
+ * 达到倍率任务
  */
-export class CrashCountTask extends TaskItem {
+export class CrashMultiplierTask extends TaskItem {
     public updateProgress(event: ITaskEvent): boolean {
-        if (event.type === TaskType.CRASH_COUNT) {
+        if (event.type === TaskType.CRASH_MULTIPLIER) {
             this._data.progress += event.value;
             this.checkCompletion();
             return true;
@@ -187,8 +187,8 @@ export class TaskFactory {
                 return new SingleFlightTask(config);
             case TaskType.ONLINE_FLIGHT:
                 return new OnlineFlightTask(config);
-            case TaskType.CRASH_COUNT:
-                return new CrashCountTask(config);
+            case TaskType.CRASH_MULTIPLIER:
+                return new CrashMultiplierTask(config);
             default:
                 throw new Error(`Unknown task type: ${config.type}`);
         }

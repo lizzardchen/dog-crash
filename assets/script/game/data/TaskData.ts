@@ -6,7 +6,7 @@ export enum TaskType {
     COLLECT_COINS = "collect_coins",     // 收集金币任务
     SINGLE_FLIGHT = "single_flight",     // 单机飞行任务
     ONLINE_FLIGHT = "online_flight",     // 联网飞行任务
-    CRASH_COUNT = "crash_count"          // 撞击次数任务
+    CRASH_MULTIPLIER = "crash_mutiplier" // 达到倍率的任务
 }
 
 /**
@@ -15,7 +15,8 @@ export enum TaskType {
 export enum TaskStatus {
     LOCKED = 0,      // 未解锁
     UNLOCKED = 1,    // 已解锁但未完成
-    COMPLETED = 2    // 已完成
+    COMPLETED = 2,   // 已完成但未领取奖励
+    CLAIMED = 3      // 已完成且已领取奖励
 }
 
 /**
@@ -29,6 +30,7 @@ export interface ITaskConfig {
     target: number;               // 目标数量
     reward: number;               // 奖励金币数量
     unlockCondition?: string;     // 解锁条件描述
+    prerequisiteTaskId: number;   // 前置任务ID，-1表示无前置任务
     order: number;                // 显示顺序
 }
 
@@ -40,7 +42,6 @@ export interface ITaskData {
     config: ITaskConfig;          // 任务配置
     status: TaskStatus;           // 任务状态
     progress: number;             // 当前进度
-    isCompleted: boolean;         // 是否已完成
     canClaim: boolean;            // 是否可以领取奖励
 }
 

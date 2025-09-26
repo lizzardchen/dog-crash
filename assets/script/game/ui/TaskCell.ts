@@ -137,7 +137,7 @@ export class TaskCell extends Component {
         // }
 
         if (this.completedIcon) {
-            this.completedIcon.active = taskData.isCompleted && !taskData.canClaim;
+            this.completedIcon.active = taskData.status === TaskStatus.COMPLETED && !taskData.canClaim;
         }
 
         if (this.lockedIcon) {

@@ -62,12 +62,82 @@ export class TaskComp extends ecs.Comp implements ITaskManager {
                 console.error(`Failed to create task ${config.id}:`, error);
             }
         }
+        
+        // 初始化任务解锁状态
+        this.updateTaskUnlockStatus();
     }
 
     /**
-     * 获取所有任务
+     * 更新任务解锁状态
+     */
+    private updateTaskUnlockStatus(): void {
+        for (const task of this._tasks.values()) {
+            const config = task.config;
+            
+            // 如果没有前置任务（prerequisiteTaskId为-1），则默认解锁
+            if (config.prerequisiteTaskId === -1) {
+                if (task.data.status === TaskStatus.LOCKED) {
+                    task.setStatus(TaskStatus.UNLOCKED);
+                }
+            } else {
+                // 检查前置任务是否已完成且已领取奖励
+                const prerequisiteTask = this._tasks.get(config.prerequisiteTaskId);
+                if (prerequisiteTask && prerequisiteTask.data.status === TaskStatus.CLAIMED) {
+                    if (task.data.status === TaskStatus.LOCKED) {
+                        task.setStatus(TaskStatus.UNLOCKED);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 检查前置任务是否已完成并领取奖励
+     */
+    private isPrerequisiteTaskCompleted(taskId: number): boolean {
+        const task = this._tasks.get(taskId);
+        if (!task) {
+            return false;
+        }
+        
+        const config = task.config;
+        
+        // 如果没有前置任务，返回true
+        if (config.prerequisiteTaskId === -1) {
+            return true;
+        }
+        
+        // 检查前置任务状态
+        const prerequisiteTask = this._tasks.get(config.prerequisiteTaskId);
+        return prerequisiteTask ? prerequisiteTask.data.status === TaskStatus.CLAIMED : false;
+    }
+
+    /**
+     * 获取所有应该显示的任务
+     * 过滤规则：
+     * 1. 已完成且已领取奖励的任务不显示
+     * 2. 前置任务未完成的任务不显示
      */
     public getAllTasks(): ITaskData[] {
+        const tasks: ITaskData[] = [];
+        for (const task of this._tasks.values()) {
+            const taskData = task.data;
+            
+            // 只返回状态为UNLOCKED和COMPLETED的任务
+            if (taskData.status === TaskStatus.UNLOCKED || taskData.status === TaskStatus.COMPLETED) {
+                // 检查前置任务是否满足条件
+                if (this.isPrerequisiteTaskCompleted(taskData.id)) {
+                    tasks.push(taskData);
+                }
+            }
+        }
+        return tasks.sort((a, b) => a.config.order - b.config.order);
+    }
+
+    /**
+     * 获取所有任务（包括不应显示的任务，用于调试）
+     */
+    public getAllTasksIncludingHidden(): ITaskData[] {
         const tasks: ITaskData[] = [];
         for (const task of this._tasks.values()) {
             tasks.push(task.data);
@@ -93,12 +163,17 @@ export class TaskComp extends ecs.Comp implements ITaskManager {
 
         let hasUpdate = false;
         for (const task of this._tasks.values()) {
-            if (task.data.status === TaskStatus.UNLOCKED && task.updateProgress(event)) {
-                hasUpdate = true;
-                this.notifyTaskProgressChanged(task.data);
-                
-                if (task.data.isCompleted) {
-                    this.notifyTaskStatusChanged(task.data);
+            if (task.data.status === TaskStatus.UNLOCKED) {
+                const oldStatus = task.data.status;
+                if (task.updateProgress(event)) {
+                    hasUpdate = true;
+                    this.notifyTaskProgressChanged(task.data);
+                    
+                    // 检查任务是否完成
+                    task.checkCompletion();
+                    if (oldStatus !== task.data.status && task.data.status === TaskStatus.COMPLETED) {
+                        this.notifyTaskStatusChanged(task.data);
+                    }
                 }
             }
         }
@@ -114,9 +189,15 @@ export class TaskComp extends ecs.Comp implements ITaskManager {
     public claimTaskReward(taskId: number): boolean {
         const task = this._tasks.get(taskId);
         if (task && task.claimReward()) {
+            // 将任务状态设置为已领取
+            task.setStatus(TaskStatus.CLAIMED);
+            
             // 添加金币奖励
             // TODO: 这里需要调用金币系统添加奖励
             console.log(`Claimed reward: ${task.config.reward} coins for task ${taskId}`);
+            
+            // 更新其他任务的解锁状态
+            this.updateTaskUnlockStatus();
             
             this.notifyTaskRewardClaimed(task.data);
             this.saveTaskData();
@@ -131,10 +212,10 @@ export class TaskComp extends ecs.Comp implements ITaskManager {
     public checkTaskCompletion(taskId: number): void {
         const task = this._tasks.get(taskId);
         if (task) {
-            const wasCompleted = task.data.isCompleted;
+            const oldStatus = task.data.status;
             task.checkCompletion();
             
-            if (!wasCompleted && task.data.isCompleted) {
+            if (oldStatus !== task.data.status && task.data.status === TaskStatus.COMPLETED) {
                 this.notifyTaskStatusChanged(task.data);
                 this.saveTaskData();
             }
@@ -167,6 +248,8 @@ export class TaskComp extends ecs.Comp implements ITaskManager {
                         task.loadFromSave(saveData[id]);
                     }
                 }
+                // 加载数据后更新任务解锁状态
+                this.updateTaskUnlockStatus();
             } catch (error) {
                 console.error("Failed to load task data:", error);
             }
