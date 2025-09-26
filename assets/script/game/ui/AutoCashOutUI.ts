@@ -7,6 +7,7 @@ import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/O
 import { EnergyComp } from '../comp/EnergyComp';
 import { smc } from '../common/SingletonModuleComp';
 import { tips } from '../common/tips/TipsManager';
+import { BetAmountSelector } from './BetAmountSelector';
 
 const { ccclass, property } = _decorator;
 
@@ -62,6 +63,9 @@ export class AutoCashOutUI extends CCComp {
 
     @property(Button)
     total_infinity_button: Button = null!;
+
+    @property(BetAmountSelector)
+    betAmountSelector: BetAmountSelector = null!;
 
     private _close_callback: Function | null = null;
     private _start_callback: Function | null = null;
@@ -168,6 +172,11 @@ export class AutoCashOutUI extends CCComp {
 
         if (this.total_bets_input) {
             this.total_bets_input.string = "∞";
+        }
+         // 初始化下注选择器
+        if (this.betAmountSelector) {
+            this.betAmountSelector.initBetPanel();
+            this.betAmountSelector.scrollToCurrentBet();
         }
     }
 
