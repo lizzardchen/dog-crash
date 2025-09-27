@@ -7,6 +7,7 @@ import { TaskComp } from '../comp/TaskComp';
 import { TaskCell } from './TaskCell';
 import { smc } from '../common/SingletonModuleComp';
 import { UIID } from '../common/config/GameUIConfig';
+import { UserDataComp } from '../comp/UserDataComp';
 const { ccclass, property } = _decorator;
 
 @ccclass('TaskUI')
@@ -262,6 +263,15 @@ export class TaskUI extends CCComp implements ITaskUICallback {
      */
     public onTaskRewardClaimed(taskData: ITaskData): void {
         // 任务奖励被领取后，刷新整个任务列表
+        if(taskData){
+            // 发送金币更新事件
+            const userData = smc.crashGame.get(UserDataComp);
+            userData.balance += taskData.config.reward;
+                    oops.message.dispatchEvent("COINS_UPDATED", { 
+                        amount: taskData.config.reward,
+                        newBalance: userData ? userData.balance : 0
+                    });
+        }
         // 这样可以移除已领取的任务并显示新解锁的任务
         this.refreshTaskList();
     }

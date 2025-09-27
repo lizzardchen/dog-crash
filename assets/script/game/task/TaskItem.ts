@@ -109,7 +109,9 @@ export abstract class TaskItem {
 export class PassLevelTask extends TaskItem {
     public updateProgress(event: ITaskEvent): boolean {
         if (event.type === TaskType.PASS_LEVEL) {
-            this._data.progress += event.value;
+            if( event.value >= this._config.target ){
+                this._data.progress = this._config.target;
+            }
             this.checkCompletion();
             return true;
         }
@@ -123,7 +125,10 @@ export class PassLevelTask extends TaskItem {
 export class CollectCoinsTask extends TaskItem {
     public updateProgress(event: ITaskEvent): boolean {
         if (event.type === TaskType.COLLECT_COINS) {
-            this._data.progress += event.value;
+            // this._data.progress += event.value;
+            if(event.value >= this._config.target){
+                this._data.progress = this._config.target;
+            }
             this.checkCompletion();
             return true;
         }

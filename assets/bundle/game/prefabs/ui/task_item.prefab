@@ -898,7 +898,9 @@
     "claimButton": {
       "__id__": 38
     },
-    "completedIcon": null,
+    "completedIcon": {
+      "__id__": 2
+    },
     "lockedIcon": null,
     "backgroundSprite": {
       "__id__": 34

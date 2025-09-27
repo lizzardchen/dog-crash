@@ -1,5 +1,9 @@
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { oops } from "../../../../extensions/oops-plugin-framework/assets/core/Oops";
+import { smc } from "../common/SingletonModuleComp";
+import { BettingComp } from "./BettingComp";
+import { TaskComp } from "./TaskComp";
+import { ITaskEvent,TaskType } from "../data/TaskData";
 
 @ecs.register('UserData')
 export class UserDataComp extends ecs.Comp {
@@ -15,6 +19,7 @@ export class UserDataComp extends ecs.Comp {
     private _levelstars:number = 0;
     totalFlights: number = 0;
     flightsWon: number = 0;
+    onlineFlights:number = 0;
     highestMultiplier: number = 1.0;
     highestBetAmount: number = 0;
     highestWinAmount: number = 0;
@@ -46,6 +51,12 @@ export class UserDataComp extends ecs.Comp {
 
     public set completedLevelId(value: number) {
         this._completedLevelId = value;
+        const passLevelTask:ITaskEvent = {
+                                type: TaskType.PASS_LEVEL,
+                                value: value
+                            }
+                            const taskcomp = smc.crashGame.get(TaskComp);
+                            taskcomp.updateTaskProgress(passLevelTask);
     }
 
     public get completeTaskId():number{
@@ -102,6 +113,7 @@ export class UserDataComp extends ecs.Comp {
         this.money = 100;
         this.stars = 0;
         this.totalFlights = 0;
+        this.onlineFlights = 0;
         this.flightsWon = 0;
         this.highestMultiplier = 1.0;
         this.highestBetAmount = 0;
@@ -180,7 +192,10 @@ export class UserDataComp extends ecs.Comp {
      */
     updateGameStats(betAmount: number, multiplier: number, winAmount: number, isWin: boolean): void {
         this.totalFlights += 1;
-        
+        const betting = smc.crashGame.get(BettingComp);
+        if(betting.gameMode === "PIG"){
+            this.onlineFlights+=1;
+        }
         if (isWin) {
             this.flightsWon += 1;
             // this.balance += (winAmount - betAmount); // 净收益
@@ -206,6 +221,8 @@ export class UserDataComp extends ecs.Comp {
             winRate: this.getWinRate(),
             netProfit: this.getNetProfit()
         });
+
+        this.saveToLocal();
     }
     
     /**
@@ -217,6 +234,7 @@ export class UserDataComp extends ecs.Comp {
             username: this.username,
             balance: this.balance,
             totalFlights: this.totalFlights,
+            onlineFlights:this.onlineFlights,
             flightsWon: this.flightsWon,
             highestMultiplier: this.highestMultiplier,
             highestBetAmount: this.highestBetAmount,
@@ -256,6 +274,7 @@ export class UserDataComp extends ecs.Comp {
             this.username = this.userId;//userData.username || `Player_${this.userId.substring(0, 8)}`;
             this.balance = userData.balance || 1000;
             this.totalFlights = userData.totalFlights || 0;
+            this.onlineFlights = userData.onlineFlights || 0;
             this.flightsWon = userData.flightsWon || 0;
             this.highestMultiplier = userData.highestMultiplier || 1.0;
             this.highestBetAmount = userData.highestBetAmount || 0;

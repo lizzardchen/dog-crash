@@ -35,6 +35,8 @@ import { TimerCDShow } from './TimerCDShow';
 import { MultiplierConfig } from '../config/MultiplierConfig';
 import { LevelSelUI } from './LevelSelUI';
 import { DialogsUI } from './DialogsUI';
+import { TaskComp } from '../comp/TaskComp';
+import { ITaskEvent, TaskType } from '../data/TaskData';
 
 const { ccclass, property } = _decorator;
 
@@ -274,7 +276,11 @@ export class MainGameUI extends CCComp {
 
     onLoad() {
         console.log("MainGameUI loaded");
-
+        if(oops.gui.effect2){
+            const backoinflyeffect = this.coinFlyEffect;
+            this.coinFlyEffect = oops.gui.effect2.addComponent(CoinFlyEffect);
+            this.coinFlyEffect.coinPrefab = backoinflyeffect.coinPrefab;
+        }
         // 初始化游戏数据
         this.initGameData();
 
@@ -318,7 +324,38 @@ export class MainGameUI extends CCComp {
             this.saveOriginalBalanceLabelWorldPos();
             this.saveOriginalMoneyLabelWorldPos();
             this.resetGame();
+            this.checkTaskCompletion();
         }, 0.1);
+    }
+
+    private checkTaskCompletion(): void {
+        const userdata = smc.crashGame.get(UserDataComp);
+        const taskComp = smc.crashGame.get(TaskComp);
+        if (taskComp) {
+            const levelTaskEvent: ITaskEvent = {
+                type: TaskType.PASS_LEVEL,
+                value: userdata.completedLevelId
+            };
+            taskComp.updateTaskProgress(levelTaskEvent);
+
+            const goldTaskEvent: ITaskEvent = {
+                type: TaskType.COLLECT_COINS,
+                value: userdata.balance
+            };
+            taskComp.updateTaskProgress(goldTaskEvent);
+
+            const totalflightsevent:ITaskEvent = {
+                type: TaskType.SINGLE_FLIGHT,
+                value: userdata.totalFlights
+            };
+            taskComp.updateTaskProgress(totalflightsevent);
+
+            const onlineflightsevent:ITaskEvent = {
+                type: TaskType.ONLINE_FLIGHT,
+                value: userdata.onlineFlights
+            };
+            taskComp.updateTaskProgress(onlineflightsevent);
+        }
     }
 
     private initGameData(): void {
@@ -573,6 +610,7 @@ export class MainGameUI extends CCComp {
         //level
         oops.message.on("TASK_COMPLETED_LEVEL",this.onLevelComplete,this);
         oops.message.on("STAR_COLLECTED",this.onStarsChanged,this);
+        oops.message.on("COINS_UPDATED",this.onAddCoins,this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
@@ -911,6 +949,12 @@ export class MainGameUI extends CCComp {
                             console.log("Coin fly animation completed!");
                             this.buttonState = ButtonState.Unpressed;
                             this.completedNowLevel(levelstars);
+                            const coinsaddTask:ITaskEvent = {
+                                type: TaskType.COLLECT_COINS,
+                                value: userData.balance
+                            }
+                            const taskcomp = smc.crashGame.get(TaskComp);
+                            taskcomp.updateTaskProgress(coinsaddTask);
                         });
                         this.playMoneyFlyAnimation(profit/10, () => {
                             console.log("money fly animation completed!");
@@ -2052,6 +2096,7 @@ export class MainGameUI extends CCComp {
          oops.message.off("PRIZE_CLAIMED",this.onRaceClaimed,this);
          oops.message.off("GAME_MODE_CHANGED",this.onGameModeChanged,this);
          oops.message.off("TASK_COMPLETED_LEVEL",this.onLevelComplete,this);
+         oops.message.off("COINS_UPDATED",this.onAddCoins,this);
 
         // 清理余额标签点击事件
         if (this.balanceLabel) {
@@ -3358,6 +3403,14 @@ export class MainGameUI extends CCComp {
             SimpleTutorial.getInstance().endGuide();
         }
         
+    }
+
+    private onAddCoins(event:string,data:any){
+        const addedcoins:number = data.amount;
+        this.playCoinFlyAnimation(addedcoins, () => {
+            console.log("onAddCoins fly animation completed!");
+            this.updateUI();
+        });
     }
 
     /**
