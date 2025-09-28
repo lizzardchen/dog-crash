@@ -1927,7 +1927,7 @@ export class MainGameUI extends CCComp {
         if (!betting) return;
         let currentMultiplier = 2.01;
         currentMultiplier = betting.pigCashOutMultiplier>1?betting.pigCashOutMultiplier:2.01;
-        betting.setPigCashOut(currentMultiplier, -1);
+        betting.setPigCashOut(0, -1);
         const status = betting.getGameModeStatus();
         const params: AutoCashOutParams = {
             multiplier: currentMultiplier,
