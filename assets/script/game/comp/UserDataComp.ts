@@ -191,10 +191,21 @@ export class UserDataComp extends ecs.Comp {
      * 更新游戏统计
      */
     updateGameStats(betAmount: number, multiplier: number, winAmount: number, isWin: boolean): void {
-        this.totalFlights += 1;
+        const taskcomp = smc.crashGame.get(TaskComp);
         const betting = smc.crashGame.get(BettingComp);
+        this.totalFlights += 1;
+        const singleFlightTask:ITaskEvent = {
+            type: TaskType.SINGLE_FLIGHT,
+            value: this.totalFlights
+        }
+        taskcomp.updateTaskProgress(singleFlightTask);
         if(betting.gameMode === "PIG"){
             this.onlineFlights+=1;
+            const onlineFlightsTask:ITaskEvent = {
+                type: TaskType.ONLINE_FLIGHT,
+                value: this.onlineFlights
+            }
+            taskcomp.updateTaskProgress(onlineFlightsTask);
         }
         if (isWin) {
             this.flightsWon += 1;
@@ -205,6 +216,12 @@ export class UserDataComp extends ecs.Comp {
                 this.highestMultiplier = multiplier;
                 this.highestBetAmount = betAmount;
                 this.highestWinAmount = winAmount;
+                const highestMultiplierTask:ITaskEvent = {
+                    type: TaskType.CRASH_MULTIPLIER,
+                    value: multiplier
+                }
+                const taskcomp = smc.crashGame.get(TaskComp);
+                taskcomp.updateTaskProgress(highestMultiplierTask);
             }
         }
         // else {

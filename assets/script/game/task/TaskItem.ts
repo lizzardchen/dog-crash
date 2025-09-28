@@ -156,7 +156,10 @@ export class SingleFlightTask extends TaskItem {
 export class OnlineFlightTask extends TaskItem {
     public updateProgress(event: ITaskEvent): boolean {
         if (event.type === TaskType.ONLINE_FLIGHT) {
-            this._data.progress += event.value;
+            // this._data.progress += event.value;
+            if(event.value >= this._config.target){
+                this._data.progress = this._config.target;
+            }
             this.checkCompletion();
             return true;
         }
@@ -170,7 +173,10 @@ export class OnlineFlightTask extends TaskItem {
 export class CrashMultiplierTask extends TaskItem {
     public updateProgress(event: ITaskEvent): boolean {
         if (event.type === TaskType.CRASH_MULTIPLIER) {
-            this._data.progress += event.value;
+            // this._data.progress += event.value;
+            if(event.value >= this._config.target){
+                this._data.progress = this._config.target;
+            }
             this.checkCompletion();
             return true;
         }

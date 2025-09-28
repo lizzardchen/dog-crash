@@ -355,6 +355,12 @@ export class MainGameUI extends CCComp {
                 value: userdata.onlineFlights
             };
             taskComp.updateTaskProgress(onlineflightsevent);
+
+            const highestMultiplierEvent:ITaskEvent = {
+                type: TaskType.CRASH_MULTIPLIER,
+                value: userdata.highestMultiplier
+            };
+            taskComp.updateTaskProgress(highestMultiplierEvent);
         }
     }
 
