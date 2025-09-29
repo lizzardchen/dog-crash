@@ -110,12 +110,12 @@
       "a": 255
     },
     "_spriteFrame": {
-      "__uuid__": "18c1c328-8a80-443a-bbad-3149305dfbaf@f9941",
+      "__uuid__": "47a7d656-29c4-4d2e-8941-f7e9211098ea@f9941",
       "__expectedType__": "cc.SpriteFrame"
     },
     "_type": 0,
     "_fillType": 0,
-    "_sizeMode": 1,
+    "_sizeMode": 0,
     "_fillCenter": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -140,6 +140,8 @@
     "asset": {
       "__id__": 0
     },
-    "fileId": "1adiR7KqREpIiGPj2K+KFa"
+    "fileId": "1adiR7KqREpIiGPj2K+KFa",
+    "instance": null,
+    "targetOverrides": null
   }
 ]
