@@ -49,6 +49,7 @@ export class BettingComp extends ecs.Comp {
     
     // PIG模式下的自动提现设置
     pigCashOutMultiplier: number = 0.0;
+    lastCashOutMultiplier: number = 0.0; // 上次自动提现的倍数
     pigTotalBets: number = -1; // -1表示无限
     pigCurrentBets: number = 0; // 当前已进行的下注次数
     

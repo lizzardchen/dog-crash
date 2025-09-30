@@ -100,7 +100,7 @@ export class AutoCashOutUI extends CCComp {
 
         // 设置初始值
         if (this.multiplier_input) {
-            this.multiplier_input.string = params.multiplier.toString();
+            this.multiplier_input.string = params.multiplier.toFixed(2).toString();
         }
 
         if (this.total_bets_input) {

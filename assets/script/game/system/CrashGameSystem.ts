@@ -9,6 +9,8 @@ import { EnergyComp } from "../comp/EnergyComp";
 import { UserDataComp } from "../comp/UserDataComp";
 import { RaceComp } from "../comp/RaceComp";
 import { smc } from "../common/SingletonModuleComp";
+import { RocketViewComp } from "../comp/RocketViewComp";
+import { MultiplierConfig } from "../config/MultiplierConfig";
 
 @ecs.register('CrashGameSystem')
 export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUpdate {
@@ -134,17 +136,59 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
         const betting = entity.get(BettingComp);
         const multiplier = entity.get(MultiplierComp);
         const gameState = entity.get(GameStateComp);
-        
+        const localDataComp = entity.get(LocalDataComp);
+        const rocketComp = entity.get(RocketViewComp);
+
+        const currentTime = Date.now() - multiplier.startTime;
+        const timeInSeconds = currentTime / 1000;
+        const newMultiplier = MultiplierConfig.calculateMultiplierForTime(timeInSeconds);
+        multiplier.currentMultiplier = newMultiplier;
+        // 检查 Rocket 状态变化（基于倍率表格）
+        const previousTime = (currentTime - 100) / 1000; // 上一帧的时间
+        const rocketStateChange = MultiplierConfig.checkRocketStateChange(previousTime, timeInSeconds);
+        if (rocketStateChange.changed) {
+            // 更新 Rocket 的场景状态
+            rocketComp.setSceneState(rocketStateChange.newState);
+            console.log(`Rocket state changed from ${rocketStateChange.oldState} to ${rocketStateChange.newState} at ${timeInSeconds.toFixed(1)}s (${newMultiplier.toFixed(2)}x)`);
+
+            // 发送 Rocket 场景状态变化事件
+            oops.message.dispatchEvent("ROCKET_SCENE_CHANGED", {
+                oldScene: rocketStateChange.oldState,
+                newScene: rocketStateChange.newState,
+                timeInSeconds: timeInSeconds,
+                multiplier: newMultiplier
+            });
+        }
+        const cashout_first:boolean = betting.pigCashOutMultiplier < localDataComp.currentCrashMultiplier;
         // 检查自动提现条件（PIG模式）
-        if (betting.isHolding && betting.gameMode === "PIG" && betting.shouldPigCashOut(multiplier.currentMultiplier)) {
-            gameState.state = GameState.CASHED_OUT;
-            multiplier.cashOutMultiplier = multiplier.currentMultiplier;
-            console.log(`PIG mode auto cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x`);
-            // 游戏成功：退还能源
-            this.refundEnergy(entity);
-            oops.message.dispatchEvent("GAME_CASHED_OUT", { cashOutMultiplier: multiplier.cashOutMultiplier });
-            // 自动提现
-            betting.isHolding = false;
+        if (betting.isHolding){
+            let cashout_now:boolean = betting.shouldPigCashOut(multiplier.currentMultiplier);
+            if(!cashout_first){
+                cashout_now = false;
+            }
+            if(betting.gameMode === "PIG" && cashout_now) {
+                gameState.state = GameState.CASHED_OUT;
+                multiplier.currentMultiplier = betting.pigCashOutMultiplier;
+                multiplier.cashOutMultiplier = multiplier.currentMultiplier;
+                console.log(`PIG mode auto cashed out at ${multiplier.cashOutMultiplier.toFixed(2)}x`);
+                // 游戏成功：退还能源
+                this.refundEnergy(entity);
+                oops.message.dispatchEvent("GAME_CASHED_OUT", { cashOutMultiplier: multiplier.cashOutMultiplier });
+                // 自动提现
+                betting.isHolding = false;
+                betting.setPigCashOut(0,-1);
+                return;
+            }
+            // 检查是否达到预设的崩盘倍数
+            if (multiplier.currentMultiplier >= localDataComp.currentCrashMultiplier) {
+                gameState.state = GameState.CRASHED;
+                multiplier.currentMultiplier = localDataComp.currentCrashMultiplier; // 确保崩盘倍数准确
+                console.log(`GAME CRASHED at ${multiplier.currentMultiplier.toFixed(2)}x after ${timeInSeconds.toFixed(1)} seconds`);
+                // 发送崩盘消息
+                oops.message.dispatchEvent("GAME_CRASHED", {
+                    crashMultiplier: multiplier.currentMultiplier
+                });
+            }
         }
     }
 

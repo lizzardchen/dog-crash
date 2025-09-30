@@ -1926,7 +1926,7 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         if (!betting) return;
         let currentMultiplier = 2.01;
-        currentMultiplier = betting.pigCashOutMultiplier>1?betting.pigCashOutMultiplier:2.01;
+        currentMultiplier = betting.lastCashOutMultiplier>1?betting.lastCashOutMultiplier:2.01;
         betting.setPigCashOut(0, -1);
         const status = betting.getGameModeStatus();
         const params: AutoCashOutParams = {
@@ -1946,6 +1946,7 @@ export class MainGameUI extends CCComp {
                                 return;
                             }
                             // 开始自动提现回调
+                            betting.lastCashOutMultiplier = multiplier;
                             this.startAutoCashOut(multiplier, totalBets);
                         },
                         () => {
