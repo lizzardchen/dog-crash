@@ -27,6 +27,8 @@ export class BetAmountSelector extends CCComp {
     // 私有状态变量
     private isScrollSnapping: boolean = false; // 防止滚动递归调用
 
+    private isShowCoinAlerting:boolean = false;
+
     // 回调函数
     public onBetAmountChanged: (amount: number, display: string) => void = null!;
     public onValidateBetAmount: (amount: number) => boolean = null!;
@@ -482,6 +484,8 @@ export class BetAmountSelector extends CCComp {
         // 免费模式不需要检查余额
         if (!isFreeMode && amount > userData.balance) {
             console.warn("Insufficient balance:", amount, "vs", userData.balance);
+            this.snapToItem(2);
+            this.selectItemByIndex(2);
             // 金币不足，提示观看广告
             this.showInsufficientCoinsDialog(amount - userData.balance);
             return false;
@@ -493,22 +497,27 @@ export class BetAmountSelector extends CCComp {
      * 显示金币不足对话框
      */
     private showInsufficientCoinsDialog(neededAmount: number): void {
+        if(this.isShowCoinAlerting) return;
+        this.isShowCoinAlerting = true;
         const rewardAmount = 1000;//Math.max(100, Math.ceil(neededAmount / 100) * 100); // 向上取整到100的倍数
-        tips.confirm(
-            `Insufficient coins!`,
-            () => {
-                // 用户点击确认，播放广告
-                console.log("MainGameUI: User confirmed coins recovery ad");
-                // this.showAdForCoins(rewardAmount);
-                oops.message.dispatchEvent("SHOW_AD_COINS",{rewards:rewardAmount});
-            },
-            () => {
-                // 用户点击取消
-                console.log("MainGameUI: User cancelled coins recovery ad");
-            },
-            "Insufficient Coins",
-            "Watch Ad"
-        );
+        oops.message.dispatchEvent("SHOW_INSUFFICIENT_COINS",{neededAmount:rewardAmount});
+        // tips.confirm(
+        //     `Insufficient coins!`,
+        //     () => {
+        //         // 用户点击确认，播放广告
+        //         console.log("MainGameUI: User confirmed coins recovery ad");
+        //         // this.showAdForCoins(rewardAmount);
+        //         oops.message.dispatchEvent("SHOW_AD_COINS",{rewards:rewardAmount});
+        //         this.isShowCoinAlerting = false;
+        //     },
+        //     () => {
+        //         // 用户点击取消
+        //         console.log("MainGameUI: User cancelled coins recovery ad");
+        //         this.isShowCoinAlerting = false;
+        //     },
+        //     "Insufficient Coins",
+        //     "Watch Ad"
+        // );
     }
 
     onRemoveEvents() {

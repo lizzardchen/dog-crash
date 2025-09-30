@@ -208,6 +208,7 @@ export class MainGameUI extends CCComp {
     private localRaceRemainingTime: number = 0; // 本地倒计时剩余时间（毫秒）
     private raceCountdownTimer: number = 0; // 本地倒计时更新器
     private isHistoryPopupOpen: boolean = false; // 记录history弹窗状态
+    private isShowAdConfirming:boolean = false;
 
     // private isButtonHolding:boolean = false;
     private buttonState:ButtonState = ButtonState.Unpressed;
@@ -518,6 +519,7 @@ export class MainGameUI extends CCComp {
         oops.message.on("GUIDE_SHOW_MODE",this.onGuideEvent,this);
         oops.message.on("GUIDE_SHOW_MODE_ONLINE",this.onGuideEvent,this);
         oops.message.on("GUIDE_AFTER_CLICK_ONLINE",this.onGuideEvent,this);
+        oops.message.on("SHOW_INSUFFICIENT_COINS",this.onShowInsufficientCoins,this);
     }
 
     private onHoldButtonTouchStart(_event: EventTouch): void {
@@ -687,11 +689,12 @@ export class MainGameUI extends CCComp {
         const multiplier = smc.crashGame.get(MultiplierComp);
         if ((gameState.state === GameState.FLYING ||gameState.state === GameState.WAITING)) {
             // 用户手动提现 - 如果当前是PIG模式，切换到SPG模式
-            // if (betting.gameMode === "PIG") {
+            if (betting.gameMode === "PIG") {
                 // console.log("MainGameUI: User manually cashed out, switching to SPG mode");
                 // betting.setGameMode("SPG");
                 // this.updateAutoBetButtonState();
-            // }
+                betting.setPigCashOut(0,-1);
+            }
             // 提现 - 松开按钮时提现
             betting.isHolding = false;
             gameState.state = GameState.CASHED_OUT;
@@ -747,7 +750,12 @@ export class MainGameUI extends CCComp {
     /**
      * 显示金币不足对话框
      */
+    private onShowInsufficientCoins(event:string,data:any){
+        this.showInsufficientCoinsDialog(data.neededAmount);
+    }
     private showInsufficientCoinsDialog(neededAmount: number): void {
+        if(this.isShowAdConfirming) return;
+        this.isShowAdConfirming = true;
         const rewardAmount = 1000;//Math.max(100, Math.ceil(neededAmount / 100) * 100); // 向上取整到100的倍数
         
         tips.confirm(
@@ -756,10 +764,12 @@ export class MainGameUI extends CCComp {
                 // 用户点击确认，播放广告
                 console.log("MainGameUI: User confirmed coins recovery ad");
                 this.showAdForCoins(rewardAmount);
+                this.isShowAdConfirming = false;
             },
             () => {
                 // 用户点击取消
                 console.log("MainGameUI: User cancelled coins recovery ad");
+                this.isShowAdConfirming = false;
             },
             "Insufficient Coins",
             "Watch Ad"
@@ -1171,12 +1181,12 @@ export class MainGameUI extends CCComp {
         const betting = smc.crashGame.get(BettingComp);
         if( !betting ) return;
         if(betting.serverPhase === "betting"){
-            if(!oops.gui.has(UIID.AutoCashOut)){
+            if(!oops.gui.get(UIID.AutoCashOut)){
                 this.showAutoCashOutUI();
             }
         }
         else{
-            if(oops.gui.has(UIID.AutoCashOut)){
+            if(oops.gui.get(UIID.AutoCashOut)){
                oops.gui.remove(UIID.AutoCashOut);
             }
             tips.alert("Not in bidding phase, please wait for prompt");
@@ -1273,7 +1283,7 @@ export class MainGameUI extends CCComp {
     private onOnlineStartBetting(){
         const betting = smc.crashGame.get(BettingComp);
         if(betting.serverPhase === "betting"){
-            if( !oops.gui.has(UIID.AutoCashOut) ){
+            if( !oops.gui.get(UIID.AutoCashOut) ){
                 this.showAutoCashOutUI();
             }
         }
@@ -1289,7 +1299,7 @@ export class MainGameUI extends CCComp {
         betting.fetchServerCountdown().then(() => {
             if (betting.serverPhase === "betting") {
                 // 如果是下注阶段，显示AutoCashOutUI设置界面
-                if(!oops.gui.has(UIID.AutoCashOut)){
+                if(!oops.gui.get(UIID.AutoCashOut)){
                     this.showAutoCashOutUI();
                 }
                 betting.setGameMode("PIG");
@@ -1344,7 +1354,7 @@ export class MainGameUI extends CCComp {
                 betting.fetchServerCountdown().then(() => {
                     if (betting.serverPhase === "betting") {
                         // 如果是下注阶段，显示AutoCashOutUI设置界面
-                        if(!oops.gui.has(UIID.AutoCashOut)){
+                        if(!oops.gui.get(UIID.AutoCashOut)){
                             this.showAutoCashOutUI();
                         }
                         betting.setGameMode("PIG");
@@ -1666,6 +1676,7 @@ export class MainGameUI extends CCComp {
         oops.message.off("SHOW_AD_COINS",this.onShowAdRewardsCoins,this);
         oops.message.off("UPDATE_BET_AMOUNT",this.onUpdateBetAmount,this);
         oops.message.off("ONLINE_START_BETTING",this.onOnlineStartBetting,this);
+        oops.message.off("SHOW_INSUFFICIENT_COINS",this.onShowInsufficientCoins,this);
 
         // 清理余额标签点击事件
         if (this.balanceLabel) {
@@ -1927,7 +1938,7 @@ export class MainGameUI extends CCComp {
         if (!betting) return;
         let currentMultiplier = 2.01;
         currentMultiplier = betting.lastCashOutMultiplier>1?betting.lastCashOutMultiplier:2.01;
-        betting.setPigCashOut(0, -1);
+        // betting.setPigCashOut(0, -1);
         const status = betting.getGameModeStatus();
         const params: AutoCashOutParams = {
             multiplier: currentMultiplier,
@@ -2944,8 +2955,14 @@ export class MainGameUI extends CCComp {
         if( data.phase === "waiting" &&betting.goNextRound && betting.pigCashOutMultiplier <=0){
             tips.alert("Sorry, your bid was not successful. Please wait for the next round!");
         }
-        if( oops.gui.has(UIID.AutoCashOut) ){
+        if( oops.gui.get(UIID.AutoCashOut) ){
             oops.gui.remove(UIID.AutoCashOut);
+            if( data.phase != "gaming" ){
+                if( betting.pigCashOutMultiplier <=0 ){
+                    betting.setPigCashOut(0,-1);
+                }
+                
+            }
         }
     }
 

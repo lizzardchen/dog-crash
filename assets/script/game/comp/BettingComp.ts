@@ -218,7 +218,7 @@ export class BettingComp extends ecs.Comp {
             this.pigCashOutMultiplier = 0;
             this.goNextRound = true;
         }else{
-            if( this.serverPhase == "betting" || this.serverPhase == "idle" ){
+            if( this.serverPhase != "gaming"){
                 this.goNextRound = false;
             }else{
                 // this.pigCashOutMultiplier = 0;

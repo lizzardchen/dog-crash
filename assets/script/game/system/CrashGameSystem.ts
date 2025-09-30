@@ -188,6 +188,9 @@ export class CrashGameSystem extends ecs.ComblockSystem implements ecs.ISystemUp
                 oops.message.dispatchEvent("GAME_CRASHED", {
                     crashMultiplier: multiplier.currentMultiplier
                 });
+                if(betting.gameMode === "PIG"){
+                    betting.setPigCashOut(0,-1);
+                }
             }
         }
     }
