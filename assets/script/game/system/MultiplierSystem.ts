@@ -56,7 +56,7 @@ export class MultiplierSystem extends ecs.ComblockSystem implements ecs.ISystemU
             multiplierComp.currentMultiplier = newMultiplier;
 
             // 检查是否达到预设的崩盘倍数
-            if (multiplierComp.currentMultiplier >= localDataComp.currentCrashMultiplier) {
+            if (multiplierComp.currentMultiplier > localDataComp.currentCrashMultiplier) {
                 gameStateComp.state = GameState.CRASHED;
                 multiplierComp.currentMultiplier = localDataComp.currentCrashMultiplier; // 确保崩盘倍数准确
 
