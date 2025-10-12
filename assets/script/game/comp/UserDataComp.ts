@@ -95,6 +95,16 @@ export class UserDataComp extends ecs.Comp {
     public set balance(value: number) {
         this._balance = value;
         if(this._balance <= 0) this._balance = 0;
+        const goldTaskEvent: ITaskEvent = {
+                type: TaskType.COLLECT_COINS,
+                value: this._balance
+            };
+        if(smc.crashGame){
+            const taskcomp = smc.crashGame.get(TaskComp);
+            if(taskcomp){
+                taskcomp.updateTaskProgress(goldTaskEvent);
+            }
+        }
     }
 
     public get money(): number {

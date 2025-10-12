@@ -36,7 +36,8 @@ import { MultiplierConfig } from '../config/MultiplierConfig';
 import { LevelSelUI } from './LevelSelUI';
 import { DialogsUI } from './DialogsUI';
 import { TaskComp } from '../comp/TaskComp';
-import { ITaskEvent, TaskType } from '../data/TaskData';
+import { ITaskData, ITaskEvent, TaskStatus, TaskType } from '../data/TaskData';
+import { TaskCallbackComp } from '../task/TaskCallbackComp';
 
 const { ccclass, property } = _decorator;
 
@@ -160,6 +161,9 @@ export class MainGameUI extends CCComp {
 
     @property(Button)
     taskButton: Button = null!;
+
+    @property(Node)
+    taskTipNode: Node = null!;
     
     @property(Button)
     levelBackButton: Button = null!;
@@ -252,6 +256,8 @@ export class MainGameUI extends CCComp {
     private originalBalanceLabelWorldPos: Vec3 = new Vec3();
     private originalMoneyLabelWordlPos:Vec3 = new Vec3();
 
+    private taskCallbackComp: TaskCallbackComp = new TaskCallbackComp();
+
     /**
      * 将数值转换为短文本格式
      * @param value 数值
@@ -328,10 +334,20 @@ export class MainGameUI extends CCComp {
         }, 0.1);
     }
 
+    private onTaskChanged(taskData: ITaskData): void {
+        if(taskData){
+            if(taskData.status === TaskStatus.COMPLETED){
+                this.taskTipNode.active = true;
+            }
+        }
+    }
+
     private checkTaskCompletion(): void {
         const userdata = smc.crashGame.get(UserDataComp);
         const taskComp = smc.crashGame.get(TaskComp);
         if (taskComp) {
+            this.taskCallbackComp.taskStatusChanedCallback = this.onTaskChanged.bind(this);
+            taskComp.registerUICallback(this.taskCallbackComp);
             const levelTaskEvent: ITaskEvent = {
                 type: TaskType.PASS_LEVEL,
                 value: userdata.completedLevelId
@@ -940,7 +956,8 @@ export class MainGameUI extends CCComp {
         this.scheduleOnce(() => {
             this.showGameResult({
                 isWin: true,
-                profit: profit
+                profit: profit,
+                stars:levelstars
             },()=>{
                 console.log("GameResultUI closed, game won!!");
                 // 先播放UI恢复动画，然后播放金币飞行动画
@@ -988,6 +1005,7 @@ export class MainGameUI extends CCComp {
         const userData = smc.crashGame.get(UserDataComp);
          const multiplier = _data.crashMultiplier;//smc.crashGame.get(MultiplierComp);
         const winAmount = betting.betAmount * multiplier;
+        const levelstars = userData.levelstars;
 
         let loss: number = winAmount; // 默认损失为当前可能的奖励金额
 
@@ -1014,7 +1032,8 @@ export class MainGameUI extends CCComp {
         this.scheduleOnce(() => {
             this.showGameResult({
                 isWin: false,
-                profit: -loss
+                profit: -loss,
+                stars:levelstars
             },()=>{
                 this.buttonState = ButtonState.Unpressed;
                 console.log("GameResultUI closed, game failed!!");
@@ -1067,7 +1086,8 @@ export class MainGameUI extends CCComp {
         this.scheduleOnce(() => {
             this.showGameResult({
                 isWin: true,
-                profit: profit
+                profit: profit,
+                stars:userData.levelstars
             },()=>{
                 this.buttonState = ButtonState.Unpressed;
                 console.log("GameResultUI closed, game won!!");
@@ -2702,7 +2722,9 @@ export class MainGameUI extends CCComp {
      */
     private showTaskUI(): void {
         console.log("Showing task UI");
-
+        if(this.taskTipNode){
+            this.taskTipNode.active = false;
+        }
         const callbacks: UICallbacks = {
             onAdded: (node: Node | null, params: any) => {
                 if (!node) {

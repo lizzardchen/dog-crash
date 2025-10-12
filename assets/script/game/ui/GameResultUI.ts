@@ -3,6 +3,9 @@ import { CCComp } from "../../../../extensions/oops-plugin-framework/assets/modu
 import { ecs } from "../../../../extensions/oops-plugin-framework/assets/libs/ecs/ECS";
 import { CrashGameLanguage } from "../config/CrashGameLanguage";
 import { CrashGameAudio } from "../config/CrashGameAudio";
+import { smc } from '../common/SingletonModuleComp';
+import { BettingComp } from '../comp/BettingComp';
+import { UserDataComp } from '../comp/UserDataComp';
 
 
 const { ccclass, property } = _decorator;
@@ -36,6 +39,18 @@ export class GameResultUI extends CCComp {
 
     @property(Label)
     countdown_label: Label = null!;
+
+    @property(Node)
+    starPassNode:Node = null!;
+
+    @property(Node)
+    starUnPassNode:Node = null!;
+
+    @property(Node)
+    starNode:Node = null!;
+
+    @property(Label)
+    starLabel:Label = null!;
 
     @property(sp.Skeleton)
     win_spine: sp.Skeleton = null!;
@@ -187,6 +202,26 @@ export class GameResultUI extends CCComp {
         if (this.dollar_amount_label) {
             this.dollar_amount_label.string = (rewardAmount/10).toFixed(0);
         }
+        const userdata = smc.crashGame.get(UserDataComp);
+        const betting = smc.crashGame.get(BettingComp);
+        if(betting.gameMode === "SPG"){
+            if(this.starNode){
+                this.starNode.active = true;
+                this.starLabel.string = params.stars.toString();
+
+                if(params.stars >= userdata.completedLevelId+2){
+                    this.starPassNode.active = true;
+                    this.starUnPassNode.active = false;
+                }else{
+                    this.starPassNode.active = false;
+                    this.starUnPassNode.active = true;
+                }
+            }
+        }else{
+            if(this.starNode){
+                this.starNode.active = false;
+            }
+        }
     }
 
     /**
@@ -233,4 +268,5 @@ export interface GameResultParams {
     isWin: boolean;
     /** 收益（正数为盈利，负数为亏损） */
     profit: number;
+    stars:number;
 }

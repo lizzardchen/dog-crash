@@ -27,6 +27,9 @@ export class TaskCell extends Component {
     
     @property(Node)
     public lockedIcon: Node = null!;
+
+    @property(Node)
+    public claimedIcon: Node = null!;
     
     @property(Sprite)
     public backgroundSprite: Sprite = null!;
@@ -130,18 +133,16 @@ export class TaskCell extends Component {
 
         const taskData = this._taskData;
 
-        // 显示/隐藏相关UI元素
-        // if (this.claimButton) {
-        //     this.claimButton.node.active = taskData.canClaim;
-        //     this.claimButton.interactable = taskData.canClaim;
-        // }
-
         if (this.completedIcon) {
-            this.completedIcon.active = taskData.status === TaskStatus.COMPLETED;
+            this.completedIcon.active = taskData.status === TaskStatus.COMPLETED || taskData.status === TaskStatus.CLAIMED;
         }
 
         if (this.lockedIcon) {
             this.lockedIcon.active = taskData.status === TaskStatus.LOCKED;
+        }
+        
+        if(this.claimedIcon){
+            this.claimedIcon.active = taskData.status === TaskStatus.CLAIMED;
         }
     }
 

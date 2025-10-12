@@ -122,16 +122,28 @@ export class TaskComp extends ecs.Comp implements ITaskManager {
         const tasks: ITaskData[] = [];
         for (const task of this._tasks.values()) {
             const taskData = task.data;
-            
             // 只返回状态为UNLOCKED和COMPLETED的任务
-            if (taskData.status === TaskStatus.UNLOCKED || taskData.status === TaskStatus.COMPLETED) {
+            // if (taskData.status === TaskStatus.UNLOCKED || taskData.status === TaskStatus.COMPLETED) {
                 // 检查前置任务是否满足条件
-                if (this.isPrerequisiteTaskCompleted(taskData.id)) {
+                // if (this.isPrerequisiteTaskCompleted(taskData.id)) {
                     tasks.push(taskData);
-                }
-            }
+                // }
+            // }
         }
-        return tasks.sort((a, b) => a.config.order - b.config.order);
+        // 按任务状态排序：COMPLETED > UNLOCKED > LOCKED > CLAIMED
+        const statusPriority: Record<number, number> = {
+            [TaskStatus.COMPLETED]: 0,
+            [TaskStatus.UNLOCKED]: 1,
+            [TaskStatus.LOCKED]: 2,
+            [TaskStatus.CLAIMED]: 3
+        };
+        return tasks.sort((a, b) => {
+            const pa = statusPriority[a.status] ?? 999;
+            const pb = statusPriority[b.status] ?? 999;
+            if (pa !== pb) return pa - pb;
+            // 同状态下按配置中的 order 进行二级排序
+            return a.config.order - b.config.order;
+        });
     }
 
     /**
